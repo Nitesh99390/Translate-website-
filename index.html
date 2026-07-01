@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EPUB Translation Verifier</title>
+<title>Document Translation Verifier</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
@@ -266,6 +268,80 @@
     margin-top:8px;padding:12px;font-family:var(--mono);
   }
 
+  /* ---------- CHAPTER EDITOR ---------- */
+  .panel-sub{
+    font-size:12px;color:var(--text-dim);line-height:1.5;
+    margin:-6px 0 14px;
+  }
+  .editor-list{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+  .editor-list::-webkit-scrollbar{width:5px;}
+  .editor-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  .editor-row{
+    display:flex;align-items:center;gap:8px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:8px;
+  }
+  .editor-row.excluded{opacity:0.45;}
+  .editor-pos{
+    font-family:var(--mono);
+    font-size:10.5px;color:var(--text-faint);
+    min-width:20px;text-align:center;
+  }
+  .editor-title-input{
+    flex:1;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:5px;
+    color:var(--text);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12.5px;
+    padding:7px 9px;
+    min-width:0;
+  }
+  .editor-title-input:focus{outline:none;border-color:var(--accent);}
+  .editor-title-input:disabled{color:var(--text-faint);cursor:not-allowed;}
+  .editor-controls{display:flex;gap:3px;flex-shrink:0;}
+  .editor-btn{
+    width:26px;height:26px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:5px;
+    color:var(--text-dim);
+    font-family:var(--mono);
+    font-size:12px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    padding:0;
+  }
+  .editor-btn:hover{border-color:var(--accent);color:var(--text);}
+  .editor-btn:disabled{opacity:0.3;cursor:not-allowed;}
+  .editor-btn.toggle-off{color:var(--red);border-color:rgba(229,83,75,0.35);}
+
+  /* ---------- EXPORT TABS ---------- */
+  .export-tabs{
+    display:flex;gap:6px;margin-bottom:12px;
+  }
+  .export-tab{
+    flex:1;
+    padding:9px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--text-dim);
+    font-family:var(--mono);
+    font-size:11.5px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .export-tab.active{
+    border-color:var(--accent);
+    color:var(--accent);
+    background:rgba(91,141,239,0.08);
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;}
   }
@@ -276,8 +352,8 @@
 
   <div class="app-header">
     <div class="tag">Browser-Based &middot; Chapter Verified</div>
-    <h1>EPUB Translation Verifier</h1>
-    <p>Upload an EPUB, enable Chrome's built-in translation, and this tool confirms each chapter actually translated before saving — no partial or missed chapters.</p>
+    <h1>Document Translation Verifier</h1>
+    <p>Upload an EPUB, PDF, DOCX, or TXT file, enable Chrome's built-in translation, and this tool confirms each chapter actually translated before saving — no partial or missed chapters.</p>
     <div class="flow-strip">
       <div class="flow-step"><b>1</b> Upload</div>
       <div class="flow-step"><b>2</b> Enable Translate</div>
@@ -292,9 +368,9 @@
       <span class="panel-num">01</span>
     </div>
     <label class="drop" id="dropZone">
-      <input type="file" id="epubFile" accept=".epub">
-      <div class="drop-label">Select EPUB file</div>
-      <div class="drop-sub">.epub only</div>
+      <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt">
+      <div class="drop-label">Select a document</div>
+      <div class="drop-sub">.epub &middot; .pdf &middot; .docx &middot; .txt</div>
     </label>
     <div id="fileNameShow"></div>
 
@@ -345,6 +421,16 @@
     <div id="logBox" class="log-box"></div>
   </div>
 
+  <!-- CHAPTER EDITOR (rename/reorder before export) -->
+  <div class="panel" id="editorPanel" style="display:none;">
+    <div class="panel-head">
+      <span class="panel-label">Review & Arrange</span>
+      <span class="panel-num">04</span>
+    </div>
+    <p class="panel-sub">Rename chapters or change their order. This only affects the exported files — nothing is re-translated.</p>
+    <div class="editor-list" id="editorList"></div>
+  </div>
+
   <!-- DOWNLOAD -->
   <div class="panel" id="downloadPanel" style="display:none;">
     <div class="panel-head">
@@ -352,7 +438,17 @@
     </div>
     <div class="meta-row"><span class="k">TRANSLATED</span><span class="v" id="dDone">0</span></div>
     <div class="meta-row"><span class="k">SKIPPED / UNVERIFIED</span><span class="v" id="dSkipped">0</span></div>
+
+    <div class="export-tabs" id="exportTabs">
+      <button class="export-tab active" data-mode="txt">Text (.zip)</button>
+      <button class="export-tab" data-mode="epub">EPUB (.epub)</button>
+    </div>
+
     <button class="btn btn-primary" id="downloadBtn">Download ZIP (per-chapter + combined .txt)</button>
+    <div class="note-box" id="epubNote" style="display:none;">
+      <div class="ic">i</div>
+      <div>Repackages translated chapters into a standard EPUB3 container with a generated table of contents, using the titles and order set above. Opens in any e-reader (Apple Books, Calibre, Kindle after conversion, etc.).</div>
+    </div>
   </div>
 
   <div class="footer-note">All processing happens locally in your browser. No file is uploaded to a server.</div>
@@ -366,6 +462,8 @@ let chapters = [];        // {index, title, item, status, text, retries}
 let currentIdx = -1;
 let running = false;
 let stopRequested = false;
+let exportOrder = [];     // array of chapter indices, in export order
+let bookLang = 'en';      // best-effort source language for EPUB metadata
 
 const el = id => document.getElementById(id);
 
@@ -389,8 +487,22 @@ const downloadPanel = el('downloadPanel');
 const dDone = el('dDone');
 const dSkipped = el('dSkipped');
 const downloadBtn = el('downloadBtn');
+const editorPanel = el('editorPanel');
+const editorList = el('editorList');
+const exportTabs = el('exportTabs');
+const epubNote = el('epubNote');
+let exportMode = 'txt';
 
-/* ============ FILE UPLOAD & PARSE ============ */
+/* ============ FILE UPLOAD & PARSE — FORMAT DISPATCH ============ */
+/*
+  Every parser below produces the same chapter shape:
+    { index, title, html, status, text, retries }
+  'html' is what gets injected into the viewer for translation.
+  EPUB chapters lazy-load their HTML from the spine item at process time
+  (existing behavior, kept for large books); PDF/DOCX/TXT chapters have
+  their HTML built up front since the whole file is already in memory
+  after parsing.
+*/
 fileInput.addEventListener('change', function(e){
   const file = e.target.files[0];
   if(!file) return;
@@ -400,6 +512,33 @@ fileInput.addEventListener('change', function(e){
   mStatus.textContent = 'Extracting…';
   metaBox.style.display = 'block';
 
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if(ext === 'epub') return parseEpubFile(file);
+  if(ext === 'pdf') return parsePdfFile(file);
+  if(ext === 'docx') return parseDocxFile(file);
+  if(ext === 'txt') return parseTxtFile(file);
+
+  mStatus.textContent = 'Error: unsupported file type (' + ext + ')';
+});
+
+function finishLoadingChapters(bookTitle, lang){
+  mTitle.textContent = bookTitle;
+  bookLang = lang || 'en';
+  mChapters.textContent = chapters.length;
+  mStatus.textContent = chapters.length ? 'Ready' : 'Error: no readable content found';
+  exportOrder = chapters.map((c,i)=>i);
+  renderChapterList();
+  chapPanel.style.display = 'block';
+  viewerPanel.style.display = 'block';
+  actionPanel.style.display = 'block';
+  startBtn.disabled = chapters.length === 0;
+  updateProgress();
+  checkForResumableSession(bookTitle);
+}
+
+/* ---- EPUB ---- */
+function parseEpubFile(file){
   const reader = new FileReader();
   reader.onload = async function(event){
     try{
@@ -407,8 +546,6 @@ fileInput.addEventListener('change', function(e){
       await book.ready;
       const nav = await book.loaded.navigation.catch(()=>null);
       const metadata = await book.loaded.metadata.catch(()=>({}));
-
-      mTitle.textContent = metadata.title || file.name.replace('.epub','');
 
       await book.loaded.spine;
       chapters = [];
@@ -424,28 +561,21 @@ fileInput.addEventListener('change', function(e){
         chapters.push({
           index: i,
           title: chapTitle,
-          item: item,
+          item: item,       // lazy: html pulled from this at process time
+          html: null,
           status: 'pending',
           text: '',
           retries: 0
         });
       }
 
-      mChapters.textContent = chapters.length;
-      mStatus.textContent = 'Ready';
-      renderChapterList();
-      chapPanel.style.display = 'block';
-      viewerPanel.style.display = 'block';
-      actionPanel.style.display = 'block';
-      startBtn.disabled = false;
-
-      updateProgress();
+      finishLoadingChapters(metadata.title || file.name.replace('.epub',''), metadata.language);
     }catch(err){
       mStatus.textContent = 'Error: ' + err.message;
     }
   };
   reader.readAsArrayBuffer(file);
-});
+}
 
 function findNavMatch(tocArr, href){
   for(const entry of tocArr){
@@ -458,6 +588,204 @@ function findNavMatch(tocArr, href){
     }
   }
   return null;
+}
+
+/* ---- PDF ----
+   Each PDF page becomes one "chapter". pdf.js gives text runs without
+   paragraph structure, so consecutive lines are joined with a space and
+   a blank-line heuristic (short line followed by a line starting with a
+   capital) is used to guess paragraph breaks — imperfect, but far more
+   readable than one unbroken block of text per page.
+*/
+function parsePdfFile(file){
+  const reader = new FileReader();
+  reader.onload = async function(event){
+    try{
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+      const pdf = await pdfjsLib.getDocument({data: event.target.result}).promise;
+      chapters = [];
+
+      for(let p=1; p<=pdf.numPages; p++){
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        const rawLines = groupPdfTextIntoLines(content.items);
+        const paragraphs = guessParagraphs(rawLines);
+        const html = paragraphs.map(p=>`<p>${escapeHtml(p)}</p>`).join('\n');
+
+        chapters.push({
+          index: p-1,
+          title: 'Page ' + p,
+          item: null,
+          html: html || '<p></p>',
+          status: 'pending',
+          text: '',
+          retries: 0
+        });
+      }
+
+      finishLoadingChapters(file.name.replace('.pdf',''), 'en');
+    }catch(err){
+      mStatus.textContent = 'Error: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function groupPdfTextIntoLines(items){
+  // pdf.js gives individual text runs with y-coordinates; group runs that
+  // share (roughly) the same y into a line, since that's the closest
+  // signal to visual line breaks available from getTextContent().
+  const lines = [];
+  let currentY = null;
+  let currentLine = [];
+  items.forEach(item=>{
+    const y = Math.round(item.transform[5]);
+    if(currentY === null || Math.abs(y - currentY) > 2){
+      if(currentLine.length) lines.push(currentLine.join(''));
+      currentLine = [item.str];
+      currentY = y;
+    } else {
+      currentLine.push(item.str);
+    }
+  });
+  if(currentLine.length) lines.push(currentLine.join(''));
+  return lines.filter(l=>l.trim().length>0);
+}
+
+function guessParagraphs(lines){
+  const paragraphs = [];
+  let buf = '';
+  lines.forEach(line=>{
+    const trimmed = line.trim();
+    const endsSentence = /[.!?"')]$/.test(buf.trim());
+    const looksLikeNewPara = buf && endsSentence && /^[A-Z"'(]/.test(trimmed) && buf.trim().length < 90;
+    if(looksLikeNewPara){
+      paragraphs.push(buf.trim());
+      buf = trimmed;
+    } else {
+      buf = buf ? buf + ' ' + trimmed : trimmed;
+    }
+  });
+  if(buf.trim()) paragraphs.push(buf.trim());
+  return paragraphs;
+}
+
+/* ---- DOCX ----
+   Mammoth converts the whole document to one HTML blob. Since Chrome's
+   translate-and-verify loop works chapter-by-chapter, the blob is split
+   into sections on <h1>/<h2> boundaries. Documents with no headings
+   become a single chapter.
+*/
+function parseDocxFile(file){
+  const reader = new FileReader();
+  reader.onload = async function(event){
+    try{
+      const result = await mammoth.convertToHtml({arrayBuffer: event.target.result});
+      const container = document.createElement('div');
+      container.innerHTML = result.value;
+
+      const sections = splitHtmlOnHeadings(container);
+      chapters = sections.map((sec, i)=>({
+        index: i,
+        title: sec.title || ('Section ' + (i+1)),
+        item: null,
+        html: sec.html,
+        status: 'pending',
+        text: '',
+        retries: 0
+      }));
+
+      finishLoadingChapters(file.name.replace('.docx',''), 'en');
+    }catch(err){
+      mStatus.textContent = 'Error: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function splitHtmlOnHeadings(container){
+  const nodes = Array.from(container.childNodes);
+  const headingTags = new Set(['H1','H2']);
+  const hasHeadings = nodes.some(n=>n.nodeType===1 && headingTags.has(n.tagName));
+
+  if(!hasHeadings){
+    return [{ title: null, html: container.innerHTML }];
+  }
+
+  const sections = [];
+  let currentTitle = null;
+  let currentNodes = [];
+
+  function flush(){
+    if(currentNodes.length){
+      sections.push({
+        title: currentTitle,
+        html: currentNodes.map(n=>n.outerHTML || n.textContent).join('\n')
+      });
+    }
+    currentNodes = [];
+  }
+
+  nodes.forEach(n=>{
+    if(n.nodeType===1 && headingTags.has(n.tagName)){
+      flush();
+      currentTitle = n.textContent.trim();
+      currentNodes = [n];
+    } else {
+      currentNodes.push(n);
+    }
+  });
+  flush();
+
+  return sections.filter(s=>s.html && s.html.trim().length>0);
+}
+
+/* ---- TXT ----
+   Plain text has no chapter markers, so the file is split on blank-line
+   runs into paragraphs, then grouped into fixed-size chunks so a single
+   huge file doesn't become one unmanageable "chapter". ~3000 characters
+   per chunk keeps each translation-verify pass to a reasonable size.
+*/
+function parseTxtFile(file){
+  const reader = new FileReader();
+  reader.onload = function(event){
+    try{
+      const text = event.target.result;
+      const paragraphs = text.split(/\n{2,}/).map(p=>p.trim()).filter(p=>p.length>0);
+
+      const CHUNK_CHARS = 3000;
+      const chunks = [];
+      let buf = [];
+      let bufLen = 0;
+      paragraphs.forEach(p=>{
+        buf.push(p);
+        bufLen += p.length;
+        if(bufLen >= CHUNK_CHARS){
+          chunks.push(buf);
+          buf = [];
+          bufLen = 0;
+        }
+      });
+      if(buf.length) chunks.push(buf);
+
+      chapters = chunks.map((chunkParas, i)=>({
+        index: i,
+        title: 'Part ' + (i+1),
+        item: null,
+        html: chunkParas.map(p=>`<p>${escapeHtml(p)}</p>`).join('\n'),
+        status: 'pending',
+        text: '',
+        retries: 0
+      }));
+
+      finishLoadingChapters(file.name.replace('.txt',''), 'en');
+    }catch(err){
+      mStatus.textContent = 'Error: ' + err.message;
+    }
+  };
+  reader.readAsText(file);
 }
 
 /* ============ RENDER CHAPTER LIST ============ */
@@ -658,6 +986,8 @@ startBtn.addEventListener('click', async ()=>{
     dDone.textContent = doneCount;
     dSkipped.textContent = chapters.length - doneCount;
     downloadPanel.style.display = 'block';
+    editorPanel.style.display = 'block';
+    renderEditorList();
     log(`Complete — ${doneCount}/${chapters.length} chapters processed.`, 'ok');
   }
 });
@@ -673,22 +1003,130 @@ skipBtn.addEventListener('click', ()=>{
   }
 });
 
-/* ============ DOWNLOAD AS ZIP ============ */
+/* ============ CHAPTER EDITOR (rename / reorder / exclude) ============ */
+function renderEditorList(){
+  editorList.innerHTML = '';
+  exportOrder.forEach((chapIdx, pos)=>{
+    const c = chapters[chapIdx];
+    const hasText = !!(c.text && c.text.trim());
+    const row = document.createElement('div');
+    row.className = 'editor-row' + (c.excluded ? ' excluded' : '');
+    row.innerHTML = `
+      <span class="editor-pos">${String(pos+1).padStart(2,'0')}</span>
+      <input class="editor-title-input" value="${escapeAttr(c.title)}"
+             data-chap="${chapIdx}" ${hasText ? '' : 'disabled'} />
+      <div class="editor-controls">
+        <button class="editor-btn" data-act="up" data-pos="${pos}" ${pos===0?'disabled':''} title="Move up">↑</button>
+        <button class="editor-btn" data-act="down" data-pos="${pos}" ${pos===exportOrder.length-1?'disabled':''} title="Move down">↓</button>
+        <button class="editor-btn ${c.excluded?'toggle-off':''}" data-act="toggle" data-chap="${chapIdx}"
+                title="${c.excluded ? 'Include in export' : 'Exclude from export'}" ${hasText ? '' : 'disabled'}>
+          ${c.excluded ? '＋' : '✕'}
+        </button>
+      </div>
+    `;
+    editorList.appendChild(row);
+  });
+}
+
+function escapeAttr(s){
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+editorList.addEventListener('input', (e)=>{
+  if(e.target.classList.contains('editor-title-input')){
+    const idx = parseInt(e.target.dataset.chap, 10);
+    chapters[idx].title = e.target.value;
+  }
+});
+
+editorList.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.editor-btn');
+  if(!btn || btn.disabled) return;
+  const act = btn.dataset.act;
+
+  if(act === 'up' || act === 'down'){
+    const pos = parseInt(btn.dataset.pos, 10);
+    const swapWith = act === 'up' ? pos-1 : pos+1;
+    if(swapWith < 0 || swapWith >= exportOrder.length) return;
+    [exportOrder[pos], exportOrder[swapWith]] = [exportOrder[swapWith], exportOrder[pos]];
+    renderEditorList();
+  }
+
+  if(act === 'toggle'){
+    const idx = parseInt(btn.dataset.chap, 10);
+    chapters[idx].excluded = !chapters[idx].excluded;
+    renderEditorList();
+  }
+});
+
+function getExportChapters(){
+  // Returns chapters in user-defined order, skipping excluded and empty ones.
+  return exportOrder
+    .map(idx => chapters[idx])
+    .filter(c => c.text && c.text.trim() && !c.excluded);
+}
+
+/* ============ EXPORT MODE TABS ============ */
+exportTabs.addEventListener('click', (e)=>{
+  const tab = e.target.closest('.export-tab');
+  if(!tab) return;
+  exportMode = tab.dataset.mode;
+  document.querySelectorAll('.export-tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  if(exportMode === 'epub'){
+    downloadBtn.textContent = 'Download EPUB (.epub)';
+    epubNote.style.display = 'flex';
+  } else {
+    downloadBtn.textContent = 'Download ZIP (per-chapter + combined .txt)';
+    epubNote.style.display = 'none';
+  }
+});
+
+/* ============ DOWNLOAD — DISPATCH ============ */
 downloadBtn.addEventListener('click', async ()=>{
+  if(exportMode === 'epub'){
+    await downloadAsEpub();
+  } else {
+    await downloadAsTxtZip();
+  }
+});
+
+/* ============ EXPORT: TXT + ZIP (with TOC-based combined file) ============ */
+async function downloadAsTxtZip(){
   const zip = new JSZip();
   const bookTitle = (mTitle.textContent || 'book').replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'book';
+  const exportList = getExportChapters();
 
-  chapters.forEach((c, i)=>{
-    if(c.text && c.text.trim()){
-      const fname = `${String(i+1).padStart(2,'0')}_${(c.title||'chapter').replace(/[^a-zA-Z0-9 ]/g,'').trim()}.txt`;
-      zip.file(fname, c.text);
-    }
+  if(exportList.length === 0){
+    log('Nothing to export — all chapters are excluded or empty.', 'err');
+    return;
+  }
+
+  exportList.forEach((c, pos)=>{
+    const fname = `${String(pos+1).padStart(2,'0')}_${(c.title||'chapter').replace(/[^a-zA-Z0-9 ]/g,'').trim()}.txt`;
+    zip.file(fname, c.text);
   });
 
-  const combined = chapters
-    .filter(c=>c.text && c.text.trim())
-    .map((c)=>`=== ${c.title} ===\n\n${c.text}`)
-    .join('\n\n\n');
+  // Build a combined file with a real table of contents at the top,
+  // and a matching heading + line marker above each chapter body so
+  // the TOC entries correspond to a findable position in the file.
+  const tocLines = ['TABLE OF CONTENTS', '='.repeat(40), ''];
+  exportList.forEach((c, pos)=>{
+    tocLines.push(`${String(pos+1).padStart(2,'0')}. ${c.title}`);
+  });
+  tocLines.push('', '='.repeat(40), '');
+
+  const bodyLines = [];
+  exportList.forEach((c, pos)=>{
+    bodyLines.push(`[${String(pos+1).padStart(2,'0')}] ${c.title}`);
+    bodyLines.push('-'.repeat(40));
+    bodyLines.push('');
+    bodyLines.push(c.text);
+    bodyLines.push('');
+    bodyLines.push('');
+  });
+
+  const combined = tocLines.join('\n') + bodyLines.join('\n');
   zip.file(`00_full_${bookTitle}.txt`, combined);
 
   const blob = await zip.generateAsync({type:'blob'});
@@ -698,8 +1136,154 @@ downloadBtn.addEventListener('click', async ()=>{
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  log('ZIP download started.', 'ok');
-});
+  log(`ZIP download started (${exportList.length} chapters).`, 'ok');
+}
+
+/* ============ EXPORT: EPUB REPACKAGING ============ */
+/*
+  Builds a spec-valid EPUB3 container from scratch:
+    mimetype               — must be first entry, stored uncompressed
+    META-INF/container.xml — points readers to the OPF
+    OEBPS/content.opf      — manifest + spine, in the user-defined order
+    OEBPS/nav.xhtml         — EPUB3 navigation document (the TOC)
+    OEBPS/chap_XX.xhtml     — one file per chapter, translated text wrapped
+  Each translated chapter is plain text (from Chrome's rendered DOM), so
+  it's wrapped as a sequence of <p> tags rather than reusing original HTML,
+  since the original markup no longer corresponds to the translated text.
+*/
+function textToXhtmlBody(text){
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+  if(paragraphs.length === 0) return '<p></p>';
+  return paragraphs
+    .map(p => `<p>${escapeXml(p).replace(/\n/g, '<br/>')}</p>`)
+    .join('\n');
+}
+
+function escapeXml(s){
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&apos;');
+}
+
+function makeUuid(){
+  // Simple RFC4122-ish v4 UUID for the EPUB identifier — doesn't need to be
+  // cryptographically strong, just unique per export.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = Math.random()*16|0;
+    const v = c==='x' ? r : (r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+async function downloadAsEpub(){
+  const exportList = getExportChapters();
+  if(exportList.length === 0){
+    log('Nothing to export — all chapters are excluded or empty.', 'err');
+    return;
+  }
+
+  const bookTitle = mTitle.textContent || 'Translated Book';
+  const uuid = makeUuid();
+  const lang = (bookLang || 'en').split('-')[0];
+
+  const zip = new JSZip();
+
+  // 1. mimetype — MUST be stored uncompressed and be the first file added.
+  zip.file('mimetype', 'application/epub+zip', {compression:'STORE'});
+
+  // 2. container.xml
+  zip.file('META-INF/container.xml',
+`<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+
+  // 3. per-chapter xhtml files
+  const manifestItems = [];
+  const spineItems = [];
+  const navItems = [];
+
+  exportList.forEach((c, pos)=>{
+    const id = `chap${String(pos+1).padStart(3,'0')}`;
+    const fname = `${id}.xhtml`;
+    const xhtml =
+`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="${lang}">
+<head>
+  <meta charset="UTF-8"/>
+  <title>${escapeXml(c.title)}</title>
+</head>
+<body>
+  <h1>${escapeXml(c.title)}</h1>
+  ${textToXhtmlBody(c.text)}
+</body>
+</html>`;
+    zip.file(`OEBPS/${fname}`, xhtml);
+    manifestItems.push(`<item id="${id}" href="${fname}" media-type="application/xhtml+xml"/>`);
+    spineItems.push(`<itemref idref="${id}"/>`);
+    navItems.push(`<li><a href="${fname}">${escapeXml(c.title)}</a></li>`);
+  });
+
+  // 4. nav.xhtml — EPUB3 table of contents
+  const navXhtml =
+`<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="${lang}">
+<head><meta charset="UTF-8"/><title>Table of Contents</title></head>
+<body>
+  <nav epub:type="toc" id="toc">
+    <h1>Table of Contents</h1>
+    <ol>
+      ${navItems.join('\n      ')}
+    </ol>
+  </nav>
+</body>
+</html>`;
+  zip.file('OEBPS/nav.xhtml', navXhtml);
+  manifestItems.push(`<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>`);
+
+  // 5. content.opf — package manifest + spine
+  const modified = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const opf =
+`<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">urn:uuid:${uuid}</dc:identifier>
+    <dc:title>${escapeXml(bookTitle)}</dc:title>
+    <dc:language>${lang}</dc:language>
+    <meta property="dcterms:modified">${modified}</meta>
+  </metadata>
+  <manifest>
+    ${manifestItems.join('\n    ')}
+  </manifest>
+  <spine>
+    ${spineItems.join('\n    ')}
+  </spine>
+</package>`;
+  zip.file('OEBPS/content.opf', opf);
+
+  const blob = await zip.generateAsync({
+    type:'blob',
+    mimeType:'application/epub+zip'
+  });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const safeTitle = bookTitle.replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'book';
+  link.download = `${safeTitle}_translated_${Math.floor(Date.now()/1000)}.epub`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  log(`EPUB download started (${exportList.length} chapters).`, 'ok');
+}
 </script>
 
 </body>
