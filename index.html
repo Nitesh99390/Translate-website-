@@ -30,9 +30,9 @@
         }
         input[type="file"] {
             padding: 10px;
-            border: 2px dashed #dc3545;
+            border: 2px dashed #007bff;
             border-radius: 5px;
-            background: #ffebeb;
+            background: #e9f2ff;
             cursor: pointer;
         }
         button {
@@ -63,23 +63,29 @@
             font-weight: bold;
             text-align: center;
         }
+        .separator {
+            text-align: center;
+            color: #888;
+            margin: 20px 0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>🔥 Extreme EPUB Translator</h2>
-        <p>⚠️ Pura book ek sath load hoga (Phone hang ho sakta hai)</p>
+        <h2>🔥 Extreme EPUB to TXT</h2>
+        <p>1. Upload 👉 2. Chrome Translate 👉 3. Save as TXT</p>
     </div>
 
     <div class="controls">
         <label for="epubFile"><b>📁 Apni EPUB File chunein:</b></label>
         <input type="file" id="epubFile" accept=".epub">
         
-        <button id="copyBtn">📋 Pura Text Ek Sath Copy Karein</button>
+        <button id="saveBtn">💾 Translated Text ko .txt File mein Save Karein</button>
     </div>
 
-    <div id="viewer">📚 File upload karein aur magic dekhein...</div>
+    <div id="viewer">📚 File upload karein aur load hone ka wait karein...</div>
 
     <script>
         let book = null;
@@ -89,7 +95,7 @@
             if (!file) return;
 
             const viewer = document.getElementById("viewer");
-            viewer.innerHTML = "<p class='loading'>⏳ Puri kitaab nikal raha hoon... Badi file mein 1-2 minute lag sakte hain, screen band mat karna!</p>";
+            viewer.innerHTML = "<p class='loading'>⏳ Puri kitaab extract ho rahi hai... Badi file mein thoda time lagega, please wait!</p>";
 
             let reader = new FileReader();
             reader.onload = function(event) {
@@ -104,30 +110,50 @@
                             let item = book.spine.get(i);
                             await item.load(book.load.bind(book));
                             if(item.document && item.document.body) {
-                                fullHtml += item.document.body.innerHTML + "<br><hr style='border:2px solid red;'><br>";
+                                // Separator add kiya taaki TXT file me bhi chapter alag dikhein
+                                fullHtml += item.document.body.innerHTML + "<div class='separator'>--- CH ---</div>";
                             }
                         }
                         viewer.innerHTML = fullHtml;
                     } catch(err) {
-                        viewer.innerHTML = "<p class='loading'>❌ Error: Book itni badi hai ki browser ka memory full ho gaya.</p>";
+                        viewer.innerHTML = "<p class='loading'>❌ Error: Book extract karne mein dikkat aayi.</p>";
                     }
                 });
             };
             reader.readAsArrayBuffer(file);
         });
 
-        // Copy Text Button
-        document.getElementById('copyBtn').addEventListener('click', async () => {
+        // Save as TXT Logic
+        document.getElementById('saveBtn').addEventListener('click', function() {
             const viewer = document.getElementById("viewer");
-            if (viewer.innerText.includes("File upload karein") || viewer.innerText.includes("Puri kitaab nikal raha hoon")) {
-                return alert("Pehle file ko poori tarah load hone do!");
-            }
             
+            // Check agar file load hi nahi hui hai
+            if (viewer.innerText.includes("File upload karein") || viewer.innerText.includes("extract ho rahi hai")) {
+                return alert("⚠️ Pehle file ko poori tarah load hone dein!");
+            }
+
             try {
-                await navigator.clipboard.writeText(viewer.innerText);
-                alert("✅ Saara text copy ho gaya!");
+                // 1. Screen par jo text dikh raha hai (translated), usko extract karo
+                let textToSave = viewer.innerText;
+
+                // 2. Us text ka ek TXT Blob (file data) banao
+                let blob = new Blob([textToSave], { type: "text/plain;charset=utf-8" });
+
+                // 3. Download link generate karo (Background mein)
+                let downloadLink = document.createElement("a");
+                downloadLink.href = URL.createObjectURL(blob);
+                
+                // File ka naam current time ke hisaab se hoga
+                let fileName = "Translated_Book_" + Math.floor(Date.now() / 1000) + ".txt";
+                downloadLink.download = fileName;
+
+                // 4. Link par auto-click karwao (isse download pop-up aayega)
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
             } catch (err) {
-                alert("❌ Text bohot bada hai, mobile clipboard ne uthane se mana kar diya. Manual select karke copy karo!");
+                alert("❌ File save karne mein error aaya: " + err.message);
             }
         });
     </script>
