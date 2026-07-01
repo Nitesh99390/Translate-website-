@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Document Translation Verifier</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js"></script>
@@ -71,6 +71,7 @@
     margin-top:16px;
     font-family:var(--mono);
     font-size:11px;
+    flex-wrap:wrap;
   }
   .flow-step{
     color:var(--text-faint);
@@ -80,7 +81,7 @@
     gap:6px;
   }
   .flow-step b{color:var(--text-dim);font-weight:600;}
-  .flow-step::after{content:'→';margin:0 10px;color:var(--text-faint);}
+  .flow-step::after{content:'\2192';margin:0 10px;color:var(--text-faint);}
   .flow-step:last-child::after{content:'';margin:0;}
 
   /* ---------- PANELS ---------- */
@@ -123,8 +124,10 @@
     cursor:pointer;
     background:var(--panel-2);
     transition:border-color .15s, background .15s;
+    display:block;
   }
   .drop:hover{border-color:var(--accent);background:#1a2030;}
+  .drop.dragover{border-color:var(--accent);background:#1a2030;}
   .drop input{display:none;}
   .drop-label{font-size:13.5px;color:var(--text);font-weight:500;}
   .drop-sub{font-size:11.5px;color:var(--text-faint);margin-top:4px;font-family:var(--mono);}
@@ -141,10 +144,35 @@
     display:flex;justify-content:space-between;
     font-size:12.5px;padding:8px 0;
     border-bottom:1px solid var(--border);
+    gap:12px;
   }
   .meta-row:last-child{border-bottom:none;}
-  .meta-row .k{color:var(--text-dim);font-family:var(--mono);font-size:11.5px;}
+  .meta-row .k{color:var(--text-dim);font-family:var(--mono);font-size:11.5px;flex-shrink:0;}
   .meta-row .v{font-weight:600;text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* target language selector */
+  .lang-field{margin-top:14px;}
+  .lang-field label{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .lang-field select{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--text);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:13px;
+    padding:9px 10px;
+  }
+  .lang-field select:focus{outline:none;border-color:var(--accent);}
+  .lang-hint{font-size:11px;color:var(--text-faint);margin-top:6px;line-height:1.5;}
 
   /* progress */
   .prog-track{
@@ -166,6 +194,7 @@
 
   /* chapter list */
   .chap-list{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-top:16px;}
+  .chap-item-wrap{display:flex;flex-direction:column;}
   .chap-list::-webkit-scrollbar{width:5px;}
   .chap-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
   .chap-item{
@@ -194,7 +223,9 @@
   .st-pending{background:transparent;color:var(--text-faint);border-color:var(--border);}
   .st-active{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);}
   .st-done{background:rgba(63,185,80,0.12);color:var(--green);border-color:rgba(63,185,80,0.3);}
-  .st-retry{background:rgba(229,83,75,0.12);color:var(--red);border-color:rgba(229,83,75,0.3);}
+  .st-retry{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);}
+  .st-unverified{background:rgba(229,83,75,0.12);color:var(--red);border-color:rgba(229,83,75,0.3);}
+  .st-skipped{background:rgba(139,147,161,0.12);color:var(--text-dim);border-color:var(--border);}
 
   /* live viewer */
   #viewer{
@@ -203,7 +234,7 @@
     border-radius:6px;
     padding:16px;
     min-height:140px;
-    max-height:300px;
+    max-height:340px;
     overflow-y:auto;
     font-size:13.5px;
     line-height:1.7;
@@ -213,6 +244,9 @@
   #viewer::-webkit-scrollbar{width:6px;}
   #viewer::-webkit-scrollbar-thumb{background:#c9c4b8;border-radius:6px;}
   #viewer .ph{color:#8a8578;text-align:center;padding:36px 10px;font-size:12.5px;font-family:var(--mono);}
+  #viewer p{margin:0 0 0.8em;}
+  #viewer h1,#viewer h2,#viewer h3{margin:0.6em 0 0.4em;}
+  #viewer img{max-width:100%;height:auto;}
 
   /* buttons */
   .btn{
@@ -246,7 +280,7 @@
     color:var(--text-dim);
     margin-top:12px;
   }
-  .note-box .ic{font-family:var(--mono);color:var(--accent);font-size:12px;flex-shrink:0;padding-top:1px;}
+  .note-box .ic{font-family:var(--mono);color:var(--accent);font-size:12px;flex-shrink:0;padding-top:1px;font-weight:600;}
 
   .log-box{
     font-family:var(--mono);
@@ -342,6 +376,89 @@
     background:rgba(91,141,239,0.08);
   }
 
+  /* ---------- GLOBAL ERROR BANNER ---------- */
+  .global-banner{
+    display:none;
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:14px;
+    font-size:12.5px;
+    line-height:1.55;
+  }
+  .global-banner.show{display:block;}
+  .global-banner.error{
+    background:rgba(229,83,75,0.1);
+    border:1px solid rgba(229,83,75,0.4);
+    color:var(--text);
+  }
+  .global-banner.warn{
+    background:rgba(210,153,34,0.1);
+    border:1px solid rgba(210,153,34,0.4);
+    color:var(--text);
+  }
+  .global-banner.info{
+    background:rgba(91,141,239,0.08);
+    border:1px solid rgba(91,141,239,0.35);
+    color:var(--text);
+  }
+  .global-banner-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+    font-weight:700;font-family:var(--mono);font-size:11.5px;
+    text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;
+  }
+  .global-banner.error .global-banner-head{color:var(--red);}
+  .global-banner.warn .global-banner-head{color:var(--amber);}
+  .global-banner.info .global-banner-head{color:var(--accent);}
+  .banner-dismiss{
+    background:none;border:none;color:var(--text-faint);
+    cursor:pointer;font-family:var(--mono);font-size:13px;
+    padding:0;line-height:1;flex-shrink:0;
+  }
+  .banner-dismiss:hover{color:var(--text);}
+  .banner-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .banner-btn{
+    padding:7px 12px;
+    border-radius:6px;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;font-weight:600;
+    cursor:pointer;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text);
+  }
+  .banner-btn.primary{background:var(--accent);color:#08122a;border-color:var(--accent);}
+  .banner-detail{
+    margin-top:8px;font-family:var(--mono);font-size:10.5px;
+    color:var(--text-faint);white-space:pre-wrap;word-break:break-word;
+  }
+  .banner-detail summary{cursor:pointer;color:var(--text-dim);}
+
+  /* ---------- DIFF / COMPARE VIEW ---------- */
+  .compare-toggle{
+    background:none;border:1px solid var(--border);
+    color:var(--text-faint);font-family:var(--mono);
+    font-size:9.5px;padding:3px 7px;border-radius:4px;
+    cursor:pointer;white-space:nowrap;flex-shrink:0;
+  }
+  .compare-toggle:hover{color:var(--text);border-color:var(--accent);}
+  .compare-panel{
+    display:none;
+    margin-top:6px;margin-bottom:2px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .compare-panel.show{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+  @media (max-width:560px){
+    .compare-panel.show{grid-template-columns:1fr;}
+  }
+  .compare-col{background:var(--panel-2);padding:10px;max-height:220px;overflow-y:auto;}
+  .compare-col-label{
+    font-family:var(--mono);font-size:9.5px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.5px;color:var(--text-faint);
+    margin-bottom:6px;
+  }
+  .compare-col-text{font-size:12px;line-height:1.6;color:var(--text-dim);white-space:pre-wrap;}
+  .compare-col-text.translated{color:var(--text);}
+
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;}
   }
@@ -350,27 +467,30 @@
 <body>
 <div class="shell">
 
-  <div class="app-header">
+  <div id="globalBanner" class="global-banner"></div>
+  <div id="resumeBanner" class="global-banner info"></div>
+
+  <header class="app-header">
     <div class="tag">Browser-Based &middot; Chapter Verified</div>
     <h1>Document Translation Verifier</h1>
     <p>Upload an EPUB, PDF, DOCX, or TXT file, enable Chrome's built-in translation, and this tool confirms each chapter actually translated before saving — no partial or missed chapters.</p>
-    <div class="flow-strip">
-      <div class="flow-step"><b>1</b> Upload</div>
-      <div class="flow-step"><b>2</b> Enable Translate</div>
-      <div class="flow-step"><b>3</b> Verify & Export</div>
-    </div>
-  </div>
+    <nav class="flow-strip" aria-label="Steps">
+      <span class="flow-step"><b>1</b> Upload</span>
+      <span class="flow-step"><b>2</b> Enable Translate</span>
+      <span class="flow-step"><b>3</b> Verify &amp; Export</span>
+    </nav>
+  </header>
 
   <!-- UPLOAD -->
-  <div class="panel">
+  <section class="panel" id="upload-section">
     <div class="panel-head">
       <span class="panel-label">Source File</span>
       <span class="panel-num">01</span>
     </div>
     <label class="drop" id="dropZone">
       <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt">
-      <div class="drop-label">Select a document</div>
-      <div class="drop-sub">.epub &middot; .pdf &middot; .docx &middot; .txt</div>
+      <span class="drop-label">Select or drop a document</span>
+      <span class="drop-sub">.epub &middot; .pdf &middot; .docx &middot; .txt</span>
     </label>
     <div id="fileNameShow"></div>
 
@@ -379,10 +499,22 @@
       <div class="meta-row"><span class="k">CHAPTERS</span><span class="v" id="mChapters">—</span></div>
       <div class="meta-row"><span class="k">STATUS</span><span class="v" id="mStatus">Loaded</span></div>
     </div>
-  </div>
+
+    <div class="lang-field" id="langField" style="display:none;">
+      <label for="targetLang">Target language (helps verification)</label>
+      <select id="targetLang">
+        <option value="auto">Auto-detect any translation</option>
+        <option value="script">Non-Latin script (Hindi, Chinese, Arabic, Russian…)</option>
+        <option value="latin">Latin-script language (French, Spanish, German…)</option>
+      </select>
+      <div class="lang-hint">Pick "Latin-script" if you're translating to a language that uses the same alphabet as English — the tool can't rely on a script change to confirm those, so it uses a stricter text-difference check instead.</div>
+    </div>
+
+    <div id="parseWarnings" class="global-banner warn" style="margin-top:12px;margin-bottom:0;"></div>
+  </section>
 
   <!-- CHAPTERS + PROGRESS -->
-  <div class="panel" id="chapPanel" style="display:none;">
+  <section class="panel" id="chapPanel" style="display:none;">
     <div class="panel-head">
       <span class="panel-label">Chapters</span>
       <span class="panel-num">02</span>
@@ -393,18 +525,18 @@
       <span id="progPercent">0%</span>
     </div>
     <div class="chap-list" id="chapList"></div>
-  </div>
+  </section>
 
   <!-- LIVE VIEWER -->
-  <div class="panel" id="viewerPanel" style="display:none;">
+  <section class="panel" id="viewerPanel" style="display:none;">
     <div class="panel-head">
       <span class="panel-label">Current Chapter Preview</span>
     </div>
     <div id="viewer"><div class="ph">Content will appear here once translation starts</div></div>
-  </div>
+  </section>
 
   <!-- ACTION -->
-  <div class="panel" id="actionPanel" style="display:none;">
+  <section class="panel" id="actionPanel" style="display:none;">
     <div class="panel-head">
       <span class="panel-label">Run</span>
       <span class="panel-num">03</span>
@@ -415,24 +547,24 @@
 
     <div class="note-box">
       <div class="ic">i</div>
-      <div>Turn on Chrome's translation (menu icon in the address bar, or right-click → Translate to English/Hindi) before starting. Each chapter is scrolled and checked for translated text — if none is detected within the timeout, it retries automatically once before moving on.</div>
+      <div>Turn on Chrome's translation (menu icon in the address bar, or right-click &rarr; Translate) before starting. Each chapter is scrolled and checked for translated text — if none is detected within the timeout, it retries automatically once before moving on.</div>
     </div>
 
     <div id="logBox" class="log-box"></div>
-  </div>
+  </section>
 
-  <!-- CHAPTER EDITOR (rename/reorder before export) -->
-  <div class="panel" id="editorPanel" style="display:none;">
+  <!-- CHAPTER EDITOR -->
+  <section class="panel" id="editorPanel" style="display:none;">
     <div class="panel-head">
-      <span class="panel-label">Review & Arrange</span>
+      <span class="panel-label">Review &amp; Arrange</span>
       <span class="panel-num">04</span>
     </div>
     <p class="panel-sub">Rename chapters or change their order. This only affects the exported files — nothing is re-translated.</p>
     <div class="editor-list" id="editorList"></div>
-  </div>
+  </section>
 
   <!-- DOWNLOAD -->
-  <div class="panel" id="downloadPanel" style="display:none;">
+  <section class="panel" id="downloadPanel" style="display:none;">
     <div class="panel-head">
       <span class="panel-label">Export</span>
     </div>
@@ -449,28 +581,39 @@
       <div class="ic">i</div>
       <div>Repackages translated chapters into a standard EPUB3 container with a generated table of contents, using the titles and order set above. Opens in any e-reader (Apple Books, Calibre, Kindle after conversion, etc.).</div>
     </div>
-  </div>
+  </section>
 
-  <div class="footer-note">All processing happens locally in your browser. No file is uploaded to a server.</div>
+  <p class="footer-note">All processing happens locally in your browser. No file is uploaded to a server.</p>
 
 </div>
 
 <script>
+"use strict";
 /* ============ STATE ============ */
 let book = null;
-let chapters = [];        // {index, title, item, status, text, retries}
+let currentFile = null;
+let chapters = [];
 let currentIdx = -1;
 let running = false;
 let stopRequested = false;
-let exportOrder = [];     // array of chapter indices, in export order
-let bookLang = 'en';      // best-effort source language for EPUB metadata
+let skipRequested = false;      // FIX: skip now cooperatively interrupts the current wait
+let exportOrder = [];
+let bookLang = 'en';
+let sessionKey = null;
+let idbAvailable = true;
+let consecutiveVerifyFailures = 0;
+let verifyMode = 'auto';        // auto | script | latin (from target language dropdown)
 
 const el = id => document.getElementById(id);
 
 const fileInput  = el('epubFile');
+const dropZone = el('dropZone');
 const fileNameShow = el('fileNameShow');
 const metaBox = el('metaBox');
 const mTitle = el('mTitle'), mChapters = el('mChapters'), mStatus = el('mStatus');
+const langField = el('langField');
+const targetLang = el('targetLang');
+const parseWarnings = el('parseWarnings');
 const chapPanel = el('chapPanel');
 const chapList = el('chapList');
 const progFill = el('progFill');
@@ -491,95 +634,384 @@ const editorPanel = el('editorPanel');
 const editorList = el('editorList');
 const exportTabs = el('exportTabs');
 const epubNote = el('epubNote');
+const globalBanner = el('globalBanner');
+const resumeBanner = el('resumeBanner');
 let exportMode = 'txt';
 
-/* ============ FILE UPLOAD & PARSE — FORMAT DISPATCH ============ */
-/*
-  Every parser below produces the same chapter shape:
-    { index, title, html, status, text, retries }
-  'html' is what gets injected into the viewer for translation.
-  EPUB chapters lazy-load their HTML from the spine item at process time
-  (existing behavior, kept for large books); PDF/DOCX/TXT chapters have
-  their HTML built up front since the whole file is already in memory
-  after parsing.
-*/
+targetLang.addEventListener('change', ()=>{ verifyMode = targetLang.value; });
+
+/* ============ GLOBAL BANNER ============ */
+function showBanner(node, {level='error', title, message, detail, actions=[]}){
+  node.className = 'global-banner show ' + level;
+  const actionsHtml = actions.length
+    ? `<div class="banner-actions">${actions.map(a=>`<button class="banner-btn ${a.primary?'primary':''}" data-banner-action="${a.id}">${escapeHtml(a.label)}</button>`).join('')}</div>`
+    : '';
+  const detailHtml = detail
+    ? `<details class="banner-detail"><summary>Technical detail</summary>${escapeHtml(detail)}</details>`
+    : '';
+  node.innerHTML = `
+    <div class="global-banner-head">
+      <span>${escapeHtml(title)}</span>
+      <button class="banner-dismiss" data-banner-dismiss="1" aria-label="Dismiss">\u2715</button>
+    </div>
+    <div>${escapeHtml(message)}</div>
+    ${detailHtml}
+    ${actionsHtml}
+  `;
+  node._actionHandlers = {};
+  actions.forEach(a => node._actionHandlers[a.id] = a.onClick);
+}
+
+function hideBanner(node){
+  node.classList.remove('show');
+  node.innerHTML = '';
+}
+
+document.addEventListener('click', (e)=>{
+  const dismissBtn = e.target.closest('[data-banner-dismiss]');
+  if(dismissBtn){ hideBanner(dismissBtn.closest('.global-banner')); return; }
+  const actionBtn = e.target.closest('[data-banner-action]');
+  if(actionBtn){
+    const node = actionBtn.closest('.global-banner');
+    const id = actionBtn.dataset.bannerAction;
+    if(node._actionHandlers && node._actionHandlers[id]) node._actionHandlers[id]();
+  }
+});
+
+function showGlobalError(title, message, detail){ showBanner(globalBanner, {level:'error', title, message, detail}); }
+function showGlobalWarning(title, message, detail){ showBanner(globalBanner, {level:'warn', title, message, detail}); }
+
+/* ============ CRASH HANDLING ============ */
+window.addEventListener('error', (e)=>{
+  showGlobalError(
+    'Something went wrong',
+    'An unexpected error occurred. You can keep using the tool, but this action may not have completed — check the chapter list and log below before continuing.',
+    (e.error && e.error.stack) ? e.error.stack : e.message
+  );
+});
+window.addEventListener('unhandledrejection', (e)=>{
+  showGlobalError(
+    'Something went wrong',
+    'An unexpected error occurred in a background operation. You can keep using the tool, but check whether the last action completed correctly.',
+    e.reason && e.reason.stack ? e.reason.stack : String(e.reason)
+  );
+});
+
+/* ============ STARTUP DEPENDENCY CHECK ============ */
+const LIB_STATUS = {
+  jszip:   typeof JSZip !== 'undefined',
+  epub:    typeof ePub !== 'undefined',
+  pdf:     typeof pdfjsLib !== 'undefined',
+  mammoth: typeof mammoth !== 'undefined',
+};
+
+function checkStartupDependencies(){
+  const missingLabels = [];
+  if(!LIB_STATUS.jszip)   missingLabels.push('JSZip — needed for ZIP and EPUB export');
+  if(!LIB_STATUS.epub)    missingLabels.push('epub.js — needed to read .epub files');
+  if(!LIB_STATUS.pdf)     missingLabels.push('PDF.js — needed to read .pdf files');
+  if(!LIB_STATUS.mammoth) missingLabels.push('Mammoth.js — needed to read .docx files');
+  if(missingLabels.length){
+    showGlobalWarning(
+      'Some features may not work',
+      'The following components failed to load from their CDN, usually caused by an ad-blocker, offline connection, or restrictive network: ' + missingLabels.join('; ') + '. Formats that don\u2019t depend on the missing component will still work — reload the page after checking your connection to restore full functionality.'
+    );
+  }
+}
+checkStartupDependencies();
+
+function requireLib(globalCheck, formatLabel){
+  if(!globalCheck){
+    mStatus.textContent = `Error: cannot read ${formatLabel} — a required component failed to load (see warning above). Try reloading the page.`;
+    return false;
+  }
+  return true;
+}
+
+/* ============ INDEXEDDB LAYER ============ */
+const IDB_NAME = 'docTranslatorDB';
+const IDB_STORE = 'sessions';
+let idbHandle = null;
+
+function idbOpen(){
+  return new Promise((resolve, reject)=>{
+    if(!('indexedDB' in window)){ reject(new Error('IndexedDB not supported')); return; }
+    let req;
+    try { req = indexedDB.open(IDB_NAME, 1); }
+    catch(err){ reject(err); return; }
+    req.onupgradeneeded = ()=>{ req.result.createObjectStore(IDB_STORE, {keyPath:'key'}); };
+    req.onsuccess = ()=> resolve(req.result);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+async function idbGetHandle(){
+  if(idbHandle) return idbHandle;
+  idbHandle = await idbOpen();
+  return idbHandle;
+}
+async function idbGet(key){
+  try{
+    const db = await idbGetHandle();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = ()=> resolve(req.result || null);
+      req.onerror = ()=> reject(req.error);
+    });
+  }catch(err){ idbAvailable = false; return null; }
+}
+async function idbPut(value){
+  try{
+    const db = await idbGetHandle();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(value);
+      tx.oncomplete = ()=> resolve(true);
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }catch(err){ idbAvailable = false; return false; }
+}
+async function idbDelete(key){
+  try{
+    const db = await idbGetHandle();
+    return await new Promise((resolve, reject)=>{
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).delete(key);
+      tx.oncomplete = ()=> resolve(true);
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }catch(err){ return false; }
+}
+
+function computeSessionKey(fileName, fileSize, chapterCount){
+  return `${fileName}::${fileSize}::${chapterCount}`;
+}
+
+/* FIX: coalesced saving — never silently drop the latest state. If a save
+   is in flight, we mark that another is pending and re-run when it finishes. */
+let saveInFlight = false;
+let savePending = false;
+async function saveSessionProgress(){
+  if(!sessionKey || !idbAvailable) return;
+  if(saveInFlight){ savePending = true; return; }
+  saveInFlight = true;
+  try{
+    const payload = {
+      key: sessionKey,
+      savedAt: Date.now(),
+      bookTitle: mTitle.textContent,
+      bookLang,
+      exportOrder,
+      chapters: chapters.map(c=>({
+        title: c.title,
+        status: c.status,
+        text: c.text,
+        originalText: c.originalText || '',
+        retries: c.retries,
+        excluded: !!c.excluded
+      }))
+    };
+    await idbPut(payload);
+  } finally {
+    saveInFlight = false;
+    if(savePending){ savePending = false; saveSessionProgress(); }
+  }
+}
+async function clearSessionProgress(){
+  if(!sessionKey) return;
+  await idbDelete(sessionKey);
+}
+
+async function checkForResumableSession(bookTitle, fileSize, chapterCount){
+  sessionKey = computeSessionKey(bookTitle, fileSize, chapterCount);
+  if(!idbAvailable) return;
+  const saved = await idbGet(sessionKey);
+  if(!saved || !saved.chapters || saved.chapters.length !== chapters.length) return;
+  const doneCount = saved.chapters.filter(c=>c.status==='done' && c.text && c.text.trim()).length;
+  if(doneCount === 0) return;
+  showBanner(resumeBanner, {
+    level: 'info',
+    title: 'Saved progress found',
+    message: `A previous session for this file has ${doneCount} of ${saved.chapters.length} chapters already translated (saved ${new Date(saved.savedAt).toLocaleString()}).`,
+    actions: [
+      { id:'resume', label:'Resume', primary:true, onClick: ()=>applyResumedSession(saved) },
+      { id:'discard', label:'Start Fresh', onClick: ()=>{ clearSessionProgress(); hideBanner(resumeBanner); } }
+    ]
+  });
+}
+
+function applyResumedSession(saved){
+  saved.chapters.forEach((sc, i)=>{
+    if(!chapters[i]) return;
+    chapters[i].status = sc.status;
+    chapters[i].text = sc.text;
+    chapters[i].originalText = sc.originalText;
+    chapters[i].retries = sc.retries || 0;
+    chapters[i].excluded = !!sc.excluded;
+    if(sc.title) chapters[i].title = sc.title;
+  });
+  if(Array.isArray(saved.exportOrder) && saved.exportOrder.length === chapters.length){
+    exportOrder = saved.exportOrder.slice();
+  }
+  renderChapterList();
+  updateProgress();
+  hideBanner(resumeBanner);
+  refreshDownloadSummary();
+}
+
+/* ============ FILE UPLOAD & DRAG-DROP ============ */
 fileInput.addEventListener('change', function(e){
   const file = e.target.files[0];
-  if(!file) return;
+  if(file) handleFile(file);
+});
 
+/* FIX: full drag & drop support */
+['dragenter','dragover'].forEach(ev=>{
+  dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.add('dragover'); });
+});
+['dragleave','drop'].forEach(ev=>{
+  dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.remove('dragover'); });
+});
+dropZone.addEventListener('drop', (e)=>{
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(file){ fileInput.value = ''; handleFile(file); }
+});
+
+function resetForNewFile(file){
+  currentFile = file;
+  book = null;
+  chapters = [];
+  currentIdx = -1;
+  exportOrder = [];
+  consecutiveVerifyFailures = 0;
   fileNameShow.style.display = 'block';
-  fileNameShow.textContent = file.name;
-  mStatus.textContent = 'Extracting…';
+  fileNameShow.textContent = file.name + '  (' + formatBytes(file.size) + ')';
+  mStatus.textContent = 'Extracting\u2026';
+  mTitle.textContent = '—';
+  mChapters.textContent = '—';
   metaBox.style.display = 'block';
+  parseWarnings.classList.remove('show');
+  parseWarnings.innerHTML = '';
+  hideBanner(resumeBanner);
+  hideBanner(globalBanner);
+  chapPanel.style.display = 'none';
+  viewerPanel.style.display = 'none';
+  actionPanel.style.display = 'none';
+  editorPanel.style.display = 'none';
+  downloadPanel.style.display = 'none';
+  langField.style.display = 'none';
+  startBtn.disabled = true;
+  startBtn.textContent = 'Start Verified Translation';
+  viewer.innerHTML = '<div class="ph">Content will appear here once translation starts</div>';
+  logBox.innerHTML = '';
+  logBox.style.display = 'none';
+}
 
+function handleFile(file){
+  resetForNewFile(file);
   const ext = file.name.split('.').pop().toLowerCase();
-
   if(ext === 'epub') return parseEpubFile(file);
   if(ext === 'pdf') return parsePdfFile(file);
   if(ext === 'docx') return parseDocxFile(file);
   if(ext === 'txt') return parseTxtFile(file);
+  mStatus.textContent = 'Error: unsupported file type (.' + ext + '). Supported: .epub, .pdf, .docx, .txt';
+  showGlobalWarning('Unsupported file', 'This tool only reads .epub, .pdf, .docx and .txt files. The file you selected has a .' + ext + ' extension.');
+}
 
-  mStatus.textContent = 'Error: unsupported file type (' + ext + ')';
-});
+function formatBytes(b){
+  if(b < 1024) return b + ' B';
+  if(b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
 
 function finishLoadingChapters(bookTitle, lang){
   mTitle.textContent = bookTitle;
   bookLang = lang || 'en';
   mChapters.textContent = chapters.length;
-  mStatus.textContent = chapters.length ? 'Ready' : 'Error: no readable content found';
+
+  if(chapters.length === 0){
+    mStatus.textContent = 'Error: no readable content found in this file';
+    startBtn.disabled = true;
+    showGlobalWarning(
+      'No content extracted',
+      'The file loaded without a technical error, but no chapters or readable text could be found. This can happen with a scanned/image-only PDF, an empty document, or a file that\u2019s corrupted despite having the right extension.'
+    );
+    return;
+  }
+
+  mStatus.textContent = 'Ready';
   exportOrder = chapters.map((c,i)=>i);
   renderChapterList();
   chapPanel.style.display = 'block';
   viewerPanel.style.display = 'block';
   actionPanel.style.display = 'block';
-  startBtn.disabled = chapters.length === 0;
+  langField.style.display = 'block';
+  startBtn.disabled = false;
   updateProgress();
-  checkForResumableSession(bookTitle);
+
+  const fileSize = currentFile ? currentFile.size : 0;
+  checkForResumableSession(bookTitle, fileSize, chapters.length);
 }
 
 /* ---- EPUB ---- */
 function parseEpubFile(file){
+  if(!requireLib(LIB_STATUS.epub, '.epub files')) return;
   const reader = new FileReader();
+  reader.onerror = ()=>{
+    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
+  };
   reader.onload = async function(event){
     try{
       book = ePub(event.target.result);
       await book.ready;
       const nav = await book.loaded.navigation.catch(()=>null);
       const metadata = await book.loaded.metadata.catch(()=>({}));
-
       await book.loaded.spine;
-      chapters = [];
 
-      for(let i=0; i<book.spine.length; i++){
-        const item = book.spine.get(i);
-        await item.load(book.load.bind(book));
-        let chapTitle = 'Chapter ' + (i+1);
-        if(nav && nav.toc){
-          const match = findNavMatch(nav.toc, item.href);
-          if(match) chapTitle = match;
-        }
-        chapters.push({
-          index: i,
-          title: chapTitle,
-          item: item,       // lazy: html pulled from this at process time
-          html: null,
-          status: 'pending',
-          text: '',
-          retries: 0
-        });
+      chapters = [];
+      let skippedCount = 0;
+
+      // FIX: use spineItems array when available (more reliable across epub.js versions)
+      const spineArr = (book.spine && Array.isArray(book.spine.spineItems))
+        ? book.spine.spineItems
+        : null;
+      const spineLen = spineArr ? spineArr.length : (book.spine.length || 0);
+
+      for(let i=0; i<spineLen; i++){
+        try{
+          const item = spineArr ? spineArr[i] : book.spine.get(i);
+          if(!item){ skippedCount++; continue; }
+          let chapTitle = 'Chapter ' + (i+1);
+          if(nav && nav.toc){
+            const match = findNavMatch(nav.toc, item.href);
+            if(match) chapTitle = match;
+          }
+          chapters.push({
+            index: i, title: chapTitle, item: item, html: null,
+            status: 'pending', text: '', originalText: '', retries: 0, excluded: false
+          });
+        }catch(chapErr){ skippedCount++; }
       }
 
-      finishLoadingChapters(metadata.title || file.name.replace('.epub',''), metadata.language);
+      if(skippedCount > 0){
+        showParseWarning(`${skippedCount} chapter${skippedCount>1?'s':''} could not be read and ${skippedCount>1?'were':'was'} skipped. The rest of the book loaded normally.`);
+      }
+      finishLoadingChapters(metadata.title || file.name.replace(/\.epub$/i,''), metadata.language);
     }catch(err){
-      mStatus.textContent = 'Error: ' + err.message;
+      const friendly = /zip|central directory|corrupt/i.test(err.message||'')
+        ? 'This doesn\u2019t look like a valid EPUB file — it may be corrupted or not actually an EPUB despite the extension.'
+        : 'Could not open this EPUB file.';
+      mStatus.textContent = 'Error: ' + friendly;
+      showGlobalError('Could not read EPUB', friendly, (err.message||'') + (err.stack ? '\n' + err.stack : ''));
     }
   };
   reader.readAsArrayBuffer(file);
 }
 
 function findNavMatch(tocArr, href){
+  if(!href) return null;
   for(const entry of tocArr){
-    if(entry.href && href && entry.href.split('#')[0] === href.split('#')[0]){
+    if(entry.href && entry.href.split('#')[0] === href.split('#')[0]){
       return entry.label ? entry.label.trim() : null;
     }
     if(entry.subitems && entry.subitems.length){
@@ -590,57 +1022,79 @@ function findNavMatch(tocArr, href){
   return null;
 }
 
-/* ---- PDF ----
-   Each PDF page becomes one "chapter". pdf.js gives text runs without
-   paragraph structure, so consecutive lines are joined with a space and
-   a blank-line heuristic (short line followed by a line starting with a
-   capital) is used to guess paragraph breaks — imperfect, but far more
-   readable than one unbroken block of text per page.
-*/
+function showParseWarning(msg){
+  parseWarnings.classList.add('show');
+  parseWarnings.innerHTML = `<div class="global-banner-head"><span>Heads up</span></div><div>${escapeHtml(msg)}</div>`;
+}
+
+/* ---- PDF ---- */
 function parsePdfFile(file){
+  if(!requireLib(LIB_STATUS.pdf, '.pdf files')) return;
   const reader = new FileReader();
+  reader.onerror = ()=>{
+    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
+  };
   reader.onload = async function(event){
     try{
+      // FIX: derive worker URL from the loaded library version to avoid API/worker mismatch
+      const pdfVersion = pdfjsLib.version || '3.11.174';
       pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfVersion}/pdf.worker.min.js`;
 
-      const pdf = await pdfjsLib.getDocument({data: event.target.result}).promise;
-      chapters = [];
-
-      for(let p=1; p<=pdf.numPages; p++){
-        const page = await pdf.getPage(p);
-        const content = await page.getTextContent();
-        const rawLines = groupPdfTextIntoLines(content.items);
-        const paragraphs = guessParagraphs(rawLines);
-        const html = paragraphs.map(p=>`<p>${escapeHtml(p)}</p>`).join('\n');
-
-        chapters.push({
-          index: p-1,
-          title: 'Page ' + p,
-          item: null,
-          html: html || '<p></p>',
-          status: 'pending',
-          text: '',
-          retries: 0
-        });
+      let pdf;
+      try{
+        pdf = await pdfjsLib.getDocument({data: event.target.result}).promise;
+      }catch(loadErr){
+        if(loadErr && loadErr.name === 'PasswordException'){
+          mStatus.textContent = 'Error: this PDF is password-protected';
+          showGlobalError('Password-protected PDF',
+            'This tool reads PDFs directly in the browser and has no way to prompt for a password. Remove the password (many PDF readers offer "print to PDF" or "export without password") and upload again.');
+          return;
+        }
+        throw loadErr;
       }
 
-      finishLoadingChapters(file.name.replace('.pdf',''), 'en');
+      chapters = [];
+      let emptyPageCount = 0;
+      let failedPageCount = 0;
+
+      for(let p=1; p<=pdf.numPages; p++){
+        try{
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          const rawLines = groupPdfTextIntoLines(content.items);
+          const paragraphs = guessParagraphs(rawLines);
+          const pageText = paragraphs.join(' ');
+          const html = paragraphs.map(par=>`<p>${escapeHtml(par)}</p>`).join('\n');
+          if(pageText.trim().length < 3) emptyPageCount++;
+          chapters.push({
+            index: p-1, title: 'Page ' + p, item: null, html: html || '<p></p>',
+            status: 'pending', text: '', originalText: '', retries: 0, excluded: false
+          });
+        }catch(pageErr){ failedPageCount++; }
+      }
+
+      if(pdf.numPages > 0 && emptyPageCount / pdf.numPages > 0.6){
+        showParseWarning(`${emptyPageCount} of ${pdf.numPages} pages had little or no extractable text. This usually means the PDF is scanned images rather than real text — this tool can\u2019t OCR it, so those pages will translate as empty.`);
+      }
+      if(failedPageCount > 0){
+        showParseWarning(`${failedPageCount} page${failedPageCount>1?'s':''} could not be read and ${failedPageCount>1?'were':'was'} skipped.`);
+      }
+      finishLoadingChapters(file.name.replace(/\.pdf$/i,''), 'en');
     }catch(err){
-      mStatus.textContent = 'Error: ' + err.message;
+      mStatus.textContent = 'Error: could not read this PDF';
+      showGlobalError('Could not read PDF', 'This file could not be parsed as a PDF — it may be corrupted or not a valid PDF despite the extension.', (err.message||'') + (err.stack ? '\n' + err.stack : ''));
     }
   };
   reader.readAsArrayBuffer(file);
 }
 
 function groupPdfTextIntoLines(items){
-  // pdf.js gives individual text runs with y-coordinates; group runs that
-  // share (roughly) the same y into a line, since that's the closest
-  // signal to visual line breaks available from getTextContent().
   const lines = [];
   let currentY = null;
   let currentLine = [];
   items.forEach(item=>{
+    if(!item.transform) return;
     const y = Math.round(item.transform[5]);
     if(currentY === null || Math.abs(y - currentY) > 2){
       if(currentLine.length) lines.push(currentLine.join(''));
@@ -659,7 +1113,7 @@ function guessParagraphs(lines){
   let buf = '';
   lines.forEach(line=>{
     const trimmed = line.trim();
-    const endsSentence = /[.!?"')]$/.test(buf.trim());
+    const endsSentence = /[.!?"')\u0964]$/.test(buf.trim());
     const looksLikeNewPara = buf && endsSentence && /^[A-Z"'(]/.test(trimmed) && buf.trim().length < 90;
     if(looksLikeNewPara){
       paragraphs.push(buf.trim());
@@ -672,14 +1126,13 @@ function guessParagraphs(lines){
   return paragraphs;
 }
 
-/* ---- DOCX ----
-   Mammoth converts the whole document to one HTML blob. Since Chrome's
-   translate-and-verify loop works chapter-by-chapter, the blob is split
-   into sections on <h1>/<h2> boundaries. Documents with no headings
-   become a single chapter.
-*/
+/* ---- DOCX ---- */
 function parseDocxFile(file){
+  if(!requireLib(LIB_STATUS.mammoth, '.docx files')) return;
   const reader = new FileReader();
+  reader.onerror = ()=>{
+    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
+  };
   reader.onload = async function(event){
     try{
       const result = await mammoth.convertToHtml({arrayBuffer: event.target.result});
@@ -688,18 +1141,25 @@ function parseDocxFile(file){
 
       const sections = splitHtmlOnHeadings(container);
       chapters = sections.map((sec, i)=>({
-        index: i,
-        title: sec.title || ('Section ' + (i+1)),
-        item: null,
-        html: sec.html,
-        status: 'pending',
-        text: '',
-        retries: 0
+        index: i, title: sec.title || ('Section ' + (i+1)), item: null, html: sec.html,
+        status: 'pending', text: '', originalText: '', retries: 0, excluded: false
       }));
 
-      finishLoadingChapters(file.name.replace('.docx',''), 'en');
+      if(result.messages && result.messages.length){
+        const warningMsgs = result.messages.filter(m=>m.type==='warning');
+        if(warningMsgs.length){
+          const preview = warningMsgs.slice(0,3).map(m=>m.message).join('; ');
+          const more = warningMsgs.length > 3 ? ` (+${warningMsgs.length-3} more)` : '';
+          showParseWarning(`Some formatting couldn\u2019t be fully preserved during conversion: ${preview}${more}. This affects layout only, not the text content.`);
+        }
+      }
+      finishLoadingChapters(file.name.replace(/\.docx$/i,''), 'en');
     }catch(err){
-      mStatus.textContent = 'Error: ' + err.message;
+      const friendly = /central directory|zip|not a valid/i.test(err.message||'')
+        ? 'This doesn\u2019t look like a valid .docx file — if this was saved from an older Word (.doc) format, re-save it as .docx first.'
+        : 'Could not convert this document.';
+      mStatus.textContent = 'Error: ' + friendly;
+      showGlobalError('Could not read DOCX', friendly, (err.message||'') + (err.stack ? '\n' + err.stack : ''));
     }
   };
   reader.readAsArrayBuffer(file);
@@ -709,25 +1169,21 @@ function splitHtmlOnHeadings(container){
   const nodes = Array.from(container.childNodes);
   const headingTags = new Set(['H1','H2']);
   const hasHeadings = nodes.some(n=>n.nodeType===1 && headingTags.has(n.tagName));
-
   if(!hasHeadings){
     return [{ title: null, html: container.innerHTML }];
   }
-
   const sections = [];
   let currentTitle = null;
   let currentNodes = [];
-
   function flush(){
     if(currentNodes.length){
       sections.push({
         title: currentTitle,
-        html: currentNodes.map(n=>n.outerHTML || n.textContent).join('\n')
+        html: currentNodes.map(n=>n.outerHTML || escapeHtml(n.textContent)).join('\n')
       });
     }
     currentNodes = [];
   }
-
   nodes.forEach(n=>{
     if(n.nodeType===1 && headingTags.has(n.tagName)){
       flush();
@@ -738,22 +1194,39 @@ function splitHtmlOnHeadings(container){
     }
   });
   flush();
-
   return sections.filter(s=>s.html && s.html.trim().length>0);
 }
 
-/* ---- TXT ----
-   Plain text has no chapter markers, so the file is split on blank-line
-   runs into paragraphs, then grouped into fixed-size chunks so a single
-   huge file doesn't become one unmanageable "chapter". ~3000 characters
-   per chunk keeps each translation-verify pass to a reasonable size.
-*/
+/* ---- TXT ---- */
 function parseTxtFile(file){
   const reader = new FileReader();
+  reader.onerror = ()=>{
+    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
+  };
   reader.onload = function(event){
     try{
       const text = event.target.result;
-      const paragraphs = text.split(/\n{2,}/).map(p=>p.trim()).filter(p=>p.length>0);
+      if(!text || !text.trim()){
+        chapters = [];
+        finishLoadingChapters(file.name.replace(/\.txt$/i,''), 'en');
+        return;
+      }
+      let paragraphs = text.split(/\n{2,}/).map(p=>p.trim()).filter(p=>p.length>0);
+
+      const MAX_SINGLE_PARA = 4000;
+      paragraphs = paragraphs.flatMap(p=>{
+        if(p.length <= MAX_SINGLE_PARA) return [p];
+        const sentences = p.match(/[^.!?\u0964]+[.!?\u0964]+(\s|$)/g);
+        const units = sentences || (p.match(/\S+\s*/g) || [p]);
+        const rebuilt = [];
+        let buf = '';
+        units.forEach(u=>{
+          if(buf.length + u.length > MAX_SINGLE_PARA && buf){ rebuilt.push(buf.trim()); buf = ''; }
+          buf += u;
+        });
+        if(buf.trim()) rebuilt.push(buf.trim());
+        return rebuilt.length ? rebuilt : [p];
+      });
 
       const CHUNK_CHARS = 3000;
       const chunks = [];
@@ -762,27 +1235,19 @@ function parseTxtFile(file){
       paragraphs.forEach(p=>{
         buf.push(p);
         bufLen += p.length;
-        if(bufLen >= CHUNK_CHARS){
-          chunks.push(buf);
-          buf = [];
-          bufLen = 0;
-        }
+        if(bufLen >= CHUNK_CHARS){ chunks.push(buf); buf = []; bufLen = 0; }
       });
       if(buf.length) chunks.push(buf);
 
       chapters = chunks.map((chunkParas, i)=>({
-        index: i,
-        title: 'Part ' + (i+1),
-        item: null,
+        index: i, title: 'Part ' + (i+1), item: null,
         html: chunkParas.map(p=>`<p>${escapeHtml(p)}</p>`).join('\n'),
-        status: 'pending',
-        text: '',
-        retries: 0
+        status: 'pending', text: '', originalText: '', retries: 0, excluded: false
       }));
-
-      finishLoadingChapters(file.name.replace('.txt',''), 'en');
+      finishLoadingChapters(file.name.replace(/\.txt$/i,''), 'en');
     }catch(err){
-      mStatus.textContent = 'Error: ' + err.message;
+      mStatus.textContent = 'Error: could not read this text file';
+      showGlobalError('Could not read TXT', 'This file could not be processed as plain text.', (err.message||'') + (err.stack ? '\n' + err.stack : ''));
     }
   };
   reader.readAsText(file);
@@ -792,6 +1257,8 @@ function parseTxtFile(file){
 function renderChapterList(){
   chapList.innerHTML = '';
   chapters.forEach((c, i)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'chap-item-wrap';
     const row = document.createElement('div');
     row.className = 'chap-item' + (i===currentIdx ? ' active' : '');
     row.id = 'chap-row-'+i;
@@ -799,16 +1266,51 @@ function renderChapterList(){
       <span class="chap-idx">${String(i+1).padStart(2,'0')}</span>
       <span class="chap-name">${escapeHtml(c.title)}</span>
       <span class="chap-status ${statusClass(c.status)}" id="chap-status-${i}">${statusLabel(c.status)}</span>
+      <button class="compare-toggle" data-idx="${i}" id="compare-toggle-${i}" style="display:none;">Compare</button>
     `;
-    chapList.appendChild(row);
+    const panel = document.createElement('div');
+    panel.className = 'compare-panel';
+    panel.id = 'compare-panel-'+i;
+    wrap.appendChild(row);
+    wrap.appendChild(panel);
+    chapList.appendChild(wrap);
+    // Restore compare button visibility for resumed/finished chapters
+    if(c.status === 'done' || c.status === 'unverified'){
+      const t = row.querySelector('.compare-toggle');
+      if(t && (c.originalText || c.text)) t.style.display = 'inline-block';
+    }
   });
 }
 
+chapList.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.compare-toggle');
+  if(!btn) return;
+  toggleComparePanel(parseInt(btn.dataset.idx, 10));
+});
+
+function toggleComparePanel(i){
+  const c = chapters[i];
+  const panel = el('compare-panel-'+i);
+  if(!panel) return;
+  if(panel.classList.contains('show')){ panel.classList.remove('show'); return; }
+  panel.innerHTML = `
+    <div class="compare-col">
+      <div class="compare-col-label">Original</div>
+      <div class="compare-col-text">${escapeHtml(c.originalText || '(not captured)')}</div>
+    </div>
+    <div class="compare-col">
+      <div class="compare-col-label">Translated</div>
+      <div class="compare-col-text translated">${escapeHtml(c.text || '(not captured)')}</div>
+    </div>
+  `;
+  panel.classList.add('show');
+}
+
 function statusClass(s){
-  return {pending:'st-pending', active:'st-active', done:'st-done', retry:'st-retry'}[s] || 'st-pending';
+  return {pending:'st-pending', active:'st-active', done:'st-done', retry:'st-retry', unverified:'st-unverified', skipped:'st-skipped'}[s] || 'st-pending';
 }
 function statusLabel(s){
-  return {pending:'Pending', active:'Translating', done:'Done', retry:'Retrying'}[s] || 'Pending';
+  return {pending:'Pending', active:'Translating', done:'Done', retry:'Retrying', unverified:'Unverified', skipped:'Skipped'}[s] || 'Pending';
 }
 
 function setChapterStatus(i, status){
@@ -821,21 +1323,31 @@ function setChapterStatus(i, status){
   document.querySelectorAll('.chap-item').forEach(x=>x.classList.remove('active'));
   const row = el('chap-row-'+i);
   if(row && status==='active') row.classList.add('active');
+
+  const toggle = el('compare-toggle-'+i);
+  if(toggle){
+    const canCompare = (status==='done' || status==='unverified' || status==='skipped') && !!(chapters[i].originalText || chapters[i].text);
+    toggle.style.display = canCompare ? 'inline-block' : 'none';
+  }
   updateProgress();
+  saveSessionProgress();
 }
 
 function updateProgress(){
-  const done = chapters.filter(c=>c.status==='done').length;
+  // FIX: count both verified done + unverified/skipped as "processed" for the bar,
+  // but progText clarifies verified vs total.
+  const verified = chapters.filter(c=>c.status==='done').length;
+  const processed = chapters.filter(c=>['done','unverified','skipped'].includes(c.status)).length;
   const total = chapters.length;
-  const pct = total ? Math.round((done/total)*100) : 0;
+  const pct = total ? Math.round((processed/total)*100) : 0;
   progFill.style.width = pct + '%';
-  progText.textContent = `${done} / ${total} completed`;
+  progText.textContent = `${verified} verified / ${total} chapters`;
   progPercent.textContent = pct + '%';
 }
 
 function escapeHtml(s){
   const d = document.createElement('div');
-  d.textContent = s;
+  d.textContent = (s == null) ? '' : s;
   return d.innerHTML;
 }
 
@@ -850,32 +1362,65 @@ function log(msg, type=''){
 
 /* ============ TRANSLATE-VERIFY CORE ============ */
 /*
-  Chrome replaces translated text nodes in-place but fires no reliable
-  "translation complete" event. This uses a polling approach: snapshot
-  the original text, then check at intervals whether the rendered text
-  has changed to a non-Latin script (signals translation applied) or
-  otherwise diverged from the original after a minimum settle window.
+  Chrome translates visible text nodes in place but fires no completion
+  event. We poll node.innerText and decide "translated" based on the
+  chosen verifyMode:
+    - script: rendered text now contains non-Latin script chars
+    - latin : rendered text differs substantially from the original
+              after a settle window (word-overlap heuristic)
+    - auto  : script check OR substantial difference
 */
 function containsNonLatinScript(str){
-  // Covers Devanagari, common CJK, Cyrillic, Arabic ranges — broad enough
-  // to detect "translation happened" without hardcoding one target language.
-  return /[\u0900-\u097F\u4E00-\u9FFF\u0400-\u04FF\u0600-\u06FF]/.test(str);
+  return /[\u0900-\u097F\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF\u0400-\u04FF\u0600-\u06FF\u0E00-\u0E7F]/.test(str);
 }
 
-function waitForTranslation(node, originalText, timeoutMs=7000){
+// Rough measure of how different two strings are (0 = identical, 1 = totally different)
+function textDivergence(a, b){
+  a = (a||'').trim(); b = (b||'').trim();
+  if(!a && !b) return 0;
+  if(!a || !b) return 1;
+  if(a === b) return 0;
+  const wa = a.toLowerCase().split(/\s+/);
+  const wb = new Set(b.toLowerCase().split(/\s+/));
+  let common = 0;
+  wa.forEach(w=>{ if(wb.has(w)) common++; });
+  const overlap = common / wa.length;
+  return 1 - overlap;
+}
+
+function isTranslated(rendered, originalText, elapsed){
+  const now = (rendered||'');
+  if(!now.trim()) return false;
+  if(verifyMode === 'script'){
+    return containsNonLatinScript(now);
+  }
+  if(verifyMode === 'latin'){
+    // require the text to differ meaningfully AND to have settled a bit
+    return elapsed > 2500 && textDivergence(originalText, now) > 0.35;
+  }
+  // auto
+  if(containsNonLatinScript(now)) return true;
+  return elapsed > 2800 && textDivergence(originalText, now) > 0.4;
+}
+
+function waitForTranslation(node, originalText, timeoutMs=8000){
   return new Promise((resolve)=>{
     const start = Date.now();
     const check = setInterval(()=>{
+      // FIX: allow Skip / Stop to interrupt the wait immediately
+      if(skipRequested || stopRequested){
+        clearInterval(check);
+        resolve({success:false, interrupted:true, text: node.innerText || ''});
+        return;
+      }
       const now = node.innerText || '';
-      const changed = now !== originalText && now.trim().length > 0;
-      const scriptShifted = containsNonLatinScript(now);
-
-      if(scriptShifted || (changed && (Date.now()-start > 2500))){
+      const elapsed = Date.now()-start;
+      if(isTranslated(now, originalText, elapsed)){
         clearInterval(check);
         resolve({success:true, text: now});
         return;
       }
-      if(Date.now()-start > timeoutMs){
+      if(elapsed > timeoutMs){
         clearInterval(check);
         resolve({success:false, text: now});
       }
@@ -886,70 +1431,112 @@ function waitForTranslation(node, originalText, timeoutMs=7000){
 async function autoScrollNode(node){
   const height = node.scrollHeight;
   let pos = 0;
-  const step = 500;
+  const step = Math.max(120, Math.floor(node.clientHeight * 0.8));
   return new Promise(resolve=>{
     const timer = setInterval(()=>{
+      if(skipRequested || stopRequested){ clearInterval(timer); node.scrollTop = 0; resolve(); return; }
       node.scrollTop = pos;
       pos += step;
-      if(pos >= height){
-        clearInterval(timer);
-        node.scrollTop = 0;
-        resolve();
-      }
-    }, 220);
+      if(pos >= height){ clearInterval(timer); node.scrollTop = 0; resolve(); }
+    }, 200);
   });
+}
+
+async function loadChapterHtml(c){
+  if(c.item){
+    try{
+      if(c.item.document && c.item.document.body){
+        return c.item.document.body.innerHTML;
+      }
+      await c.item.load(book.load.bind(book));
+      if(c.item.document && c.item.document.body){
+        return c.item.document.body.innerHTML;
+      }
+      return '';
+    }catch(err){
+      throw err;
+    }
+  }
+  return c.html || '';
 }
 
 async function processChapter(i){
   const c = chapters[i];
   currentIdx = i;
+  skipRequested = false; // reset per chapter
   setChapterStatus(i, 'active');
+  const row = el('chap-row-'+i);
+  if(row) row.scrollIntoView({block:'nearest', behavior:'smooth'});
   log(`Loading chapter ${i+1}: ${c.title}`);
 
   let html = '';
   try{
-    if(c.item.document && c.item.document.body){
-      html = c.item.document.body.innerHTML;
-    } else {
-      await c.item.load(book.load.bind(book));
-      html = c.item.document.body.innerHTML;
-    }
+    html = await loadChapterHtml(c);
   }catch(err){
     log(`Chapter ${i+1} failed to load: ${err.message}`, 'warn');
   }
 
   viewer.innerHTML = html || '<div class="ph">Empty chapter content</div>';
   const originalText = viewer.innerText;
+  c.originalText = originalText;
 
   if(!originalText.trim()){
-    setChapterStatus(i, 'done');
     c.text = '';
-    log(`Chapter ${i+1} was empty, skipped.`, 'warn');
+    setChapterStatus(i, 'skipped');
+    log(`Chapter ${i+1} was empty, marked skipped.`, 'warn');
     return true;
   }
 
   await autoScrollNode(viewer);
 
-  log(`Verifying translation for chapter ${i+1}…`);
-  const result = await waitForTranslation(viewer, originalText, 7000);
+  if(skipRequested){
+    c.text = viewer.innerText;
+    setChapterStatus(i, 'skipped');
+    log(`Chapter ${i+1} manually skipped.`, 'warn');
+    skipRequested = false;
+    return true;
+  }
+  if(stopRequested) return true;
+
+  log(`Verifying translation for chapter ${i+1}\u2026`);
+  const result = await waitForTranslation(viewer, originalText, 8000);
+
+  if(result.interrupted){
+    if(stopRequested) return true;
+    // skip
+    c.text = result.text;
+    setChapterStatus(i, 'skipped');
+    log(`Chapter ${i+1} manually skipped.`, 'warn');
+    skipRequested = false;
+    return true;
+  }
 
   if(result.success){
     c.text = result.text;
     setChapterStatus(i, 'done');
     log(`Chapter ${i+1} verified (${result.text.length} chars).`, 'ok');
+    consecutiveVerifyFailures = 0;
     return true;
   } else {
     c.retries += 1;
     if(c.retries < 2){
       setChapterStatus(i, 'retry');
-      log(`Chapter ${i+1} — no translation detected, retrying (${c.retries})…`, 'warn');
+      log(`Chapter ${i+1} — no translation detected, retrying (${c.retries})\u2026`, 'warn');
       await new Promise(r=>setTimeout(r, 1200));
+      if(stopRequested || skipRequested){
+        // treat as skip
+        c.text = viewer.innerText;
+        setChapterStatus(i, skipRequested ? 'skipped' : 'unverified');
+        skipRequested = false;
+        return true;
+      }
       return await processChapter(i);
     } else {
       c.text = result.text;
-      setChapterStatus(i, 'done');
+      setChapterStatus(i, 'unverified'); // FIX: distinct "unverified" state, not fake "done"
       log(`Chapter ${i+1} — translation not verified, saving available text as-is.`, 'err');
-      return true;
+      consecutiveVerifyFailures++;
+      return false;
     }
   }
 }
@@ -959,51 +1546,77 @@ startBtn.addEventListener('click', async ()=>{
   if(running) return;
   running = true;
   stopRequested = false;
+  skipRequested = false;
+  consecutiveVerifyFailures = 0;
   startBtn.style.display = 'none';
   stopBtn.style.display = 'block';
   skipBtn.style.display = 'block';
   logBox.innerHTML = '';
   logBox.style.display = 'block';
+  hideBanner(globalBanner);
 
-  log('Starting. Confirm Chrome translation is enabled.');
+  log(`Starting (mode: ${verifyMode}). Confirm Chrome translation is enabled.`);
 
   for(let i=0; i<chapters.length; i++){
-    if(stopRequested){
-      log('Stopped by user.', 'warn');
-      break;
+    if(stopRequested){ log('Stopped by user.', 'warn'); break; }
+    if(chapters[i].status === 'done' && chapters[i].text && chapters[i].text.trim()){
+      continue; // already verified in a resumed/previous run
     }
-    await processChapter(i);
+    const verified = await processChapter(i);
+
+    if(verified === false && consecutiveVerifyFailures >= 2){
+      // pause and ask the user
+      await new Promise(resolve=>{
+        showBanner(globalBanner, {
+          level: 'warn',
+          title: 'Translation not detected',
+          message: `The last ${consecutiveVerifyFailures} chapters finished without any translated text being detected. This usually means Chrome's translation isn't active, or the target language doesn't match your selection above. Check the translate icon in the address bar, then continue.`,
+          actions: [
+            { id:'stop', label:'Stop Now', primary:true, onClick: ()=>{ stopRequested = true; hideBanner(globalBanner); resolve(); } },
+            { id:'continue', label:'Keep Going', onClick: ()=>{ consecutiveVerifyFailures = 0; hideBanner(globalBanner); resolve(); } }
+          ]
+        });
+      });
+    }
   }
 
   running = false;
   startBtn.style.display = 'block';
   stopBtn.style.display = 'none';
   skipBtn.style.display = 'none';
-  startBtn.textContent = 'Run Again';
+  startBtn.textContent = 'Run Again (remaining chapters)';
+  currentIdx = -1;
 
+  refreshDownloadSummary();
   const doneCount = chapters.filter(c=>c.status==='done' && c.text.trim()).length;
-  if(doneCount > 0){
-    dDone.textContent = doneCount;
-    dSkipped.textContent = chapters.length - doneCount;
-    downloadPanel.style.display = 'block';
-    editorPanel.style.display = 'block';
-    renderEditorList();
-    log(`Complete — ${doneCount}/${chapters.length} chapters processed.`, 'ok');
-  }
+  log(`Complete — ${doneCount}/${chapters.length} chapters verified.`, doneCount>0?'ok':'warn');
 });
 
 stopBtn.addEventListener('click', ()=>{
   stopRequested = true;
+  log('Stopping after current step\u2026', 'warn');
 });
 
+/* FIX: skip now cooperatively interrupts the running wait loop */
 skipBtn.addEventListener('click', ()=>{
   if(currentIdx >= 0){
-    setChapterStatus(currentIdx, 'done');
-    log(`Chapter ${currentIdx+1} manually skipped.`, 'warn');
+    skipRequested = true;
   }
 });
 
-/* ============ CHAPTER EDITOR (rename / reorder / exclude) ============ */
+function refreshDownloadSummary(){
+  const doneCount = chapters.filter(c=>c.status==='done' && c.text && c.text.trim()).length;
+  const usable = chapters.filter(c=>c.text && c.text.trim()).length;
+  if(usable > 0){
+    dDone.textContent = doneCount;
+    dSkipped.textContent = usable - doneCount;
+    downloadPanel.style.display = 'block';
+    editorPanel.style.display = 'block';
+    renderEditorList();
+  }
+}
+
+/* ============ CHAPTER EDITOR ============ */
 function renderEditorList(){
   editorList.innerHTML = '';
   exportOrder.forEach((chapIdx, pos)=>{
@@ -1014,13 +1627,13 @@ function renderEditorList(){
     row.innerHTML = `
       <span class="editor-pos">${String(pos+1).padStart(2,'0')}</span>
       <input class="editor-title-input" value="${escapeAttr(c.title)}"
-             data-chap="${chapIdx}" ${hasText ? '' : 'disabled'} />
+             data-chap="${chapIdx}" ${hasText ? '' : 'disabled'} aria-label="Chapter title" />
       <div class="editor-controls">
-        <button class="editor-btn" data-act="up" data-pos="${pos}" ${pos===0?'disabled':''} title="Move up">↑</button>
-        <button class="editor-btn" data-act="down" data-pos="${pos}" ${pos===exportOrder.length-1?'disabled':''} title="Move down">↓</button>
+        <button class="editor-btn" data-act="up" data-pos="${pos}" ${pos===0?'disabled':''} title="Move up" aria-label="Move up">\u2191</button>
+        <button class="editor-btn" data-act="down" data-pos="${pos}" ${pos===exportOrder.length-1?'disabled':''} title="Move down" aria-label="Move down">\u2193</button>
         <button class="editor-btn ${c.excluded?'toggle-off':''}" data-act="toggle" data-chap="${chapIdx}"
-                title="${c.excluded ? 'Include in export' : 'Exclude from export'}" ${hasText ? '' : 'disabled'}>
-          ${c.excluded ? '＋' : '✕'}
+                title="${c.excluded ? 'Include in export' : 'Exclude from export'}" ${hasText ? '' : 'disabled'} aria-label="Toggle include">
+          ${c.excluded ? '\uFF0B' : '\u2715'}
         </button>
       </div>
     `;
@@ -1029,13 +1642,14 @@ function renderEditorList(){
 }
 
 function escapeAttr(s){
-  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
 
 editorList.addEventListener('input', (e)=>{
   if(e.target.classList.contains('editor-title-input')){
     const idx = parseInt(e.target.dataset.chap, 10);
     chapters[idx].title = e.target.value;
+    saveSessionProgress();
   }
 });
 
@@ -1043,27 +1657,24 @@ editorList.addEventListener('click', (e)=>{
   const btn = e.target.closest('.editor-btn');
   if(!btn || btn.disabled) return;
   const act = btn.dataset.act;
-
   if(act === 'up' || act === 'down'){
     const pos = parseInt(btn.dataset.pos, 10);
     const swapWith = act === 'up' ? pos-1 : pos+1;
     if(swapWith < 0 || swapWith >= exportOrder.length) return;
     [exportOrder[pos], exportOrder[swapWith]] = [exportOrder[swapWith], exportOrder[pos]];
     renderEditorList();
+    saveSessionProgress();
   }
-
   if(act === 'toggle'){
     const idx = parseInt(btn.dataset.chap, 10);
     chapters[idx].excluded = !chapters[idx].excluded;
     renderEditorList();
+    saveSessionProgress();
   }
 });
 
 function getExportChapters(){
-  // Returns chapters in user-defined order, skipping excluded and empty ones.
-  return exportOrder
-    .map(idx => chapters[idx])
-    .filter(c => c.text && c.text.trim() && !c.excluded);
+  return exportOrder.map(idx => chapters[idx]).filter(c => c && c.text && c.text.trim() && !c.excluded);
 }
 
 /* ============ EXPORT MODE TABS ============ */
@@ -1082,38 +1693,56 @@ exportTabs.addEventListener('click', (e)=>{
   }
 });
 
-/* ============ DOWNLOAD — DISPATCH ============ */
+/* ============ DOWNLOAD DISPATCH ============ */
 downloadBtn.addEventListener('click', async ()=>{
-  if(exportMode === 'epub'){
-    await downloadAsEpub();
-  } else {
-    await downloadAsTxtZip();
+  if(downloadBtn.disabled) return;
+  if(!requireLib(LIB_STATUS.jszip, 'ZIP/EPUB export')){
+    showGlobalError('Cannot export', 'The JSZip component failed to load, so files can\u2019t be packaged. Reload the page after checking your connection.');
+    return;
+  }
+  downloadBtn.disabled = true;
+  const originalLabel = downloadBtn.textContent;
+  downloadBtn.textContent = 'Preparing\u2026';
+  try{
+    if(exportMode === 'epub') await downloadAsEpub();
+    else await downloadAsTxtZip();
+  }catch(err){
+    log(`Export failed: ${err.message}`, 'err');
+    showGlobalError('Export failed', 'Something went wrong while preparing the download.', (err.message||'') + (err.stack ? '\n' + err.stack : ''));
+  }finally{
+    downloadBtn.disabled = false;
+    downloadBtn.textContent = originalLabel;
   }
 });
 
-/* ============ EXPORT: TXT + ZIP (with TOC-based combined file) ============ */
+/* ============ EXPORT: TXT + ZIP ============ */
+function safeFileName(s, fallback){
+  const cleaned = String(s||'').replace(/[^a-zA-Z0-9 \-_]/g,'').trim();
+  return cleaned || fallback;
+}
+
 async function downloadAsTxtZip(){
   const zip = new JSZip();
-  const bookTitle = (mTitle.textContent || 'book').replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'book';
+  const bookTitle = safeFileName(mTitle.textContent, 'book');
   const exportList = getExportChapters();
-
   if(exportList.length === 0){
     log('Nothing to export — all chapters are excluded or empty.', 'err');
+    showGlobalWarning('Nothing to export', 'Every translated chapter is currently excluded (or empty). Include at least one chapter in the "Review & Arrange" panel above.');
     return;
   }
 
+  const usedNames = new Set();
   exportList.forEach((c, pos)=>{
-    const fname = `${String(pos+1).padStart(2,'0')}_${(c.title||'chapter').replace(/[^a-zA-Z0-9 ]/g,'').trim()}.txt`;
+    let base = `${String(pos+1).padStart(2,'0')}_${safeFileName(c.title,'chapter')}`;
+    let fname = base + '.txt';
+    let n = 1;
+    while(usedNames.has(fname)){ fname = `${base}_${n++}.txt`; }
+    usedNames.add(fname);
     zip.file(fname, c.text);
   });
 
-  // Build a combined file with a real table of contents at the top,
-  // and a matching heading + line marker above each chapter body so
-  // the TOC entries correspond to a findable position in the file.
   const tocLines = ['TABLE OF CONTENTS', '='.repeat(40), ''];
-  exportList.forEach((c, pos)=>{
-    tocLines.push(`${String(pos+1).padStart(2,'0')}. ${c.title}`);
-  });
+  exportList.forEach((c, pos)=>{ tocLines.push(`${String(pos+1).padStart(2,'0')}. ${c.title}`); });
   tocLines.push('', '='.repeat(40), '');
 
   const bodyLines = [];
@@ -1122,58 +1751,57 @@ async function downloadAsTxtZip(){
     bodyLines.push('-'.repeat(40));
     bodyLines.push('');
     bodyLines.push(c.text);
-    bodyLines.push('');
-    bodyLines.push('');
+    bodyLines.push('', '');
   });
 
   const combined = tocLines.join('\n') + bodyLines.join('\n');
   zip.file(`00_full_${bookTitle}.txt`, combined);
 
-  const blob = await zip.generateAsync({type:'blob'});
+  try{
+    const blob = await zip.generateAsync({type:'blob'});
+    triggerDownload(blob, `${bookTitle}_translated_${Math.floor(Date.now()/1000)}.zip`);
+    log(`ZIP download started (${exportList.length} chapters).`, 'ok');
+    clearSessionProgress();
+  }catch(err){
+    log(`ZIP generation failed: ${err.message}`, 'err');
+    showGlobalError('Export failed',
+      'Building the ZIP file failed, most likely because the combined content is too large to hold in memory at once. Try excluding some chapters and exporting in smaller batches.',
+      (err.message||'') + (err.stack ? '\n' + err.stack : ''));
+  }
+}
+
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${bookTitle}_translated_${Math.floor(Date.now()/1000)}.zip`;
+  link.href = url;
+  link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  log(`ZIP download started (${exportList.length} chapters).`, 'ok');
+  // FIX: revoke the object URL to avoid a memory leak
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
 }
 
 /* ============ EXPORT: EPUB REPACKAGING ============ */
-/*
-  Builds a spec-valid EPUB3 container from scratch:
-    mimetype               — must be first entry, stored uncompressed
-    META-INF/container.xml — points readers to the OPF
-    OEBPS/content.opf      — manifest + spine, in the user-defined order
-    OEBPS/nav.xhtml         — EPUB3 navigation document (the TOC)
-    OEBPS/chap_XX.xhtml     — one file per chapter, translated text wrapped
-  Each translated chapter is plain text (from Chrome's rendered DOM), so
-  it's wrapped as a sequence of <p> tags rather than reusing original HTML,
-  since the original markup no longer corresponds to the translated text.
-*/
 function textToXhtmlBody(text){
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map(p => p.trim())
-    .filter(p => p.length > 0);
-  if(paragraphs.length === 0) return '<p></p>';
-  return paragraphs
-    .map(p => `<p>${escapeXml(p).replace(/\n/g, '<br/>')}</p>`)
-    .join('\n');
+  const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+  if(paragraphs.length === 0){
+    // fall back to single-newline splitting so we don't produce one giant line
+    const lines = text.split(/\n/).map(l=>l.trim()).filter(l=>l.length>0);
+    if(lines.length === 0) return '<p></p>';
+    return lines.map(l=>`<p>${escapeXml(l)}</p>`).join('\n');
+  }
+  return paragraphs.map(p => `<p>${escapeXml(p).replace(/\n/g, '<br/>')}</p>`).join('\n');
 }
 
 function escapeXml(s){
-  return String(s)
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&apos;');
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
 }
 
 function makeUuid(){
-  // Simple RFC4122-ish v4 UUID for the EPUB identifier — doesn't need to be
-  // cryptographically strong, just unique per export.
+  if(window.crypto && crypto.randomUUID){ try{ return crypto.randomUUID(); }catch(e){} }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
     const r = Math.random()*16|0;
     const v = c==='x' ? r : (r&0x3|0x8);
@@ -1185,19 +1813,16 @@ async function downloadAsEpub(){
   const exportList = getExportChapters();
   if(exportList.length === 0){
     log('Nothing to export — all chapters are excluded or empty.', 'err');
+    showGlobalWarning('Nothing to export', 'Every translated chapter is currently excluded (or empty). Include at least one chapter in the "Review & Arrange" panel above.');
     return;
   }
 
   const bookTitle = mTitle.textContent || 'Translated Book';
   const uuid = makeUuid();
-  const lang = (bookLang || 'en').split('-')[0];
+  const lang = (bookLang || 'en').split('-')[0] || 'en';
 
   const zip = new JSZip();
-
-  // 1. mimetype — MUST be stored uncompressed and be the first file added.
   zip.file('mimetype', 'application/epub+zip', {compression:'STORE'});
-
-  // 2. container.xml
   zip.file('META-INF/container.xml',
 `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -1206,7 +1831,6 @@ async function downloadAsEpub(){
   </rootfiles>
 </container>`);
 
-  // 3. per-chapter xhtml files
   const manifestItems = [];
   const spineItems = [];
   const navItems = [];
@@ -1217,7 +1841,7 @@ async function downloadAsEpub(){
     const xhtml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="${lang}">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="${escapeXml(lang)}">
 <head>
   <meta charset="UTF-8"/>
   <title>${escapeXml(c.title)}</title>
@@ -1233,11 +1857,10 @@ async function downloadAsEpub(){
     navItems.push(`<li><a href="${fname}">${escapeXml(c.title)}</a></li>`);
   });
 
-  // 4. nav.xhtml — EPUB3 table of contents
   const navXhtml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="${lang}">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="${escapeXml(lang)}">
 <head><meta charset="UTF-8"/><title>Table of Contents</title></head>
 <body>
   <nav epub:type="toc" id="toc">
@@ -1251,7 +1874,6 @@ async function downloadAsEpub(){
   zip.file('OEBPS/nav.xhtml', navXhtml);
   manifestItems.push(`<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>`);
 
-  // 5. content.opf — package manifest + spine
   const modified = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const opf =
 `<?xml version="1.0" encoding="UTF-8"?>
@@ -1259,7 +1881,7 @@ async function downloadAsEpub(){
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="bookid">urn:uuid:${uuid}</dc:identifier>
     <dc:title>${escapeXml(bookTitle)}</dc:title>
-    <dc:language>${lang}</dc:language>
+    <dc:language>${escapeXml(lang)}</dc:language>
     <meta property="dcterms:modified">${modified}</meta>
   </metadata>
   <manifest>
@@ -1271,18 +1893,18 @@ async function downloadAsEpub(){
 </package>`;
   zip.file('OEBPS/content.opf', opf);
 
-  const blob = await zip.generateAsync({
-    type:'blob',
-    mimeType:'application/epub+zip'
-  });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  const safeTitle = bookTitle.replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'book';
-  link.download = `${safeTitle}_translated_${Math.floor(Date.now()/1000)}.epub`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  log(`EPUB download started (${exportList.length} chapters).`, 'ok');
+  try{
+    const blob = await zip.generateAsync({ type:'blob', mimeType:'application/epub+zip' });
+    const safeTitle = safeFileName(bookTitle, 'book');
+    triggerDownload(blob, `${safeTitle}_translated_${Math.floor(Date.now()/1000)}.epub`);
+    log(`EPUB download started (${exportList.length} chapters).`, 'ok');
+    clearSessionProgress();
+  }catch(err){
+    log(`EPUB generation failed: ${err.message}`, 'err');
+    showGlobalError('Export failed',
+      'Building the EPUB file failed, most likely because the content is too large to hold in memory at once. Try excluding some chapters, or use the Text export instead.',
+      (err.message||'') + (err.stack ? '\n' + err.stack : ''));
+  }
 }
 </script>
 
