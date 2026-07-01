@@ -1,162 +1,706 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Massive EPUB Translator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
-    
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 15px;
-            background-color: #f4f7f6;
-            color: #333;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        input[type="file"] {
-            padding: 10px;
-            border: 2px dashed #007bff;
-            border-radius: 5px;
-            background: #e9f2ff;
-            cursor: pointer;
-        }
-        button {
-            padding: 12px;
-            border: none;
-            border-radius: 5px;
-            background-color: #28a745;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        button:active {
-            background-color: #1e7e34;
-        }
-        #viewer {
-            margin-top: 20px;
-            background: white;
-            padding: 15px;
-            min-height: 400px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            word-wrap: break-word;
-        }
-        .loading {
-            color: #dc3545;
-            font-weight: bold;
-            text-align: center;
-        }
-        .separator {
-            text-align: center;
-            color: #888;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPUB Translation Verifier</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0d1117;
+    --panel:#161b22;
+    --panel-2:#1c2129;
+    --border:#2a303c;
+    --text:#e6e9ef;
+    --text-dim:#8b93a1;
+    --text-faint:#565e6c;
+    --accent:#5b8def;
+    --green:#3fb950;
+    --amber:#d29922;
+    --red:#e5534b;
+    --mono:'JetBrains Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk',sans-serif;
+    min-height:100vh;
+    padding:0;
+  }
+
+  .shell{max-width:640px;margin:0 auto;padding:20px 16px 40px;}
+
+  /* ---------- HEADER ---------- */
+  .app-header{
+    padding:20px 0 22px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:20px;
+  }
+  .app-header .tag{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:8px;
+  }
+  .app-header h1{
+    font-size:22px;
+    font-weight:700;
+    margin:0 0 6px;
+    letter-spacing:-0.3px;
+  }
+  .app-header p{
+    color:var(--text-dim);
+    font-size:13px;
+    line-height:1.6;
+    margin:0;
+    max-width:480px;
+  }
+  .flow-strip{
+    display:flex;
+    gap:0;
+    margin-top:16px;
+    font-family:var(--mono);
+    font-size:11px;
+  }
+  .flow-step{
+    color:var(--text-faint);
+    padding:5px 0;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .flow-step b{color:var(--text-dim);font-weight:600;}
+  .flow-step::after{content:'→';margin:0 10px;color:var(--text-faint);}
+  .flow-step:last-child::after{content:'';margin:0;}
+
+  /* ---------- PANELS ---------- */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .panel-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .panel-label{
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.8px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  .panel-num{
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--text-faint);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:2px 6px;
+  }
+
+  /* upload */
+  .drop{
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:26px 16px;
+    text-align:center;
+    cursor:pointer;
+    background:var(--panel-2);
+    transition:border-color .15s, background .15s;
+  }
+  .drop:hover{border-color:var(--accent);background:#1a2030;}
+  .drop input{display:none;}
+  .drop-label{font-size:13.5px;color:var(--text);font-weight:500;}
+  .drop-sub{font-size:11.5px;color:var(--text-faint);margin-top:4px;font-family:var(--mono);}
+  #fileNameShow{
+    margin-top:12px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--green);
+    display:none;
+  }
+
+  /* meta */
+  .meta-row{
+    display:flex;justify-content:space-between;
+    font-size:12.5px;padding:8px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .meta-row:last-child{border-bottom:none;}
+  .meta-row .k{color:var(--text-dim);font-family:var(--mono);font-size:11.5px;}
+  .meta-row .v{font-weight:600;text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+  /* progress */
+  .prog-track{
+    height:6px;background:var(--panel-2);
+    border-radius:4px;overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .prog-fill{
+    height:100%;width:0%;
+    background:var(--accent);
+    transition:width .3s ease;
+  }
+  .prog-label{
+    display:flex;justify-content:space-between;
+    font-family:var(--mono);
+    font-size:11px;color:var(--text-dim);
+    margin-top:8px;
+  }
+
+  /* chapter list */
+  .chap-list{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-top:16px;}
+  .chap-list::-webkit-scrollbar{width:5px;}
+  .chap-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  .chap-item{
+    display:flex;align-items:center;gap:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:8px 10px;
+    font-size:12.5px;
+  }
+  .chap-item.active{border-color:var(--accent);}
+  .chap-idx{
+    font-family:var(--mono);
+    font-size:10.5px;color:var(--text-faint);
+    min-width:24px;
+  }
+  .chap-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+  .chap-status{
+    font-family:var(--mono);
+    font-size:9.5px;font-weight:600;
+    padding:3px 8px;border-radius:4px;
+    text-transform:uppercase;letter-spacing:0.4px;
+    white-space:nowrap;
+    border:1px solid transparent;
+  }
+  .st-pending{background:transparent;color:var(--text-faint);border-color:var(--border);}
+  .st-active{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);}
+  .st-done{background:rgba(63,185,80,0.12);color:var(--green);border-color:rgba(63,185,80,0.3);}
+  .st-retry{background:rgba(229,83,75,0.12);color:var(--red);border-color:rgba(229,83,75,0.3);}
+
+  /* live viewer */
+  #viewer{
+    background:#f4f2ed;
+    color:#1a1a1a;
+    border-radius:6px;
+    padding:16px;
+    min-height:140px;
+    max-height:300px;
+    overflow-y:auto;
+    font-size:13.5px;
+    line-height:1.7;
+    word-wrap:break-word;
+    border:1px solid var(--border);
+  }
+  #viewer::-webkit-scrollbar{width:6px;}
+  #viewer::-webkit-scrollbar-thumb{background:#c9c4b8;border-radius:6px;}
+  #viewer .ph{color:#8a8578;text-align:center;padding:36px 10px;font-size:12.5px;font-family:var(--mono);}
+
+  /* buttons */
+  .btn{
+    width:100%;
+    padding:12px;
+    border:1px solid transparent;
+    border-radius:8px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+    transition:filter .15s;
+  }
+  .btn:active{filter:brightness(0.92);}
+  .btn-primary{background:var(--accent);color:#08122a;}
+  .btn-primary:disabled{background:var(--panel-2);color:var(--text-faint);cursor:not-allowed;border-color:var(--border);}
+  .btn-ghost{
+    background:transparent;border:1px solid var(--border);color:var(--text);
+    margin-top:8px;
+  }
+  .btn-danger{background:rgba(229,83,75,0.1);color:var(--red);border:1px solid rgba(229,83,75,0.35);margin-top:8px;}
+
+  .note-box{
+    display:flex;gap:10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px;
+    font-size:12px;
+    line-height:1.55;
+    color:var(--text-dim);
+    margin-top:12px;
+  }
+  .note-box .ic{font-family:var(--mono);color:var(--accent);font-size:12px;flex-shrink:0;padding-top:1px;}
+
+  .log-box{
+    font-family:var(--mono);
+    font-size:11px;
+    margin-top:12px;
+    max-height:130px;
+    overflow-y:auto;
+    display:none;
+    border-top:1px solid var(--border);
+    padding-top:10px;
+  }
+  .log-line{color:var(--text-faint);padding:2px 0;}
+  .log-line.ok{color:var(--green);}
+  .log-line.err{color:var(--red);}
+  .log-line.warn{color:var(--amber);}
+
+  .footer-note{
+    text-align:center;font-size:10.5px;color:var(--text-faint);
+    margin-top:8px;padding:12px;font-family:var(--mono);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
 </head>
 <body>
+<div class="shell">
 
-    <div class="header">
-        <h2>🔥 Extreme EPUB to TXT</h2>
-        <p>1. Upload 👉 2. Chrome Translate 👉 3. Save as TXT</p>
+  <div class="app-header">
+    <div class="tag">Browser-Based &middot; Chapter Verified</div>
+    <h1>EPUB Translation Verifier</h1>
+    <p>Upload an EPUB, enable Chrome's built-in translation, and this tool confirms each chapter actually translated before saving — no partial or missed chapters.</p>
+    <div class="flow-strip">
+      <div class="flow-step"><b>1</b> Upload</div>
+      <div class="flow-step"><b>2</b> Enable Translate</div>
+      <div class="flow-step"><b>3</b> Verify & Export</div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-label">Source File</span>
+      <span class="panel-num">01</span>
+    </div>
+    <label class="drop" id="dropZone">
+      <input type="file" id="epubFile" accept=".epub">
+      <div class="drop-label">Select EPUB file</div>
+      <div class="drop-sub">.epub only</div>
+    </label>
+    <div id="fileNameShow"></div>
+
+    <div id="metaBox" style="display:none;margin-top:14px;">
+      <div class="meta-row"><span class="k">TITLE</span><span class="v" id="mTitle">—</span></div>
+      <div class="meta-row"><span class="k">CHAPTERS</span><span class="v" id="mChapters">—</span></div>
+      <div class="meta-row"><span class="k">STATUS</span><span class="v" id="mStatus">Loaded</span></div>
+    </div>
+  </div>
+
+  <!-- CHAPTERS + PROGRESS -->
+  <div class="panel" id="chapPanel" style="display:none;">
+    <div class="panel-head">
+      <span class="panel-label">Chapters</span>
+      <span class="panel-num">02</span>
+    </div>
+    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-label">
+      <span id="progText">0 / 0 completed</span>
+      <span id="progPercent">0%</span>
+    </div>
+    <div class="chap-list" id="chapList"></div>
+  </div>
+
+  <!-- LIVE VIEWER -->
+  <div class="panel" id="viewerPanel" style="display:none;">
+    <div class="panel-head">
+      <span class="panel-label">Current Chapter Preview</span>
+    </div>
+    <div id="viewer"><div class="ph">Content will appear here once translation starts</div></div>
+  </div>
+
+  <!-- ACTION -->
+  <div class="panel" id="actionPanel" style="display:none;">
+    <div class="panel-head">
+      <span class="panel-label">Run</span>
+      <span class="panel-num">03</span>
+    </div>
+    <button class="btn btn-primary" id="startBtn" disabled>Start Verified Translation</button>
+    <button class="btn btn-ghost" id="skipBtn" style="display:none;">Skip Current Chapter</button>
+    <button class="btn btn-danger" id="stopBtn" style="display:none;">Stop</button>
+
+    <div class="note-box">
+      <div class="ic">i</div>
+      <div>Turn on Chrome's translation (menu icon in the address bar, or right-click → Translate to English/Hindi) before starting. Each chapter is scrolled and checked for translated text — if none is detected within the timeout, it retries automatically once before moving on.</div>
     </div>
 
-    <div class="controls">
-        <label for="epubFile"><b>📁 Apni EPUB File chunein:</b></label>
-        <input type="file" id="epubFile" accept=".epub">
-        
-        <button id="saveBtn">💾 Translated Text ko .txt File mein Save Karein</button>
+    <div id="logBox" class="log-box"></div>
+  </div>
+
+  <!-- DOWNLOAD -->
+  <div class="panel" id="downloadPanel" style="display:none;">
+    <div class="panel-head">
+      <span class="panel-label">Export</span>
     </div>
+    <div class="meta-row"><span class="k">TRANSLATED</span><span class="v" id="dDone">0</span></div>
+    <div class="meta-row"><span class="k">SKIPPED / UNVERIFIED</span><span class="v" id="dSkipped">0</span></div>
+    <button class="btn btn-primary" id="downloadBtn">Download ZIP (per-chapter + combined .txt)</button>
+  </div>
 
-    <div id="viewer">📚 File upload karein aur load hone ka wait karein...</div>
+  <div class="footer-note">All processing happens locally in your browser. No file is uploaded to a server.</div>
 
-    <script>
-        let book = null;
+</div>
 
-        document.getElementById('epubFile').addEventListener('change', function(e) {
-            let file = e.target.files[0];
-            if (!file) return;
+<script>
+/* ============ STATE ============ */
+let book = null;
+let chapters = [];        // {index, title, item, status, text, retries}
+let currentIdx = -1;
+let running = false;
+let stopRequested = false;
 
-            const viewer = document.getElementById("viewer");
-            viewer.innerHTML = "<p class='loading'>⏳ Puri kitaab extract ho rahi hai... Badi file mein thoda time lagega, please wait!</p>";
+const el = id => document.getElementById(id);
 
-            let reader = new FileReader();
-            reader.onload = function(event) {
-                let bookData = event.target.result;
-                book = ePub(bookData);
+const fileInput  = el('epubFile');
+const fileNameShow = el('fileNameShow');
+const metaBox = el('metaBox');
+const mTitle = el('mTitle'), mChapters = el('mChapters'), mStatus = el('mStatus');
+const chapPanel = el('chapPanel');
+const chapList = el('chapList');
+const progFill = el('progFill');
+const progText = el('progText');
+const progPercent = el('progPercent');
+const viewerPanel = el('viewerPanel');
+const viewer = el('viewer');
+const actionPanel = el('actionPanel');
+const startBtn = el('startBtn');
+const skipBtn = el('skipBtn');
+const stopBtn = el('stopBtn');
+const logBox = el('logBox');
+const downloadPanel = el('downloadPanel');
+const dDone = el('dDone');
+const dSkipped = el('dSkipped');
+const downloadBtn = el('downloadBtn');
 
-                // Sare chapters ko extract karke ek page par daalna
-                book.loaded.spine.then(async function() {
-                    let fullHtml = "";
-                    try {
-                        for(let i = 0; i < book.spine.length; i++) {
-                            let item = book.spine.get(i);
-                            await item.load(book.load.bind(book));
-                            if(item.document && item.document.body) {
-                                // Separator add kiya taaki TXT file me bhi chapter alag dikhein
-                                fullHtml += item.document.body.innerHTML + "<div class='separator'>--- CH ---</div>";
-                            }
-                        }
-                        viewer.innerHTML = fullHtml;
-                    } catch(err) {
-                        viewer.innerHTML = "<p class='loading'>❌ Error: Book extract karne mein dikkat aayi.</p>";
-                    }
-                });
-            };
-            reader.readAsArrayBuffer(file);
+/* ============ FILE UPLOAD & PARSE ============ */
+fileInput.addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  fileNameShow.style.display = 'block';
+  fileNameShow.textContent = file.name;
+  mStatus.textContent = 'Extracting…';
+  metaBox.style.display = 'block';
+
+  const reader = new FileReader();
+  reader.onload = async function(event){
+    try{
+      book = ePub(event.target.result);
+      await book.ready;
+      const nav = await book.loaded.navigation.catch(()=>null);
+      const metadata = await book.loaded.metadata.catch(()=>({}));
+
+      mTitle.textContent = metadata.title || file.name.replace('.epub','');
+
+      await book.loaded.spine;
+      chapters = [];
+
+      for(let i=0; i<book.spine.length; i++){
+        const item = book.spine.get(i);
+        await item.load(book.load.bind(book));
+        let chapTitle = 'Chapter ' + (i+1);
+        if(nav && nav.toc){
+          const match = findNavMatch(nav.toc, item.href);
+          if(match) chapTitle = match;
+        }
+        chapters.push({
+          index: i,
+          title: chapTitle,
+          item: item,
+          status: 'pending',
+          text: '',
+          retries: 0
         });
+      }
 
-        // Save as TXT Logic
-        document.getElementById('saveBtn').addEventListener('click', function() {
-            const viewer = document.getElementById("viewer");
-            
-            // Check agar file load hi nahi hui hai
-            if (viewer.innerText.includes("File upload karein") || viewer.innerText.includes("extract ho rahi hai")) {
-                return alert("⚠️ Pehle file ko poori tarah load hone dein!");
-            }
+      mChapters.textContent = chapters.length;
+      mStatus.textContent = 'Ready';
+      renderChapterList();
+      chapPanel.style.display = 'block';
+      viewerPanel.style.display = 'block';
+      actionPanel.style.display = 'block';
+      startBtn.disabled = false;
 
-            try {
-                // 1. Screen par jo text dikh raha hai (translated), usko extract karo
-                let textToSave = viewer.innerText;
+      updateProgress();
+    }catch(err){
+      mStatus.textContent = 'Error: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
 
-                // 2. Us text ka ek TXT Blob (file data) banao
-                let blob = new Blob([textToSave], { type: "text/plain;charset=utf-8" });
+function findNavMatch(tocArr, href){
+  for(const entry of tocArr){
+    if(entry.href && href && entry.href.split('#')[0] === href.split('#')[0]){
+      return entry.label ? entry.label.trim() : null;
+    }
+    if(entry.subitems && entry.subitems.length){
+      const r = findNavMatch(entry.subitems, href);
+      if(r) return r;
+    }
+  }
+  return null;
+}
 
-                // 3. Download link generate karo (Background mein)
-                let downloadLink = document.createElement("a");
-                downloadLink.href = URL.createObjectURL(blob);
-                
-                // File ka naam current time ke hisaab se hoga
-                let fileName = "Translated_Book_" + Math.floor(Date.now() / 1000) + ".txt";
-                downloadLink.download = fileName;
+/* ============ RENDER CHAPTER LIST ============ */
+function renderChapterList(){
+  chapList.innerHTML = '';
+  chapters.forEach((c, i)=>{
+    const row = document.createElement('div');
+    row.className = 'chap-item' + (i===currentIdx ? ' active' : '');
+    row.id = 'chap-row-'+i;
+    row.innerHTML = `
+      <span class="chap-idx">${String(i+1).padStart(2,'0')}</span>
+      <span class="chap-name">${escapeHtml(c.title)}</span>
+      <span class="chap-status ${statusClass(c.status)}" id="chap-status-${i}">${statusLabel(c.status)}</span>
+    `;
+    chapList.appendChild(row);
+  });
+}
 
-                // 4. Link par auto-click karwao (isse download pop-up aayega)
-                document.body.appendChild(downloadLink);
-                downloadLink.click();
-                document.body.removeChild(downloadLink);
+function statusClass(s){
+  return {pending:'st-pending', active:'st-active', done:'st-done', retry:'st-retry'}[s] || 'st-pending';
+}
+function statusLabel(s){
+  return {pending:'Pending', active:'Translating', done:'Done', retry:'Retrying'}[s] || 'Pending';
+}
 
-            } catch (err) {
-                alert("❌ File save karne mein error aaya: " + err.message);
-            }
-        });
-    </script>
+function setChapterStatus(i, status){
+  chapters[i].status = status;
+  const badge = el('chap-status-'+i);
+  if(badge){
+    badge.className = 'chap-status ' + statusClass(status);
+    badge.textContent = statusLabel(status);
+  }
+  document.querySelectorAll('.chap-item').forEach(x=>x.classList.remove('active'));
+  const row = el('chap-row-'+i);
+  if(row && status==='active') row.classList.add('active');
+  updateProgress();
+}
+
+function updateProgress(){
+  const done = chapters.filter(c=>c.status==='done').length;
+  const total = chapters.length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  progFill.style.width = pct + '%';
+  progText.textContent = `${done} / ${total} completed`;
+  progPercent.textContent = pct + '%';
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function log(msg, type=''){
+  logBox.style.display = 'block';
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = msg;
+  logBox.appendChild(line);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+/* ============ TRANSLATE-VERIFY CORE ============ */
+/*
+  Chrome replaces translated text nodes in-place but fires no reliable
+  "translation complete" event. This uses a polling approach: snapshot
+  the original text, then check at intervals whether the rendered text
+  has changed to a non-Latin script (signals translation applied) or
+  otherwise diverged from the original after a minimum settle window.
+*/
+function containsNonLatinScript(str){
+  // Covers Devanagari, common CJK, Cyrillic, Arabic ranges — broad enough
+  // to detect "translation happened" without hardcoding one target language.
+  return /[\u0900-\u097F\u4E00-\u9FFF\u0400-\u04FF\u0600-\u06FF]/.test(str);
+}
+
+function waitForTranslation(node, originalText, timeoutMs=7000){
+  return new Promise((resolve)=>{
+    const start = Date.now();
+    const check = setInterval(()=>{
+      const now = node.innerText || '';
+      const changed = now !== originalText && now.trim().length > 0;
+      const scriptShifted = containsNonLatinScript(now);
+
+      if(scriptShifted || (changed && (Date.now()-start > 2500))){
+        clearInterval(check);
+        resolve({success:true, text: now});
+        return;
+      }
+      if(Date.now()-start > timeoutMs){
+        clearInterval(check);
+        resolve({success:false, text: now});
+      }
+    }, 400);
+  });
+}
+
+async function autoScrollNode(node){
+  const height = node.scrollHeight;
+  let pos = 0;
+  const step = 500;
+  return new Promise(resolve=>{
+    const timer = setInterval(()=>{
+      node.scrollTop = pos;
+      pos += step;
+      if(pos >= height){
+        clearInterval(timer);
+        node.scrollTop = 0;
+        resolve();
+      }
+    }, 220);
+  });
+}
+
+async function processChapter(i){
+  const c = chapters[i];
+  currentIdx = i;
+  setChapterStatus(i, 'active');
+  log(`Loading chapter ${i+1}: ${c.title}`);
+
+  let html = '';
+  try{
+    if(c.item.document && c.item.document.body){
+      html = c.item.document.body.innerHTML;
+    } else {
+      await c.item.load(book.load.bind(book));
+      html = c.item.document.body.innerHTML;
+    }
+  }catch(err){
+    log(`Chapter ${i+1} failed to load: ${err.message}`, 'warn');
+  }
+
+  viewer.innerHTML = html || '<div class="ph">Empty chapter content</div>';
+  const originalText = viewer.innerText;
+
+  if(!originalText.trim()){
+    setChapterStatus(i, 'done');
+    c.text = '';
+    log(`Chapter ${i+1} was empty, skipped.`, 'warn');
+    return true;
+  }
+
+  await autoScrollNode(viewer);
+
+  log(`Verifying translation for chapter ${i+1}…`);
+  const result = await waitForTranslation(viewer, originalText, 7000);
+
+  if(result.success){
+    c.text = result.text;
+    setChapterStatus(i, 'done');
+    log(`Chapter ${i+1} verified (${result.text.length} chars).`, 'ok');
+    return true;
+  } else {
+    c.retries += 1;
+    if(c.retries < 2){
+      setChapterStatus(i, 'retry');
+      log(`Chapter ${i+1} — no translation detected, retrying (${c.retries})…`, 'warn');
+      await new Promise(r=>setTimeout(r, 1200));
+      return await processChapter(i);
+    } else {
+      c.text = result.text;
+      setChapterStatus(i, 'done');
+      log(`Chapter ${i+1} — translation not verified, saving available text as-is.`, 'err');
+      return true;
+    }
+  }
+}
+
+/* ============ MAIN LOOP ============ */
+startBtn.addEventListener('click', async ()=>{
+  if(running) return;
+  running = true;
+  stopRequested = false;
+  startBtn.style.display = 'none';
+  stopBtn.style.display = 'block';
+  skipBtn.style.display = 'block';
+  logBox.innerHTML = '';
+  logBox.style.display = 'block';
+
+  log('Starting. Confirm Chrome translation is enabled.');
+
+  for(let i=0; i<chapters.length; i++){
+    if(stopRequested){
+      log('Stopped by user.', 'warn');
+      break;
+    }
+    await processChapter(i);
+  }
+
+  running = false;
+  startBtn.style.display = 'block';
+  stopBtn.style.display = 'none';
+  skipBtn.style.display = 'none';
+  startBtn.textContent = 'Run Again';
+
+  const doneCount = chapters.filter(c=>c.status==='done' && c.text.trim()).length;
+  if(doneCount > 0){
+    dDone.textContent = doneCount;
+    dSkipped.textContent = chapters.length - doneCount;
+    downloadPanel.style.display = 'block';
+    log(`Complete — ${doneCount}/${chapters.length} chapters processed.`, 'ok');
+  }
+});
+
+stopBtn.addEventListener('click', ()=>{
+  stopRequested = true;
+});
+
+skipBtn.addEventListener('click', ()=>{
+  if(currentIdx >= 0){
+    setChapterStatus(currentIdx, 'done');
+    log(`Chapter ${currentIdx+1} manually skipped.`, 'warn');
+  }
+});
+
+/* ============ DOWNLOAD AS ZIP ============ */
+downloadBtn.addEventListener('click', async ()=>{
+  const zip = new JSZip();
+  const bookTitle = (mTitle.textContent || 'book').replace(/[^a-zA-Z0-9 ]/g,'').trim() || 'book';
+
+  chapters.forEach((c, i)=>{
+    if(c.text && c.text.trim()){
+      const fname = `${String(i+1).padStart(2,'0')}_${(c.title||'chapter').replace(/[^a-zA-Z0-9 ]/g,'').trim()}.txt`;
+      zip.file(fname, c.text);
+    }
+  });
+
+  const combined = chapters
+    .filter(c=>c.text && c.text.trim())
+    .map((c)=>`=== ${c.title} ===\n\n${c.text}`)
+    .join('\n\n\n');
+  zip.file(`00_full_${bookTitle}.txt`, combined);
+
+  const blob = await zip.generateAsync({type:'blob'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${bookTitle}_translated_${Math.floor(Date.now()/1000)}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  log('ZIP download started.', 'ok');
+});
+</script>
 
 </body>
 </html>
