@@ -1,9 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Document Translation Verifier</title>
+<title>Document Translation Verifier — Pro</title>
+<meta name="description" content="Browser-based document translation verifier. Upload EPUB, PDF, DOCX or TXT, use Chrome's built-in translation, and verify every chapter translated before exporting to TXT, EPUB, Markdown or HTML. 100% local — no uploads.">
+<meta name="theme-color" content="#0b0f14">
+<meta property="og:title" content="Document Translation Verifier — Pro">
+<meta property="og:description" content="Verify Chrome translations chapter-by-chapter for EPUB, PDF, DOCX & TXT files. Pause/resume, live ETA, drag-and-drop arranging, find & replace, session backup, 4 export formats. All processing stays in your browser.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235b8def'/%3E%3Ctext x='32' y='42' font-family='monospace' font-size='26' font-weight='700' fill='%2308122a' text-anchor='middle'%3EDT%3C/text%3E%3C/svg%3E">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -13,394 +19,662 @@
 
 <style>
   :root{
-    --bg:#0d1117;
-    --panel:#161b22;
-    --panel-2:#1c2129;
-    --border:#2a303c;
-    --text:#e6e9ef;
+    --bg:#0b0f14;
+    --panel:#141a22;
+    --panel-2:#1a212b;
+    --border:#28303d;
+    --text:#e8ebf1;
     --text-dim:#8b93a1;
-    --text-faint:#565e6c;
+    --text-faint:#59616f;
     --accent:#5b8def;
+    --accent-2:#7aa5ff;
     --green:#3fb950;
     --amber:#d29922;
     --red:#e5534b;
+    --purple:#a371f7;
+    --viewer-bg:#f6f4ef;
+    --viewer-text:#1a1a1a;
     --mono:'JetBrains Mono',monospace;
+    --sans:'Space Grotesk',sans-serif;
+    --radius:14px;
+    --shadow:0 8px 28px rgba(0,0,0,0.35);
+    --shadow-hover:0 14px 40px rgba(0,0,0,0.45);
+    --glow1:rgba(91,141,239,0.10);
+    --glow2:rgba(163,113,247,0.07);
+    --orb1:rgba(91,141,239,0.14);
+    --orb2:rgba(163,113,247,0.11);
+    --orb3:rgba(63,185,80,0.07);
+    --ease-out:cubic-bezier(.22,1,.36,1);
+  }
+  [data-theme="light"]{
+    --bg:#f2f4f8;
+    --panel:#ffffff;
+    --panel-2:#f4f6fa;
+    --border:#d9dee8;
+    --text:#1b2330;
+    --text-dim:#5a6474;
+    --text-faint:#8d97a8;
+    --accent:#3567d6;
+    --accent-2:#4a7de0;
+    --green:#1a7f37;
+    --amber:#9a6700;
+    --red:#cf222e;
+    --purple:#8250df;
+    --viewer-bg:#faf8f2;
+    --viewer-text:#1a1a1a;
+    --shadow:0 8px 24px rgba(30,40,60,0.12);
+    --shadow-hover:0 14px 36px rgba(30,40,60,0.18);
+    --glow1:rgba(53,103,214,0.07);
+    --glow2:rgba(130,80,223,0.05);
+    --orb1:rgba(53,103,214,0.10);
+    --orb2:rgba(130,80,223,0.08);
+    --orb3:rgba(26,127,55,0.06);
   }
   *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   body{
     margin:0;
-    background:var(--bg);
+    background:
+      radial-gradient(900px 420px at 80% -10%, var(--glow1), transparent 60%),
+      radial-gradient(700px 380px at 0% 10%, var(--glow2), transparent 60%),
+      var(--bg);
     color:var(--text);
-    font-family:'Space Grotesk',sans-serif;
+    font-family:var(--sans);
     min-height:100vh;
     padding:0;
+    transition:background .4s ease, color .4s ease;
+    overflow-x:hidden;
   }
 
-  .shell{max-width:640px;margin:0 auto;padding:20px 16px 40px;}
+  /* ---------- ANIMATED BACKGROUND ORBS ---------- */
+  .bg-orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
+  .bg-orbs span{
+    position:absolute;border-radius:50%;filter:blur(80px);
+    will-change:transform;opacity:.9;
+  }
+  .bg-orbs span:nth-child(1){
+    width:520px;height:520px;top:-180px;right:-120px;
+    background:var(--orb1);
+    animation:orbFloat1 22s ease-in-out infinite alternate;
+  }
+  .bg-orbs span:nth-child(2){
+    width:420px;height:420px;top:32%;left:-200px;
+    background:var(--orb2);
+    animation:orbFloat2 28s ease-in-out infinite alternate;
+  }
+  .bg-orbs span:nth-child(3){
+    width:380px;height:380px;bottom:-160px;right:8%;
+    background:var(--orb3);
+    animation:orbFloat3 26s ease-in-out infinite alternate;
+  }
+  @keyframes orbFloat1{from{transform:translate(0,0) scale(1);}to{transform:translate(-70px,60px) scale(1.12);}}
+  @keyframes orbFloat2{from{transform:translate(0,0) scale(1);}to{transform:translate(90px,-50px) scale(1.08);}}
+  @keyframes orbFloat3{from{transform:translate(0,0) scale(1);}to{transform:translate(-50px,-70px) scale(1.1);}}
+
+  .shell{max-width:720px;margin:0 auto;padding:24px 18px 64px;}
+
+  /* global scrollbars */
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--text-faint);}
+
+  /* entrance stagger for initial elements */
+  .fade-up{opacity:0;animation:fadeUp .7s var(--ease-out) forwards;}
+  .fade-up.d1{animation-delay:.08s;}
+  .fade-up.d2{animation-delay:.18s;}
+  .fade-up.d3{animation-delay:.3s;}
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(18px);}
+    to{opacity:1;transform:translateY(0);}
+  }
 
   /* ---------- HEADER ---------- */
   .app-header{
-    padding:20px 0 22px;
+    padding:28px 0 24px;
     border-bottom:1px solid var(--border);
-    margin-bottom:20px;
+    margin-bottom:24px;
+    position:relative;
   }
+  .brand-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+  .brand-mark{
+    width:46px;height:46px;flex-shrink:0;
+    border-radius:13px;
+    background:linear-gradient(135deg,var(--accent),var(--purple),var(--accent));
+    background-size:200% 200%;
+    animation:gradientShift 6s ease infinite, brandFloat 4.5s ease-in-out infinite;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-weight:700;font-size:16px;color:#08122a;
+    box-shadow:0 6px 22px rgba(91,141,239,0.4);
+  }
+  @keyframes gradientShift{
+    0%,100%{background-position:0% 50%;}
+    50%{background-position:100% 50%;}
+  }
+  @keyframes brandFloat{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-4px);}
+  }
+  .header-actions{margin-left:auto;display:flex;gap:6px;align-self:flex-start;}
+  .icon-btn{
+    width:34px;height:34px;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:9px;color:var(--text-dim);font-size:15px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    transition:all .2s var(--ease-out);
+  }
+  .icon-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-2px) rotate(15deg);box-shadow:0 4px 14px rgba(91,141,239,0.25);}
   .app-header .tag{
     font-family:var(--mono);
     font-size:10.5px;
-    letter-spacing:2px;
+    letter-spacing:2.4px;
     text-transform:uppercase;
-    color:var(--accent);
-    margin-bottom:8px;
+    background:linear-gradient(90deg,var(--accent),var(--purple),var(--accent-2),var(--accent));
+    background-size:300% auto;
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:textShine 5s linear infinite;
+    margin-bottom:5px;
+    font-weight:600;
   }
+  @keyframes textShine{to{background-position:300% center;}}
   .app-header h1{
-    font-size:22px;
-    font-weight:700;
-    margin:0 0 6px;
-    letter-spacing:-0.3px;
+    font-size:24px;font-weight:700;margin:0;letter-spacing:-0.4px;line-height:1.2;
   }
   .app-header p{
-    color:var(--text-dim);
-    font-size:13px;
-    line-height:1.6;
-    margin:0;
-    max-width:480px;
+    color:var(--text-dim);font-size:13px;line-height:1.7;margin:10px 0 0;max-width:560px;
   }
+
+  /* flow strip — connected step pills */
   .flow-strip{
-    display:flex;
-    gap:0;
-    margin-top:16px;
-    font-family:var(--mono);
-    font-size:11px;
-    flex-wrap:wrap;
+    display:flex;gap:0;margin-top:20px;
+    font-family:var(--mono);font-size:11px;flex-wrap:wrap;
   }
   .flow-step{
-    color:var(--text-faint);
-    padding:5px 0;
-    display:flex;
-    align-items:center;
-    gap:6px;
+    color:var(--text-dim);padding:7px 12px;display:flex;align-items:center;gap:8px;
+    background:var(--panel);border:1px solid var(--border);border-radius:24px;
+    margin:3px 0;transition:all .25s var(--ease-out);
   }
-  .flow-step b{color:var(--text-dim);font-weight:600;}
-  .flow-step::after{content:'\2192';margin:0 10px;color:var(--text-faint);}
-  .flow-step:last-child::after{content:'';margin:0;}
+  .flow-step:hover{border-color:var(--accent);color:var(--text);transform:translateY(-2px);box-shadow:0 4px 14px rgba(91,141,239,0.15);}
+  .flow-step b{
+    color:var(--accent);font-weight:600;
+    width:19px;height:19px;border:1px solid var(--accent);border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;font-size:10px;
+    background:rgba(91,141,239,0.1);flex-shrink:0;
+  }
+  .flow-step::after{content:'';}
+  .flow-arrow{
+    color:var(--text-faint);align-self:center;margin:0 7px;font-size:12px;
+    animation:arrowPulse 2s ease-in-out infinite;
+  }
+  @keyframes arrowPulse{0%,100%{opacity:.45;transform:translateX(0);}50%{opacity:1;transform:translateX(3px);}}
 
   /* ---------- PANELS ---------- */
   .panel{
-    background:var(--panel);
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 45%), var(--panel);
     border:1px solid var(--border);
-    border-radius:10px;
-    padding:18px;
-    margin-bottom:14px;
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+    transition:border-color .3s ease, box-shadow .3s ease, transform .3s var(--ease-out);
+    animation:panelIn .5s var(--ease-out) both;
+    position:relative;
   }
-  .panel-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:14px;
+  .panel:hover{
+    border-color:color-mix(in srgb, var(--accent) 40%, var(--border));
+    box-shadow:var(--shadow);
   }
+  @supports not (color: color-mix(in srgb, red, blue)){
+    .panel:hover{border-color:var(--accent);}
+  }
+  @keyframes panelIn{
+    from{opacity:0;transform:translateY(16px) scale(.985);}
+    to{opacity:1;transform:translateY(0) scale(1);}
+  }
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;}
   .panel-label{
-    font-family:var(--mono);
-    font-size:11px;
-    font-weight:600;
-    letter-spacing:0.8px;
-    text-transform:uppercase;
-    color:var(--text-dim);
+    font-family:var(--mono);font-size:11px;font-weight:600;
+    letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel-label::before{
+    content:'';width:5px;height:5px;border-radius:50%;
+    background:var(--accent);flex-shrink:0;
+    box-shadow:0 0 8px var(--accent);
   }
   .panel-num{
-    font-family:var(--mono);
-    font-size:10.5px;
-    color:var(--text-faint);
-    border:1px solid var(--border);
-    border-radius:4px;
-    padding:2px 6px;
+    font-family:var(--mono);font-size:10.5px;color:var(--text-faint);
+    border:1px solid var(--border);border-radius:6px;padding:3px 8px;
+    background:var(--panel-2);letter-spacing:1px;
+    transition:all .25s ease;
   }
+  .panel:hover .panel-num{color:var(--accent);border-color:var(--accent);}
+
+  .saved-pill{
+    font-family:var(--mono);font-size:9.5px;color:var(--green);
+    border:1px solid rgba(63,185,80,0.3);border-radius:20px;
+    padding:2px 9px;opacity:0;transform:translateX(-4px);
+    transition:opacity .4s ease, transform .4s var(--ease-out);
+    background:rgba(63,185,80,0.08);
+  }
+  .saved-pill.flash{opacity:1;transform:translateX(0);}
 
   /* upload */
   .drop{
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:26px 16px;
-    text-align:center;
-    cursor:pointer;
+    border:1.5px dashed var(--border);
+    border-radius:12px;
+    padding:34px 16px;
+    text-align:center;cursor:pointer;
     background:var(--panel-2);
-    transition:border-color .15s, background .15s;
-    display:block;
+    transition:border-color .25s, background .25s, transform .25s var(--ease-out), box-shadow .25s;
+    display:block;position:relative;overflow:hidden;
   }
-  .drop:hover{border-color:var(--accent);background:#1a2030;}
-  .drop.dragover{border-color:var(--accent);background:#1a2030;}
+  .drop::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(400px 120px at 50% 0%, rgba(91,141,239,0.08), transparent 70%);
+    opacity:0;transition:opacity .3s;
+  }
+  .drop:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(91,141,239,0.12);}
+  .drop:hover::before{opacity:1;}
+  .drop.dragover{
+    border-color:var(--accent);
+    box-shadow:0 0 0 4px rgba(91,141,239,0.14) inset, 0 8px 26px rgba(91,141,239,0.18);
+    transform:scale(1.012);
+  }
   .drop input{display:none;}
-  .drop-label{font-size:13.5px;color:var(--text);font-weight:500;}
-  .drop-sub{font-size:11.5px;color:var(--text-faint);margin-top:4px;font-family:var(--mono);}
+  .drop-icon{
+    font-size:26px;margin-bottom:10px;opacity:0.95;display:block;
+    animation:iconBob 3.5s ease-in-out infinite;
+  }
+  @keyframes iconBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
+  .drop-label{font-size:14px;color:var(--text);font-weight:600;display:block;}
+  .drop-sub{font-size:11.5px;color:var(--text-faint);margin-top:6px;font-family:var(--mono);display:block;letter-spacing:.5px;}
   #fileNameShow{
-    margin-top:12px;
-    font-family:var(--mono);
-    font-size:12px;
-    color:var(--green);
-    display:none;
+    margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--green);display:none;
+    align-items:center;gap:6px;word-break:break-all;
+    animation:fadeUp .4s var(--ease-out);
   }
 
   /* meta */
   .meta-row{
-    display:flex;justify-content:space-between;
-    font-size:12.5px;padding:8px 0;
-    border-bottom:1px solid var(--border);
-    gap:12px;
+    display:flex;justify-content:space-between;font-size:12.5px;padding:9px 2px;
+    border-bottom:1px solid var(--border);gap:12px;
+    transition:background .2s;border-radius:4px;
   }
+  .meta-row:hover{background:rgba(91,141,239,0.03);}
   .meta-row:last-child{border-bottom:none;}
-  .meta-row .k{color:var(--text-dim);font-family:var(--mono);font-size:11.5px;flex-shrink:0;}
+  .meta-row .k{color:var(--text-dim);font-family:var(--mono);font-size:11.5px;flex-shrink:0;letter-spacing:.5px;}
   .meta-row .v{font-weight:600;text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* target language selector */
-  .lang-field{margin-top:14px;}
+  .lang-field{margin-top:16px;}
   .lang-field label{
-    display:block;
-    font-family:var(--mono);
-    font-size:11px;
-    color:var(--text-dim);
-    margin-bottom:6px;
-    text-transform:uppercase;
-    letter-spacing:0.5px;
+    display:block;font-family:var(--mono);font-size:11px;color:var(--text-dim);
+    margin-bottom:7px;text-transform:uppercase;letter-spacing:0.6px;
   }
-  .lang-field select{
-    width:100%;
-    background:var(--panel-2);
-    border:1px solid var(--border);
-    border-radius:6px;
-    color:var(--text);
-    font-family:'Space Grotesk',sans-serif;
-    font-size:13px;
-    padding:9px 10px;
+  select, .num-input{
+    width:100%;background:var(--panel-2);
+    border:1px solid var(--border);border-radius:9px;
+    color:var(--text);font-family:var(--sans);font-size:13px;padding:10px 11px;
+    transition:border-color .2s, box-shadow .2s;
   }
-  .lang-field select:focus{outline:none;border-color:var(--accent);}
-  .lang-hint{font-size:11px;color:var(--text-faint);margin-top:6px;line-height:1.5;}
+  select:focus,.num-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.12);}
+  .lang-hint{font-size:11px;color:var(--text-faint);margin-top:7px;line-height:1.55;}
+
+  /* settings */
+  details.settings{
+    margin-top:16px;border:1px solid var(--border);border-radius:10px;
+    background:var(--panel-2);overflow:hidden;
+    transition:border-color .25s;
+  }
+  details.settings:hover{border-color:var(--accent);}
+  details.settings summary{
+    cursor:pointer;padding:11px 13px;
+    font-family:var(--mono);font-size:11px;letter-spacing:0.6px;
+    text-transform:uppercase;color:var(--text-dim);
+    list-style:none;display:flex;align-items:center;justify-content:space-between;
+    user-select:none;transition:color .2s;
+  }
+  details.settings summary:hover{color:var(--text);}
+  details.settings summary::-webkit-details-marker{display:none;}
+  details.settings summary::after{content:'+';font-size:15px;color:var(--text-faint);transition:transform .3s var(--ease-out);}
+  details.settings[open] summary::after{transform:rotate(45deg);color:var(--accent);}
+  .settings-grid{
+    padding:4px 13px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;
+    animation:fadeUp .35s var(--ease-out);
+  }
+  @media(max-width:480px){.settings-grid{grid-template-columns:1fr;}}
+  .setting-field label{
+    display:block;font-family:var(--mono);font-size:10px;color:var(--text-dim);
+    margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;
+  }
+  .setting-field .range-row{display:flex;align-items:center;gap:10px;}
+  input[type=range]{
+    flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:3px;
+    background:var(--border);outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--accent);cursor:pointer;border:2px solid var(--bg);
+    box-shadow:0 0 0 2px var(--accent);
+    transition:transform .15s, box-shadow .2s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 0 0 2px var(--accent), 0 0 12px rgba(91,141,239,.5);}
+  .range-val{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:44px;text-align:right;}
+  .range-pair{display:flex;gap:8px;align-items:center;}
+  .range-pair .num-input{padding:7px 8px;font-family:var(--mono);font-size:12px;}
+  .range-pair span{color:var(--text-faint);font-family:var(--mono);font-size:10px;}
 
   /* progress */
   .prog-track{
-    height:6px;background:var(--panel-2);
-    border-radius:4px;overflow:hidden;
-    border:1px solid var(--border);
+    height:9px;background:var(--panel-2);border-radius:7px;overflow:hidden;
+    border:1px solid var(--border);position:relative;
   }
   .prog-fill{
     height:100%;width:0%;
-    background:var(--accent);
-    transition:width .3s ease;
+    background:linear-gradient(90deg,var(--accent),var(--purple),var(--accent-2));
+    background-size:200% 100%;
+    animation:gradientShift 4s ease infinite;
+    transition:width .5s var(--ease-out);
+    position:relative;border-radius:7px;
+    box-shadow:0 0 10px rgba(91,141,239,0.4);
   }
+  .prog-fill.animating::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.32),transparent);
+    animation:shimmer 1.5s infinite;
+  }
+  @keyframes shimmer{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
   .prog-label{
     display:flex;justify-content:space-between;
-    font-family:var(--mono);
-    font-size:11px;color:var(--text-dim);
-    margin-top:8px;
+    font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:9px;gap:8px;flex-wrap:wrap;
   }
+  #etaText{color:var(--text-faint);}
 
-  /* chapter list */
-  .chap-list{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-top:16px;}
-  .chap-item-wrap{display:flex;flex-direction:column;}
+  /* stat chips */
+  .stat-chips{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
+  .chip{
+    font-family:var(--mono);font-size:10px;font-weight:600;
+    padding:5px 10px;border-radius:20px;border:1px solid var(--border);
+    color:var(--text-dim);background:var(--panel-2);
+    display:inline-flex;align-items:center;gap:5px;
+    transition:transform .25s var(--ease-out), box-shadow .25s;
+  }
+  .chip:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.18);}
+  .chip b{font-weight:700;}
+  .chip-done{color:var(--green);border-color:rgba(63,185,80,0.3);}
+  .chip-issue{color:var(--red);border-color:rgba(229,83,75,0.3);}
+  .chip-skip{color:var(--amber);border-color:rgba(210,153,34,0.3);}
+  .chip-words{color:var(--purple);border-color:rgba(163,113,247,0.3);}
+  .chip.bump{transform:scale(1.14);}
+
+  /* chapter toolbar */
+  .chap-toolbar{display:flex;gap:8px;margin-top:16px;}
+  .chap-search{
+    flex:1;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
+    color:var(--text);font-family:var(--sans);font-size:12.5px;padding:9px 11px;min-width:0;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .chap-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.12);}
+  .filter-btns{display:flex;gap:4px;flex-shrink:0;}
+  .filter-btn{
+    background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
+    color:var(--text-dim);font-family:var(--mono);font-size:10px;font-weight:600;
+    padding:0 11px;cursor:pointer;transition:all .2s var(--ease-out);
+  }
+  .filter-btn:hover{transform:translateY(-1px);border-color:var(--accent);}
+  .filter-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(91,141,239,0.08);box-shadow:0 2px 10px rgba(91,141,239,0.15);}
+
+  /* chapter list — content-visibility keeps RAM/CPU low for huge books */
+  .chap-list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-top:12px;padding-right:2px;}
+  .chap-item-wrap{
+    display:flex;flex-direction:column;
+    content-visibility:auto;
+    contain-intrinsic-size:auto 40px;
+  }
+  .chap-item-wrap.hidden{display:none;}
   .chap-list::-webkit-scrollbar{width:5px;}
   .chap-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
   .chap-item{
     display:flex;align-items:center;gap:10px;
-    background:var(--panel-2);
-    border:1px solid var(--border);
-    border-radius:6px;
-    padding:8px 10px;
-    font-size:12.5px;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
+    padding:9px 11px;font-size:12.5px;cursor:pointer;
+    transition:border-color .2s, background .2s, transform .2s var(--ease-out), box-shadow .2s;
   }
-  .chap-item.active{border-color:var(--accent);}
-  .chap-idx{
-    font-family:var(--mono);
-    font-size:10.5px;color:var(--text-faint);
-    min-width:24px;
+  .chap-item:hover{border-color:var(--accent);transform:translateX(3px);box-shadow:-3px 0 0 0 rgba(91,141,239,.35);}
+  .chap-item.active{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(91,141,239,0.14);
+    background:rgba(91,141,239,0.05);
   }
+  .chap-idx{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);min-width:24px;}
   .chap-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
   .chap-status{
-    font-family:var(--mono);
-    font-size:9.5px;font-weight:600;
-    padding:3px 8px;border-radius:4px;
-    text-transform:uppercase;letter-spacing:0.4px;
-    white-space:nowrap;
-    border:1px solid transparent;
+    font-family:var(--mono);font-size:9.5px;font-weight:600;
+    padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:0.4px;
+    white-space:nowrap;border:1px solid transparent;transition:all .3s var(--ease-out);
   }
   .st-pending{background:transparent;color:var(--text-faint);border-color:var(--border);}
-  .st-active{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);}
-  .st-done{background:rgba(63,185,80,0.12);color:var(--green);border-color:rgba(63,185,80,0.3);}
-  .st-retry{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);}
-  .st-unverified{background:rgba(229,83,75,0.12);color:var(--red);border-color:rgba(229,83,75,0.3);}
+  .st-active{
+    background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);
+    animation:pulseGlow 1.4s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(210,153,34,.25);}50%{opacity:0.6;box-shadow:0 0 8px 2px rgba(210,153,34,.15);}}
+  .st-done{background:rgba(63,185,80,0.12);color:var(--green);border-color:rgba(63,185,80,0.3);animation:statusPop .35s var(--ease-out);}
+  @keyframes statusPop{0%{transform:scale(.7);}60%{transform:scale(1.12);}100%{transform:scale(1);}}
+  .st-retry{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);animation:pulseGlow 1.4s infinite;}
+  .st-unverified{background:rgba(229,83,75,0.12);color:var(--red);border-color:rgba(229,83,75,0.3);animation:statusPop .35s var(--ease-out);}
   .st-skipped{background:rgba(139,147,161,0.12);color:var(--text-dim);border-color:var(--border);}
 
   /* live viewer */
+  .viewer-controls{display:flex;gap:4px;align-items:center;}
+  .vc-btn{
+    width:28px;height:28px;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:7px;color:var(--text-dim);font-family:var(--mono);font-size:11px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+    transition:all .2s var(--ease-out);
+  }
+  .vc-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-2px);}
+  .vc-btn:active{transform:scale(.92);}
+  #viewerLabel{
+    font-family:var(--mono);font-size:9.5px;color:var(--text-faint);
+    text-transform:none;letter-spacing:0;font-weight:400;
+  }
   #viewer{
-    background:#f4f2ed;
-    color:#1a1a1a;
-    border-radius:6px;
-    padding:16px;
-    min-height:140px;
-    max-height:340px;
-    overflow-y:auto;
-    font-size:13.5px;
-    line-height:1.7;
-    word-wrap:break-word;
+    background:var(--viewer-bg);color:var(--viewer-text);border-radius:10px;padding:20px;
+    min-height:140px;max-height:360px;overflow-y:auto;
+    font-size:13.5px;line-height:1.75;word-wrap:break-word;
     border:1px solid var(--border);
+    transition:font-size .15s, box-shadow .3s;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.04);
   }
   #viewer::-webkit-scrollbar{width:6px;}
   #viewer::-webkit-scrollbar-thumb{background:#c9c4b8;border-radius:6px;}
-  #viewer .ph{color:#8a8578;text-align:center;padding:36px 10px;font-size:12.5px;font-family:var(--mono);}
+  #viewer .ph{color:#8a8578;text-align:center;padding:38px 10px;font-size:12.5px;font-family:var(--mono);}
   #viewer p{margin:0 0 0.8em;}
   #viewer h1,#viewer h2,#viewer h3{margin:0.6em 0 0.4em;}
   #viewer img{max-width:100%;height:auto;}
 
   /* buttons */
   .btn{
-    width:100%;
-    padding:12px;
-    border:1px solid transparent;
-    border-radius:8px;
-    font-family:'Space Grotesk',sans-serif;
-    font-weight:600;
-    font-size:14px;
-    cursor:pointer;
-    transition:filter .15s;
+    width:100%;padding:14px;border:1px solid transparent;border-radius:11px;
+    font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;
+    transition:filter .15s, transform .15s var(--ease-out), box-shadow .25s;
+    position:relative;overflow:hidden;
   }
-  .btn:active{filter:brightness(0.92);}
-  .btn-primary{background:var(--accent);color:#08122a;}
-  .btn-primary:disabled{background:var(--panel-2);color:var(--text-faint);cursor:not-allowed;border-color:var(--border);}
-  .btn-ghost{
-    background:transparent;border:1px solid var(--border);color:var(--text);
-    margin-top:8px;
+  .btn:hover:not(:disabled){transform:translateY(-2px);}
+  .btn:active{filter:brightness(0.92);transform:scale(0.985);}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--accent),#4a7de0,var(--purple));
+    background-size:200% 200%;
+    animation:gradientShift 5s ease infinite;
+    color:#08122a;
+    box-shadow:0 4px 18px rgba(91,141,239,0.3);
   }
+  [data-theme="light"] .btn-primary{color:#fff;}
+  .btn-primary:hover:not(:disabled){box-shadow:0 8px 28px rgba(91,141,239,0.45);}
+  .btn-primary:disabled{background:var(--panel-2);color:var(--text-faint);cursor:not-allowed;border-color:var(--border);box-shadow:none;animation:none;transform:none;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);margin-top:8px;}
+  .btn-ghost:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(91,141,239,0.12);}
+  .btn-amber{background:rgba(210,153,34,0.1);color:var(--amber);border:1px solid rgba(210,153,34,0.35);margin-top:8px;}
+  .btn-amber:hover{box-shadow:0 4px 14px rgba(210,153,34,0.18);}
   .btn-danger{background:rgba(229,83,75,0.1);color:var(--red);border:1px solid rgba(229,83,75,0.35);margin-top:8px;}
+  .btn-danger:hover{box-shadow:0 4px 14px rgba(229,83,75,0.18);}
+  .btn-row{display:flex;gap:8px;}
+  .btn-row .btn{margin-top:8px;}
+
+  /* ripple (added via JS) */
+  .ripple-ink{
+    position:absolute;border-radius:50%;pointer-events:none;
+    background:rgba(255,255,255,0.35);
+    transform:scale(0);animation:rippleGo .55s ease-out forwards;
+  }
+  [data-theme="light"] .btn-ghost .ripple-ink,
+  [data-theme="light"] .filter-btn .ripple-ink{background:rgba(53,103,214,0.18);}
+  @keyframes rippleGo{to{transform:scale(3.2);opacity:0;}}
 
   .note-box{
-    display:flex;gap:10px;
-    background:var(--panel-2);
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:12px;
-    font-size:12px;
-    line-height:1.55;
-    color:var(--text-dim);
-    margin-top:12px;
+    display:flex;gap:10px;background:var(--panel-2);border:1px solid var(--border);
+    border-radius:10px;padding:13px;font-size:12px;line-height:1.6;color:var(--text-dim);margin-top:14px;
   }
-  .note-box .ic{font-family:var(--mono);color:var(--accent);font-size:12px;flex-shrink:0;padding-top:1px;font-weight:600;}
+  .note-box .ic{
+    font-family:var(--mono);color:var(--accent);font-size:11px;flex-shrink:0;font-weight:700;
+    width:18px;height:18px;border:1px solid rgba(91,141,239,.4);border-radius:50%;
+    display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  kbd{
+    font-family:var(--mono);font-size:10px;background:var(--bg);
+    border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:1px 5px;color:var(--text-dim);
+  }
 
   .log-box{
-    font-family:var(--mono);
-    font-size:11px;
-    margin-top:12px;
-    max-height:130px;
-    overflow-y:auto;
-    display:none;
-    border-top:1px solid var(--border);
-    padding-top:10px;
+    font-family:var(--mono);font-size:11px;margin-top:14px;max-height:150px;
+    overflow-y:auto;display:none;border-top:1px solid var(--border);padding-top:10px;
   }
-  .log-line{color:var(--text-faint);padding:2px 0;}
+  .log-line{color:var(--text-faint);padding:2px 0;animation:logIn .25s ease;}
+  @keyframes logIn{from{opacity:0;transform:translateX(-6px);}to{opacity:1;transform:none;}}
   .log-line.ok{color:var(--green);}
   .log-line.err{color:var(--red);}
   .log-line.warn{color:var(--amber);}
 
   .footer-note{
     text-align:center;font-size:10.5px;color:var(--text-faint);
-    margin-top:8px;padding:12px;font-family:var(--mono);
+    margin-top:10px;padding:14px;font-family:var(--mono);line-height:1.9;
   }
+  .footer-note .dot{color:var(--border);margin:0 6px;}
 
   /* ---------- CHAPTER EDITOR ---------- */
-  .panel-sub{
-    font-size:12px;color:var(--text-dim);line-height:1.5;
-    margin:-6px 0 14px;
-  }
-  .editor-list{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+  .panel-sub{font-size:12px;color:var(--text-dim);line-height:1.55;margin:-6px 0 16px;}
+  .editor-list{max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px;}
   .editor-list::-webkit-scrollbar{width:5px;}
   .editor-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
   .editor-row{
     display:flex;align-items:center;gap:8px;
-    background:var(--panel-2);
-    border:1px solid var(--border);
-    border-radius:6px;
-    padding:8px;
+    background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:9px;
+    transition:border-color .2s, opacity .25s, box-shadow .2s, transform .2s var(--ease-out);
+    content-visibility:auto;
+    contain-intrinsic-size:auto 58px;
   }
-  .editor-row.excluded{opacity:0.45;}
-  .editor-pos{
-    font-family:var(--mono);
-    font-size:10.5px;color:var(--text-faint);
-    min-width:20px;text-align:center;
+  .editor-row:hover{border-color:var(--accent);}
+  .editor-row.excluded{opacity:0.4;}
+  .editor-row.dragging{opacity:0.35;border-style:dashed;transform:scale(.99);}
+  .editor-row.drop-target{border-color:var(--accent);box-shadow:0 0 0 2px rgba(91,141,239,0.2);transform:translateY(-1px);}
+  .drag-handle{
+    cursor:grab;color:var(--text-faint);font-size:13px;padding:0 2px;
+    flex-shrink:0;user-select:none;letter-spacing:-2px;font-family:var(--mono);
+    transition:color .2s;
   }
+  .editor-row:hover .drag-handle{color:var(--accent);}
+  .drag-handle:active{cursor:grabbing;}
+  .editor-pos{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);min-width:20px;text-align:center;}
+  .editor-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .editor-title-input{
-    flex:1;
-    background:var(--bg);
-    border:1px solid var(--border);
-    border-radius:5px;
-    color:var(--text);
-    font-family:'Space Grotesk',sans-serif;
-    font-size:12.5px;
-    padding:7px 9px;
-    min-width:0;
+    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;
+    color:var(--text);font-family:var(--sans);font-size:12.5px;padding:7px 9px;min-width:0;
+    transition:border-color .2s, box-shadow .2s;
   }
-  .editor-title-input:focus{outline:none;border-color:var(--accent);}
+  .editor-title-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.1);}
   .editor-title-input:disabled{color:var(--text-faint);cursor:not-allowed;}
+  .editor-wc{font-family:var(--mono);font-size:9px;color:var(--text-faint);padding-left:2px;}
   .editor-controls{display:flex;gap:3px;flex-shrink:0;}
   .editor-btn{
-    width:26px;height:26px;
-    background:var(--bg);
-    border:1px solid var(--border);
-    border-radius:5px;
-    color:var(--text-dim);
-    font-family:var(--mono);
-    font-size:12px;
-    cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    padding:0;
+    width:27px;height:27px;background:var(--bg);border:1px solid var(--border);border-radius:7px;
+    color:var(--text-dim);font-family:var(--mono);font-size:12px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    transition:all .18s var(--ease-out);
   }
-  .editor-btn:hover{border-color:var(--accent);color:var(--text);}
-  .editor-btn:disabled{opacity:0.3;cursor:not-allowed;}
+  .editor-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-1px);}
+  .editor-btn:active{transform:scale(.9);}
+  .editor-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
   .editor-btn.toggle-off{color:var(--red);border-color:rgba(229,83,75,0.35);}
+  .editor-footer{display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .editor-footer-group{display:flex;gap:6px;flex-wrap:wrap;}
+  .mini-btn{
+    background:transparent;border:1px solid var(--border);border-radius:7px;
+    color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:6px 11px;cursor:pointer;
+    transition:all .2s var(--ease-out);
+  }
+  .mini-btn:hover{color:var(--text);border-color:var(--accent);transform:translateY(-1px);box-shadow:0 3px 10px rgba(91,141,239,.12);}
+
+  /* find & replace */
+  .fnr{
+    margin-top:14px;border:1px solid var(--border);border-radius:10px;
+    background:var(--panel-2);overflow:hidden;transition:border-color .25s;
+  }
+  .fnr:hover{border-color:var(--accent);}
+  .fnr summary{
+    cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:11px;
+    letter-spacing:0.6px;text-transform:uppercase;color:var(--text-dim);
+    list-style:none;display:flex;justify-content:space-between;user-select:none;
+    transition:color .2s;
+  }
+  .fnr summary:hover{color:var(--text);}
+  .fnr summary::-webkit-details-marker{display:none;}
+  .fnr summary::after{content:'+';font-size:15px;color:var(--text-faint);transition:transform .3s var(--ease-out);}
+  .fnr[open] summary::after{transform:rotate(45deg);color:var(--accent);}
+  .fnr-body{padding:4px 13px 15px;display:flex;flex-direction:column;gap:8px;animation:fadeUp .35s var(--ease-out);}
+  .fnr-row{display:flex;gap:8px;}
+  .fnr-row input[type=text]{
+    flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;
+    color:var(--text);font-family:var(--sans);font-size:12.5px;padding:9px 11px;min-width:0;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  .fnr-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.1);}
+  .fnr-opts{display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--text-dim);flex-wrap:wrap;}
+  .fnr-opts label{display:flex;align-items:center;gap:5px;cursor:pointer;}
+  .fnr-apply{
+    background:var(--accent);color:#08122a;border:none;border-radius:8px;
+    font-family:var(--sans);font-weight:600;font-size:12px;padding:9px 15px;cursor:pointer;
+    transition:transform .18s var(--ease-out), box-shadow .25s;
+  }
+  .fnr-apply:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(91,141,239,.35);}
+  .fnr-apply:active{transform:scale(.96);}
+  [data-theme="light"] .fnr-apply{color:#fff;}
+  .fnr-hint{font-size:10.5px;color:var(--text-faint);line-height:1.55;}
 
   /* ---------- EXPORT TABS ---------- */
-  .export-tabs{
-    display:flex;gap:6px;margin-bottom:12px;
-  }
+  .export-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
+  @media(max-width:480px){.export-tabs{grid-template-columns:repeat(2,1fr);}}
   .export-tab{
-    flex:1;
-    padding:9px;
-    background:var(--panel-2);
-    border:1px solid var(--border);
-    border-radius:6px;
-    color:var(--text-dim);
-    font-family:var(--mono);
-    font-size:11.5px;
-    font-weight:600;
-    cursor:pointer;
-    text-align:center;
+    padding:10px 4px;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
+    color:var(--text-dim);font-family:var(--mono);font-size:11px;font-weight:600;
+    cursor:pointer;text-align:center;transition:all .2s var(--ease-out);
+    position:relative;overflow:hidden;
   }
+  .export-tab:hover{border-color:var(--accent);transform:translateY(-2px);}
   .export-tab.active{
-    border-color:var(--accent);
-    color:var(--accent);
-    background:rgba(91,141,239,0.08);
+    border-color:var(--accent);color:var(--accent);background:rgba(91,141,239,0.08);
+    box-shadow:0 4px 14px rgba(91,141,239,0.18);
   }
 
-  /* ---------- GLOBAL ERROR BANNER ---------- */
+  /* ---------- GLOBAL BANNERS ---------- */
   .global-banner{
-    display:none;
-    border-radius:10px;
-    padding:14px 16px;
-    margin-bottom:14px;
-    font-size:12.5px;
-    line-height:1.55;
+    display:none;border-radius:var(--radius);padding:15px 17px;margin-bottom:16px;
+    font-size:12.5px;line-height:1.6;animation:panelIn .35s var(--ease-out);
   }
   .global-banner.show{display:block;}
-  .global-banner.error{
-    background:rgba(229,83,75,0.1);
-    border:1px solid rgba(229,83,75,0.4);
-    color:var(--text);
-  }
-  .global-banner.warn{
-    background:rgba(210,153,34,0.1);
-    border:1px solid rgba(210,153,34,0.4);
-    color:var(--text);
-  }
-  .global-banner.info{
-    background:rgba(91,141,239,0.08);
-    border:1px solid rgba(91,141,239,0.35);
-    color:var(--text);
-  }
+  .global-banner.error{background:rgba(229,83,75,0.1);border:1px solid rgba(229,83,75,0.4);color:var(--text);}
+  .global-banner.warn{background:rgba(210,153,34,0.1);border:1px solid rgba(210,153,34,0.4);color:var(--text);}
+  .global-banner.info{background:rgba(91,141,239,0.08);border:1px solid rgba(91,141,239,0.35);color:var(--text);}
   .global-banner-head{
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
     font-weight:700;font-family:var(--mono);font-size:11.5px;
@@ -410,85 +684,128 @@
   .global-banner.warn .global-banner-head{color:var(--amber);}
   .global-banner.info .global-banner-head{color:var(--accent);}
   .banner-dismiss{
-    background:none;border:none;color:var(--text-faint);
-    cursor:pointer;font-family:var(--mono);font-size:13px;
-    padding:0;line-height:1;flex-shrink:0;
+    background:none;border:none;color:var(--text-faint);cursor:pointer;
+    font-family:var(--mono);font-size:13px;padding:0;line-height:1;flex-shrink:0;
+    transition:color .2s, transform .2s;
   }
-  .banner-dismiss:hover{color:var(--text);}
-  .banner-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .banner-dismiss:hover{color:var(--text);transform:rotate(90deg);}
+  .banner-actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;}
   .banner-btn{
-    padding:7px 12px;
-    border-radius:6px;
-    font-family:'Space Grotesk',sans-serif;
-    font-size:12px;font-weight:600;
-    cursor:pointer;border:1px solid var(--border);
-    background:var(--panel-2);color:var(--text);
+    padding:8px 13px;border-radius:8px;font-family:var(--sans);font-size:12px;font-weight:600;
+    cursor:pointer;border:1px solid var(--border);background:var(--panel-2);color:var(--text);
+    transition:all .2s var(--ease-out);
   }
+  .banner-btn:hover{border-color:var(--accent);transform:translateY(-1px);}
   .banner-btn.primary{background:var(--accent);color:#08122a;border-color:var(--accent);}
+  [data-theme="light"] .banner-btn.primary{color:#fff;}
   .banner-detail{
-    margin-top:8px;font-family:var(--mono);font-size:10.5px;
-    color:var(--text-faint);white-space:pre-wrap;word-break:break-word;
+    margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--text-faint);
+    white-space:pre-wrap;word-break:break-word;
   }
   .banner-detail summary{cursor:pointer;color:var(--text-dim);}
 
   /* ---------- DIFF / COMPARE VIEW ---------- */
   .compare-toggle{
-    background:none;border:1px solid var(--border);
-    color:var(--text-faint);font-family:var(--mono);
-    font-size:9.5px;padding:3px 7px;border-radius:4px;
-    cursor:pointer;white-space:nowrap;flex-shrink:0;
+    background:none;border:1px solid var(--border);color:var(--text-faint);
+    font-family:var(--mono);font-size:9.5px;padding:3px 8px;border-radius:6px;
+    cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s var(--ease-out);
   }
-  .compare-toggle:hover{color:var(--text);border-color:var(--accent);}
-  .compare-panel{
-    display:none;
-    margin-top:6px;margin-bottom:2px;
-    border:1px solid var(--border);
-    border-radius:8px;
-    overflow:hidden;
-  }
-  .compare-panel.show{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
-  @media (max-width:560px){
-    .compare-panel.show{grid-template-columns:1fr;}
-  }
-  .compare-col{background:var(--panel-2);padding:10px;max-height:220px;overflow-y:auto;}
+  .compare-toggle:hover{color:var(--text);border-color:var(--accent);transform:translateY(-1px);}
+  .compare-panel{display:none;margin-top:6px;margin-bottom:2px;border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+  .compare-panel.show{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);animation:panelIn .3s var(--ease-out);}
+  @media (max-width:560px){.compare-panel.show{grid-template-columns:1fr;}}
+  .compare-col{background:var(--panel-2);padding:11px;max-height:220px;overflow-y:auto;}
   .compare-col-label{
-    font-family:var(--mono);font-size:9.5px;font-weight:700;
-    text-transform:uppercase;letter-spacing:0.5px;color:var(--text-faint);
-    margin-bottom:6px;
+    font-family:var(--mono);font-size:9.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:0.5px;color:var(--text-faint);margin-bottom:6px;
   }
-  .compare-col-text{font-size:12px;line-height:1.6;color:var(--text-dim);white-space:pre-wrap;}
+  .compare-col-text{font-size:12px;line-height:1.65;color:var(--text-dim);white-space:pre-wrap;}
   .compare-col-text.translated{color:var(--text);}
 
+  /* ---------- TOASTS ---------- */
+  #toastWrap{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;gap:8px;z-index:9999;
+    width:min(400px, calc(100vw - 32px));pointer-events:none;
+  }
+  .toast{
+    background:var(--panel);border:1px solid var(--border);border-radius:11px;
+    padding:12px 15px;font-size:12.5px;color:var(--text);
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;
+    animation:toastIn .35s var(--ease-out);pointer-events:auto;
+    backdrop-filter:blur(8px);
+  }
+  .toast.out{animation:toastOut .3s ease forwards;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.96);}to{opacity:1;transform:none;}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(10px) scale(.97);}}
+  .toast .t-ic{font-family:var(--mono);font-weight:700;font-size:12px;flex-shrink:0;}
+  .toast.ok .t-ic{color:var(--green);}
+  .toast.err .t-ic{color:var(--red);}
+  .toast.info .t-ic{color:var(--accent);}
+  .toast.warn .t-ic{color:var(--amber);}
+
+  /* sticky mini progress */
+  #stickyProg{
+    position:fixed;top:0;left:0;right:0;height:3px;z-index:9998;
+    background:transparent;pointer-events:none;opacity:0;transition:opacity .3s;
+  }
+  #stickyProg.on{opacity:1;}
+  #stickyProg .bar{
+    height:100%;width:0%;
+    background:linear-gradient(90deg,var(--accent),var(--purple));
+    transition:width .45s ease;
+    box-shadow:0 0 8px rgba(91,141,239,.6);
+  }
+
   @media (prefers-reduced-motion: reduce){
-    *{transition:none !important;}
+    *{transition:none !important;animation:none !important;}
+    html{scroll-behavior:auto;}
+    .fade-up{opacity:1;}
   }
 </style>
 </head>
 <body>
+<div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
+<div id="stickyProg" aria-hidden="true"><div class="bar" id="stickyBar"></div></div>
+<div id="toastWrap" aria-live="polite"></div>
+
 <div class="shell">
 
   <div id="globalBanner" class="global-banner"></div>
   <div id="resumeBanner" class="global-banner info"></div>
 
-  <header class="app-header">
-    <div class="tag">Browser-Based &middot; Chapter Verified</div>
-    <h1>Document Translation Verifier</h1>
-    <p>Upload an EPUB, PDF, DOCX, or TXT file, enable Chrome's built-in translation, and this tool confirms each chapter actually translated before saving — no partial or missed chapters.</p>
+  <header class="app-header fade-up">
+    <div class="brand-row">
+      <div class="brand-mark">DT</div>
+      <div>
+        <div class="tag">Browser-Based &middot; Chapter Verified &middot; Pro</div>
+        <h1>Document Translation Verifier</h1>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" title="Toggle light/dark theme" aria-label="Toggle theme">&#9788;</button>
+      </div>
+    </div>
+    <p>Upload an EPUB, PDF, DOCX, or TXT file, enable Chrome's built-in translation, and this tool confirms each chapter actually translated before saving — no partial or missed chapters. With pause/resume, live ETA, chapter ranges, find &amp; replace, session backup, and 4 export formats. Optimized to run smoothly even on low-RAM devices.</p>
     <nav class="flow-strip" aria-label="Steps">
       <span class="flow-step"><b>1</b> Upload</span>
+      <span class="flow-arrow" aria-hidden="true">&#8594;</span>
       <span class="flow-step"><b>2</b> Enable Translate</span>
-      <span class="flow-step"><b>3</b> Verify &amp; Export</span>
+      <span class="flow-arrow" aria-hidden="true">&#8594;</span>
+      <span class="flow-step"><b>3</b> Verify</span>
+      <span class="flow-arrow" aria-hidden="true">&#8594;</span>
+      <span class="flow-step"><b>4</b> Export</span>
     </nav>
   </header>
 
   <!-- UPLOAD -->
-  <section class="panel" id="upload-section">
+  <section class="panel fade-up d1" id="upload-section">
     <div class="panel-head">
       <span class="panel-label">Source File</span>
       <span class="panel-num">01</span>
     </div>
     <label class="drop" id="dropZone">
       <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt">
+      <span class="drop-icon">&#128218;</span>
       <span class="drop-label">Select or drop a document</span>
       <span class="drop-sub">.epub &middot; .pdf &middot; .docx &middot; .txt</span>
     </label>
@@ -497,6 +814,7 @@
     <div id="metaBox" style="display:none;margin-top:14px;">
       <div class="meta-row"><span class="k">TITLE</span><span class="v" id="mTitle">—</span></div>
       <div class="meta-row"><span class="k">CHAPTERS</span><span class="v" id="mChapters">—</span></div>
+      <div class="meta-row"><span class="k">EST. WORDS</span><span class="v" id="mWords">—</span></div>
       <div class="meta-row"><span class="k">STATUS</span><span class="v" id="mStatus">Loaded</span></div>
     </div>
 
@@ -508,6 +826,69 @@
         <option value="latin">Latin-script language (French, Spanish, German…)</option>
       </select>
       <div class="lang-hint">Pick "Latin-script" if you're translating to a language that uses the same alphabet as English — the tool can't rely on a script change to confirm those, so it uses a stricter text-difference check instead.</div>
+
+      <details class="settings" id="settingsBox">
+        <summary>Advanced settings</summary>
+        <div class="settings-grid">
+          <div class="setting-field">
+            <label for="setTimeout">Verify timeout per chapter</label>
+            <div class="range-row">
+              <input type="range" id="setTimeout" min="4" max="25" step="1" value="8">
+              <span class="range-val" id="setTimeoutVal">8s</span>
+            </div>
+          </div>
+          <div class="setting-field">
+            <label for="setRetries">Max retries per chapter</label>
+            <div class="range-row">
+              <input type="range" id="setRetries" min="1" max="4" step="1" value="2">
+              <span class="range-val" id="setRetriesVal">2</span>
+            </div>
+          </div>
+          <div class="setting-field">
+            <label for="setGap">Delay between chapters</label>
+            <div class="range-row">
+              <input type="range" id="setGap" min="0" max="4000" step="250" value="500">
+              <span class="range-val" id="setGapVal">0.5s</span>
+            </div>
+          </div>
+          <div class="setting-field">
+            <label for="setScroll">Auto-scroll speed</label>
+            <div class="range-row">
+              <input type="range" id="setScroll" min="80" max="500" step="20" value="200">
+              <span class="range-val" id="setScrollVal">200ms</span>
+            </div>
+          </div>
+          <div class="setting-field">
+            <label for="rangeFrom">Chapter range (from – to)</label>
+            <div class="range-pair">
+              <input type="number" class="num-input" id="rangeFrom" min="1" value="1" aria-label="From chapter">
+              <span>&ndash;</span>
+              <input type="number" class="num-input" id="rangeTo" min="1" value="1" aria-label="To chapter">
+            </div>
+          </div>
+          <div class="setting-field">
+            <label for="setSound">Completion sound</label>
+            <select id="setSound" class="num-input" style="padding:6px 10px;">
+              <option value="on">On</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+          <div class="setting-field">
+            <label for="setNotify">Desktop notification</label>
+            <select id="setNotify" class="num-input" style="padding:6px 10px;">
+              <option value="on">On (when tab hidden)</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+          <div class="setting-field">
+            <label for="setMemSaver">Memory saver</label>
+            <select id="setMemSaver" class="num-input" style="padding:6px 10px;">
+              <option value="on">On (recommended)</option>
+              <option value="off">Off (full compare text)</option>
+            </select>
+          </div>
+        </div>
+      </details>
     </div>
 
     <div id="parseWarnings" class="global-banner warn" style="margin-top:12px;margin-bottom:0;"></div>
@@ -516,13 +897,31 @@
   <!-- CHAPTERS + PROGRESS -->
   <section class="panel" id="chapPanel" style="display:none;">
     <div class="panel-head">
-      <span class="panel-label">Chapters</span>
+      <span class="panel-label">Chapters <span class="saved-pill" id="savedPill">auto-saved</span></span>
       <span class="panel-num">02</span>
     </div>
     <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
     <div class="prog-label">
       <span id="progText">0 / 0 completed</span>
+      <span id="etaText"></span>
       <span id="progPercent">0%</span>
+    </div>
+    <div class="stat-chips" id="statChips">
+      <span class="chip chip-done">&#10003; <b id="statDone">0</b> verified</span>
+      <span class="chip chip-issue">&#9888; <b id="statIssue">0</b> unverified</span>
+      <span class="chip chip-skip">&#8631; <b id="statSkip">0</b> skipped</span>
+      <span class="chip"><b id="statPending">0</b> pending</span>
+      <span class="chip chip-words"><b id="statWords">0</b> words out</span>
+      <span class="chip"><b id="statReadTime">0m</b> read time</span>
+    </div>
+    <div class="chap-toolbar">
+      <input class="chap-search" id="chapFilter" type="search" placeholder="Filter chapters&hellip;" aria-label="Filter chapters">
+      <div class="filter-btns" id="statusFilters">
+        <button class="filter-btn active" data-f="all">All</button>
+        <button class="filter-btn" data-f="pending">Pending</button>
+        <button class="filter-btn" data-f="done">Done</button>
+        <button class="filter-btn" data-f="issues">Issues</button>
+      </div>
     </div>
     <div class="chap-list" id="chapList"></div>
   </section>
@@ -530,9 +929,14 @@
   <!-- LIVE VIEWER -->
   <section class="panel" id="viewerPanel" style="display:none;">
     <div class="panel-head">
-      <span class="panel-label">Current Chapter Preview</span>
+      <span class="panel-label">Preview <span id="viewerLabel"></span></span>
+      <div class="viewer-controls">
+        <button class="vc-btn" id="fontMinus" title="Smaller text" aria-label="Decrease font size">A-</button>
+        <button class="vc-btn" id="fontPlus" title="Larger text" aria-label="Increase font size">A+</button>
+        <button class="vc-btn" id="copyViewer" title="Copy visible text" aria-label="Copy visible text">&#10697;</button>
+      </div>
     </div>
-    <div id="viewer"><div class="ph">Content will appear here once translation starts</div></div>
+    <div id="viewer"><div class="ph">Click a chapter to preview it, or start the run to watch live</div></div>
   </section>
 
   <!-- ACTION -->
@@ -542,12 +946,17 @@
       <span class="panel-num">03</span>
     </div>
     <button class="btn btn-primary" id="startBtn" disabled>Start Verified Translation</button>
-    <button class="btn btn-ghost" id="skipBtn" style="display:none;">Skip Current Chapter</button>
-    <button class="btn btn-danger" id="stopBtn" style="display:none;">Stop</button>
+    <div class="btn-row">
+      <button class="btn btn-amber" id="pauseBtn" style="display:none;">Pause</button>
+      <button class="btn btn-ghost" id="skipBtn" style="display:none;">Skip Chapter</button>
+      <button class="btn btn-danger" id="stopBtn" style="display:none;">Stop</button>
+    </div>
+    <button class="btn btn-ghost" id="retryFailedBtn" style="display:none;">Retry Unverified / Skipped Chapters</button>
 
     <div class="note-box">
       <div class="ic">i</div>
-      <div>Turn on Chrome's translation (menu icon in the address bar, or right-click &rarr; Translate) before starting. Each chapter is scrolled and checked for translated text — if none is detected within the timeout, it retries automatically once before moving on.</div>
+      <div>Turn on Chrome's translation (menu icon in the address bar, or right-click &rarr; Translate) before starting. Each chapter is scrolled and checked for translated text — if none is detected within the timeout, it retries automatically before moving on.<br>
+      Shortcuts: <kbd>S</kbd> start &middot; <kbd>P</kbd> pause &middot; <kbd>K</kbd> skip &middot; <kbd>Esc</kbd> stop</div>
     </div>
 
     <div id="logBox" class="log-box"></div>
@@ -559,58 +968,109 @@
       <span class="panel-label">Review &amp; Arrange</span>
       <span class="panel-num">04</span>
     </div>
-    <p class="panel-sub">Rename chapters or change their order. This only affects the exported files — nothing is re-translated.</p>
+    <p class="panel-sub">Rename chapters, drag <span style="font-family:var(--mono);">&#8942;&#8942;</span> to reorder, or exclude chapters. This only affects the exported files — nothing is re-translated.</p>
     <div class="editor-list" id="editorList"></div>
+
+    <details class="fnr" id="fnrBox">
+      <summary>Find &amp; Replace (clean up translated text)</summary>
+      <div class="fnr-body">
+        <div class="fnr-row">
+          <input type="text" id="fnrFind" placeholder="Find text&hellip;" aria-label="Find text">
+          <input type="text" id="fnrReplace" placeholder="Replace with&hellip;" aria-label="Replace with">
+        </div>
+        <div class="fnr-opts">
+          <label><input type="checkbox" id="fnrCase"> Match case</label>
+          <span id="fnrPreview" style="font-family:var(--mono);font-size:10.5px;"></span>
+          <button class="fnr-apply" id="fnrApplyBtn" style="margin-left:auto;">Replace All</button>
+        </div>
+        <div class="fnr-hint">Applies across all included chapters' translated text. Useful for fixing recurring mistranslations, names, or formatting artifacts. Changes are auto-saved and reflected in every export format.</div>
+      </div>
+    </details>
+
+    <div class="editor-footer">
+      <div class="editor-footer-group">
+        <button class="mini-btn" id="backupExportBtn" title="Save all progress as a .json file">&#8681; Backup .json</button>
+        <button class="mini-btn" id="backupImportBtn" title="Restore progress from a backup file">&#8683; Restore backup</button>
+        <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none;">
+      </div>
+      <button class="mini-btn" id="resetOrderBtn">Reset original order</button>
+    </div>
   </section>
 
   <!-- DOWNLOAD -->
   <section class="panel" id="downloadPanel" style="display:none;">
     <div class="panel-head">
       <span class="panel-label">Export</span>
+      <span class="panel-num">05</span>
     </div>
     <div class="meta-row"><span class="k">TRANSLATED</span><span class="v" id="dDone">0</span></div>
     <div class="meta-row"><span class="k">SKIPPED / UNVERIFIED</span><span class="v" id="dSkipped">0</span></div>
+    <div class="meta-row"><span class="k">WORDS</span><span class="v" id="dWords">0</span></div>
 
-    <div class="export-tabs" id="exportTabs">
-      <button class="export-tab active" data-mode="txt">Text (.zip)</button>
-      <button class="export-tab" data-mode="epub">EPUB (.epub)</button>
+    <div class="export-tabs" id="exportTabs" style="margin-top:12px;">
+      <button class="export-tab active" data-mode="txt">TXT .zip</button>
+      <button class="export-tab" data-mode="epub">EPUB</button>
+      <button class="export-tab" data-mode="md">Markdown</button>
+      <button class="export-tab" data-mode="html">HTML</button>
     </div>
 
     <button class="btn btn-primary" id="downloadBtn">Download ZIP (per-chapter + combined .txt)</button>
-    <div class="note-box" id="epubNote" style="display:none;">
-      <div class="ic">i</div>
-      <div>Repackages translated chapters into a standard EPUB3 container with a generated table of contents, using the titles and order set above. Opens in any e-reader (Apple Books, Calibre, Kindle after conversion, etc.).</div>
-    </div>
+    <div class="note-box" id="exportNote" style="display:none;"><div class="ic">i</div><div id="exportNoteText"></div></div>
   </section>
 
-  <p class="footer-note">All processing happens locally in your browser. No file is uploaded to a server.</p>
+  <p class="footer-note fade-up d2">
+    All processing happens locally in your browser<span class="dot">&bull;</span>No file is uploaded to a server<span class="dot">&bull;</span>Progress auto-saves so you can resume anytime
+  </p>
 
 </div>
 
 <script>
 "use strict";
-/* ============ STATE ============ */
+/* ================================================================
+   DOCUMENT TRANSLATION VERIFIER — PRO
+   Single-file app. Sections:
+   1. State & DOM refs          6. Parsing (EPUB/PDF/DOCX/TXT)
+   2. Theme                     7. Chapter list (low-RAM render)
+   3. Settings                  8. Translate-verify core & main loop
+   4. Toasts / sound / wakelock 9. Editor, Find&Replace, Backup
+   5. Sessions (IndexedDB)     10. Exports (ZIP/EPUB/MD/HTML)
+   11. UI polish (ripple micro-interactions)
+   ================================================================ */
+
+/* ============ 1. STATE ============ */
 let book = null;
 let currentFile = null;
 let chapters = [];
 let currentIdx = -1;
 let running = false;
+let paused = false;
 let stopRequested = false;
-let skipRequested = false;      // FIX: skip now cooperatively interrupts the current wait
+let skipRequested = false;
 let exportOrder = [];
 let bookLang = 'en';
 let sessionKey = null;
 let idbAvailable = true;
 let consecutiveVerifyFailures = 0;
-let verifyMode = 'auto';        // auto | script | latin (from target language dropdown)
+let verifyMode = 'auto';        // auto | script | latin
+let statusFilter = 'all';
+let textFilter = '';
+let runStartTime = 0;
+let runTimer = null;
+let chapterDurations = [];      // capped ring buffer for ETA
+let wakeLock = null;
+let exportMode = 'txt';
+const BASE_TITLE = document.title;
+const MAX_LOG_LINES = 150;      // low-RAM: cap log DOM nodes
+const MAX_DURATION_SAMPLES = 40;
+const ORIG_SNIPPET = 4000;      // low-RAM: cap stored original text (memory saver mode)
 
 const el = id => document.getElementById(id);
 
-const fileInput  = el('epubFile');
+const fileInput = el('epubFile');
 const dropZone = el('dropZone');
 const fileNameShow = el('fileNameShow');
 const metaBox = el('metaBox');
-const mTitle = el('mTitle'), mChapters = el('mChapters'), mStatus = el('mStatus');
+const mTitle = el('mTitle'), mChapters = el('mChapters'), mStatus = el('mStatus'), mWords = el('mWords');
 const langField = el('langField');
 const targetLang = el('targetLang');
 const parseWarnings = el('parseWarnings');
@@ -619,26 +1079,182 @@ const chapList = el('chapList');
 const progFill = el('progFill');
 const progText = el('progText');
 const progPercent = el('progPercent');
+const etaText = el('etaText');
 const viewerPanel = el('viewerPanel');
 const viewer = el('viewer');
+const viewerLabel = el('viewerLabel');
 const actionPanel = el('actionPanel');
 const startBtn = el('startBtn');
+const pauseBtn = el('pauseBtn');
 const skipBtn = el('skipBtn');
 const stopBtn = el('stopBtn');
+const retryFailedBtn = el('retryFailedBtn');
 const logBox = el('logBox');
 const downloadPanel = el('downloadPanel');
 const dDone = el('dDone');
 const dSkipped = el('dSkipped');
+const dWords = el('dWords');
 const downloadBtn = el('downloadBtn');
 const editorPanel = el('editorPanel');
 const editorList = el('editorList');
 const exportTabs = el('exportTabs');
-const epubNote = el('epubNote');
+const exportNote = el('exportNote');
+const exportNoteText = el('exportNoteText');
 const globalBanner = el('globalBanner');
 const resumeBanner = el('resumeBanner');
-let exportMode = 'txt';
+const savedPill = el('savedPill');
+const stickyProg = el('stickyProg');
+const stickyBar = el('stickyBar');
+const rangeFrom = el('rangeFrom');
+const rangeTo = el('rangeTo');
 
-targetLang.addEventListener('change', ()=>{ verifyMode = targetLang.value; });
+targetLang.addEventListener('change', ()=>{ verifyMode = targetLang.value; saveSettings(); });
+
+/* ============ 2. THEME ============ */
+const THEME_KEY = 'dtv_theme';
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  el('themeToggle').innerHTML = t === 'dark' ? '&#9788;' : '&#9789;';
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if(metaTheme) metaTheme.content = t === 'dark' ? '#0b0f14' : '#f2f4f8';
+  try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+}
+el('themeToggle').addEventListener('click', ()=>{
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+});
+try{
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if(savedTheme === 'light' || savedTheme === 'dark') applyTheme(savedTheme);
+}catch(e){}
+
+/* ============ 3. SETTINGS ============ */
+const SETTINGS_KEY = 'dtv_settings_v3';
+const settings = {
+  timeoutMs: 8000, maxRetries: 2, gapMs: 500,
+  scrollMs: 200, sound: 'on', notify: 'on', memSaver: 'on'
+};
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      if(typeof s.timeoutMs === 'number') settings.timeoutMs = s.timeoutMs;
+      if(typeof s.maxRetries === 'number') settings.maxRetries = s.maxRetries;
+      if(typeof s.gapMs === 'number') settings.gapMs = s.gapMs;
+      if(typeof s.scrollMs === 'number') settings.scrollMs = s.scrollMs;
+      if(s.sound) settings.sound = s.sound;
+      if(s.notify) settings.notify = s.notify;
+      if(s.memSaver) settings.memSaver = s.memSaver;
+      if(s.verifyMode){ verifyMode = s.verifyMode; targetLang.value = s.verifyMode; }
+    }
+  }catch(e){}
+  el('setTimeout').value = Math.round(settings.timeoutMs/1000);
+  el('setRetries').value = settings.maxRetries;
+  el('setGap').value = settings.gapMs;
+  el('setScroll').value = settings.scrollMs;
+  el('setSound').value = settings.sound;
+  el('setNotify').value = settings.notify;
+  el('setMemSaver').value = settings.memSaver;
+  refreshSettingLabels();
+}
+function saveSettings(){
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify({...settings, verifyMode})); }catch(e){}
+}
+function refreshSettingLabels(){
+  el('setTimeoutVal').textContent = Math.round(settings.timeoutMs/1000) + 's';
+  el('setRetriesVal').textContent = settings.maxRetries;
+  el('setGapVal').textContent = (settings.gapMs/1000).toFixed(2).replace(/\.?0+$/,'') + 's';
+  el('setScrollVal').textContent = settings.scrollMs + 'ms';
+}
+el('setTimeout').addEventListener('input', e=>{ settings.timeoutMs = parseInt(e.target.value,10)*1000; refreshSettingLabels(); saveSettings(); });
+el('setRetries').addEventListener('input', e=>{ settings.maxRetries = parseInt(e.target.value,10); refreshSettingLabels(); saveSettings(); });
+el('setGap').addEventListener('input', e=>{ settings.gapMs = parseInt(e.target.value,10); refreshSettingLabels(); saveSettings(); });
+el('setScroll').addEventListener('input', e=>{ settings.scrollMs = parseInt(e.target.value,10); refreshSettingLabels(); saveSettings(); });
+el('setSound').addEventListener('change', e=>{ settings.sound = e.target.value; saveSettings(); });
+el('setNotify').addEventListener('change', e=>{ settings.notify = e.target.value; saveSettings(); });
+el('setMemSaver').addEventListener('change', e=>{ settings.memSaver = e.target.value; saveSettings(); });
+loadSettings();
+
+function clampRangeInputs(){
+  const n = chapters.length || 1;
+  let from = parseInt(rangeFrom.value, 10) || 1;
+  let to = parseInt(rangeTo.value, 10) || n;
+  from = Math.min(Math.max(1, from), n);
+  to = Math.min(Math.max(from, to), n);
+  rangeFrom.value = from; rangeTo.value = to;
+  return {from, to};
+}
+rangeFrom.addEventListener('change', clampRangeInputs);
+rangeTo.addEventListener('change', clampRangeInputs);
+
+/* ============ 4. TOASTS / SOUND / NOTIFY / WAKELOCK ============ */
+const toastWrap = el('toastWrap');
+function showToast(msg, type='info', ms=2800){
+  const icons = {ok:'\u2713', err:'\u2715', info:'i', warn:'!'};
+  // low-RAM: never allow more than 4 toasts at once
+  while(toastWrap.children.length >= 4) toastWrap.firstChild.remove();
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<span class="t-ic">${icons[type]||'i'}</span><span></span>`;
+  t.lastElementChild.textContent = msg;
+  toastWrap.appendChild(t);
+  setTimeout(()=>{
+    t.classList.add('out');
+    setTimeout(()=>t.remove(), 320);
+  }, ms);
+}
+
+function playChime(){
+  if(settings.sound !== 'on') return;
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523.25, 659.25, 783.99];
+    notes.forEach((f, i)=>{
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0, ctx.currentTime + i*0.12);
+      g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + i*0.12 + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i*0.12 + 0.5);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + i*0.12);
+      o.stop(ctx.currentTime + i*0.12 + 0.55);
+    });
+    setTimeout(()=>ctx.close().catch(()=>{}), 1500);
+  }catch(e){}
+}
+
+function requestNotifyPermission(){
+  if(settings.notify !== 'on' || !('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    try{ Notification.requestPermission().catch(()=>{}); }catch(e){}
+  }
+}
+function notifyDone(msg){
+  if(settings.notify !== 'on' || !('Notification' in window)) return;
+  if(document.visibilityState === 'visible') return; // only when tab hidden
+  if(Notification.permission === 'granted'){
+    try{
+      const n = new Notification('Translation run finished', {body: msg, tag:'dtv-done'});
+      n.onclick = ()=>{ window.focus(); n.close(); };
+    }catch(e){}
+  }
+}
+
+async function acquireWakeLock(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
+  }catch(e){}
+}
+function releaseWakeLock(){
+  if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock = null; }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(running && document.visibilityState === 'visible' && !wakeLock) acquireWakeLock();
+});
 
 /* ============ GLOBAL BANNER ============ */
 function showBanner(node, {level='error', title, message, detail, actions=[]}){
@@ -661,11 +1277,7 @@ function showBanner(node, {level='error', title, message, detail, actions=[]}){
   node._actionHandlers = {};
   actions.forEach(a => node._actionHandlers[a.id] = a.onClick);
 }
-
-function hideBanner(node){
-  node.classList.remove('show');
-  node.innerHTML = '';
-}
+function hideBanner(node){ node.classList.remove('show'); node.innerHTML = ''; }
 
 document.addEventListener('click', (e)=>{
   const dismissBtn = e.target.closest('[data-banner-dismiss]');
@@ -696,6 +1308,9 @@ window.addEventListener('unhandledrejection', (e)=>{
     e.reason && e.reason.stack ? e.reason.stack : String(e.reason)
   );
 });
+window.addEventListener('beforeunload', (e)=>{
+  if(running){ e.preventDefault(); e.returnValue = ''; }
+});
 
 /* ============ STARTUP DEPENDENCY CHECK ============ */
 const LIB_STATUS = {
@@ -704,7 +1319,6 @@ const LIB_STATUS = {
   pdf:     typeof pdfjsLib !== 'undefined',
   mammoth: typeof mammoth !== 'undefined',
 };
-
 function checkStartupDependencies(){
   const missingLabels = [];
   if(!LIB_STATUS.jszip)   missingLabels.push('JSZip — needed for ZIP and EPUB export');
@@ -728,7 +1342,7 @@ function requireLib(globalCheck, formatLabel){
   return true;
 }
 
-/* ============ INDEXEDDB LAYER ============ */
+/* ============ 5. INDEXEDDB SESSIONS ============ */
 const IDB_NAME = 'docTranslatorDB';
 const IDB_STORE = 'sessions';
 let idbHandle = null;
@@ -787,34 +1401,49 @@ function computeSessionKey(fileName, fileSize, chapterCount){
   return `${fileName}::${fileSize}::${chapterCount}`;
 }
 
-/* FIX: coalesced saving — never silently drop the latest state. If a save
-   is in flight, we mark that another is pending and re-run when it finishes. */
+function buildSessionPayload(){
+  return {
+    key: sessionKey,
+    savedAt: Date.now(),
+    bookTitle: mTitle.textContent,
+    bookLang,
+    exportOrder,
+    chapters: chapters.map(c=>({
+      title: c.title,
+      status: c.status,
+      text: c.text,
+      originalText: c.originalText || '',
+      retries: c.retries,
+      excluded: !!c.excluded
+    }))
+  };
+}
+
+/* Coalesced + debounced save — low-RAM & low-IO, never drops the latest state */
 let saveInFlight = false;
 let savePending = false;
-async function saveSessionProgress(){
+let savedPillTimer = null;
+let saveDebounce = null;
+
+function saveSessionProgress(){
+  if(!sessionKey || !idbAvailable) return;
+  clearTimeout(saveDebounce);
+  saveDebounce = setTimeout(doSave, 600);
+}
+async function doSave(){
   if(!sessionKey || !idbAvailable) return;
   if(saveInFlight){ savePending = true; return; }
   saveInFlight = true;
   try{
-    const payload = {
-      key: sessionKey,
-      savedAt: Date.now(),
-      bookTitle: mTitle.textContent,
-      bookLang,
-      exportOrder,
-      chapters: chapters.map(c=>({
-        title: c.title,
-        status: c.status,
-        text: c.text,
-        originalText: c.originalText || '',
-        retries: c.retries,
-        excluded: !!c.excluded
-      }))
-    };
-    await idbPut(payload);
+    const ok = await idbPut(buildSessionPayload());
+    if(ok){
+      savedPill.classList.add('flash');
+      clearTimeout(savedPillTimer);
+      savedPillTimer = setTimeout(()=>savedPill.classList.remove('flash'), 1400);
+    }
   } finally {
     saveInFlight = false;
-    if(savePending){ savePending = false; saveSessionProgress(); }
+    if(savePending){ savePending = false; doSave(); }
   }
 }
 async function clearSessionProgress(){
@@ -835,7 +1464,7 @@ async function checkForResumableSession(bookTitle, fileSize, chapterCount){
     message: `A previous session for this file has ${doneCount} of ${saved.chapters.length} chapters already translated (saved ${new Date(saved.savedAt).toLocaleString()}).`,
     actions: [
       { id:'resume', label:'Resume', primary:true, onClick: ()=>applyResumedSession(saved) },
-      { id:'discard', label:'Start Fresh', onClick: ()=>{ clearSessionProgress(); hideBanner(resumeBanner); } }
+      { id:'discard', label:'Start Fresh', onClick: ()=>{ clearSessionProgress(); hideBanner(resumeBanner); showToast('Previous session discarded', 'info'); } }
     ]
   });
 }
@@ -854,18 +1483,18 @@ function applyResumedSession(saved){
     exportOrder = saved.exportOrder.slice();
   }
   renderChapterList();
-  updateProgress();
+  requestProgressUpdate();
   hideBanner(resumeBanner);
   refreshDownloadSummary();
+  showToast('Progress restored — continue from where you left off', 'ok');
 }
 
-/* ============ FILE UPLOAD & DRAG-DROP ============ */
+/* ============ 6. FILE UPLOAD & PARSING ============ */
 fileInput.addEventListener('change', function(e){
   const file = e.target.files[0];
   if(file) handleFile(file);
 });
 
-/* FIX: full drag & drop support */
 ['dragenter','dragover'].forEach(ev=>{
   dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.add('dragover'); });
 });
@@ -879,16 +1508,21 @@ dropZone.addEventListener('drop', (e)=>{
 
 function resetForNewFile(file){
   currentFile = file;
+  // low-RAM: explicitly free the previous book & chapter payloads
+  if(book && book.destroy){ try{ book.destroy(); }catch(e){} }
   book = null;
   chapters = [];
   currentIdx = -1;
   exportOrder = [];
   consecutiveVerifyFailures = 0;
-  fileNameShow.style.display = 'block';
-  fileNameShow.textContent = file.name + '  (' + formatBytes(file.size) + ')';
+  chapterDurations = [];
+  document.title = BASE_TITLE;
+  fileNameShow.style.display = 'flex';
+  fileNameShow.textContent = file ? ('\u2713 ' + file.name + '  (' + formatBytes(file.size) + ')') : '';
   mStatus.textContent = 'Extracting\u2026';
   mTitle.textContent = '—';
   mChapters.textContent = '—';
+  mWords.textContent = '—';
   metaBox.style.display = 'block';
   parseWarnings.classList.remove('show');
   parseWarnings.innerHTML = '';
@@ -900,11 +1534,19 @@ function resetForNewFile(file){
   editorPanel.style.display = 'none';
   downloadPanel.style.display = 'none';
   langField.style.display = 'none';
+  retryFailedBtn.style.display = 'none';
   startBtn.disabled = true;
   startBtn.textContent = 'Start Verified Translation';
-  viewer.innerHTML = '<div class="ph">Content will appear here once translation starts</div>';
+  viewer.innerHTML = '<div class="ph">Click a chapter to preview it, or start the run to watch live</div>';
+  viewerLabel.textContent = '';
   logBox.innerHTML = '';
   logBox.style.display = 'none';
+  chapList.innerHTML = '';
+  editorList.innerHTML = '';
+  el('chapFilter').value = '';
+  textFilter = '';
+  statusFilter = 'all';
+  document.querySelectorAll('#statusFilters .filter-btn').forEach(b=>b.classList.toggle('active', b.dataset.f==='all'));
 }
 
 function handleFile(file){
@@ -923,6 +1565,31 @@ function formatBytes(b){
   if(b < 1048576) return (b/1024).toFixed(1) + ' KB';
   return (b/1048576).toFixed(1) + ' MB';
 }
+function formatNum(n){ return n.toLocaleString('en-US'); }
+function wordCount(s){
+  const t = (s||'').trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+
+function estimateSourceWords(){
+  // best-effort: count words in html chapters (epub items load lazily → skip those)
+  let total = 0, counted = 0;
+  const tmp = document.createElement('div'); // low-RAM: reuse one node
+  chapters.forEach(c=>{
+    if(c.html){
+      tmp.innerHTML = c.html;
+      total += wordCount(tmp.textContent);
+      counted++;
+    }
+  });
+  tmp.innerHTML = '';
+  if(counted === 0) return null;
+  if(counted < chapters.length){
+    total = Math.round(total / counted * chapters.length);
+    return '~' + formatNum(total);
+  }
+  return formatNum(total);
+}
 
 function finishLoadingChapters(bookTitle, lang){
   mTitle.textContent = bookTitle;
@@ -939,15 +1606,21 @@ function finishLoadingChapters(bookTitle, lang){
     return;
   }
 
+  const est = estimateSourceWords();
+  mWords.textContent = est || '—';
+
   mStatus.textContent = 'Ready';
   exportOrder = chapters.map((c,i)=>i);
+  rangeFrom.max = chapters.length; rangeTo.max = chapters.length;
+  rangeFrom.value = 1; rangeTo.value = chapters.length;
   renderChapterList();
   chapPanel.style.display = 'block';
   viewerPanel.style.display = 'block';
   actionPanel.style.display = 'block';
   langField.style.display = 'block';
   startBtn.disabled = false;
-  updateProgress();
+  requestProgressUpdate();
+  showToast(`Loaded ${chapters.length} chapter${chapters.length>1?'s':''}`, 'ok');
 
   const fileSize = currentFile ? currentFile.size : 0;
   checkForResumableSession(bookTitle, fileSize, chapters.length);
@@ -971,7 +1644,6 @@ function parseEpubFile(file){
       chapters = [];
       let skippedCount = 0;
 
-      // FIX: use spineItems array when available (more reliable across epub.js versions)
       const spineArr = (book.spine && Array.isArray(book.spine.spineItems))
         ? book.spine.spineItems
         : null;
@@ -1035,13 +1707,12 @@ function parsePdfFile(file){
     mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
   };
   reader.onload = async function(event){
+    let pdf = null;
     try{
-      // FIX: derive worker URL from the loaded library version to avoid API/worker mismatch
       const pdfVersion = pdfjsLib.version || '3.11.174';
       pdfjsLib.GlobalWorkerOptions.workerSrc =
         `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfVersion}/pdf.worker.min.js`;
 
-      let pdf;
       try{
         pdf = await pdfjsLib.getDocument({data: event.target.result}).promise;
       }catch(loadErr){
@@ -1071,7 +1742,10 @@ function parsePdfFile(file){
             index: p-1, title: 'Page ' + p, item: null, html: html || '<p></p>',
             status: 'pending', text: '', originalText: '', retries: 0, excluded: false
           });
+          // low-RAM: free page resources as we go
+          if(page.cleanup) try{ page.cleanup(); }catch(e){}
         }catch(pageErr){ failedPageCount++; }
+        if(p % 25 === 0) mStatus.textContent = `Extracting\u2026 page ${p}/${pdf.numPages}`;
       }
 
       if(pdf.numPages > 0 && emptyPageCount / pdf.numPages > 0.6){
@@ -1084,6 +1758,9 @@ function parsePdfFile(file){
     }catch(err){
       mStatus.textContent = 'Error: could not read this PDF';
       showGlobalError('Could not read PDF', 'This file could not be parsed as a PDF — it may be corrupted or not a valid PDF despite the extension.', (err.message||'') + (err.stack ? '\n' + err.stack : ''));
+    }finally{
+      // low-RAM: destroy the pdf.js worker & document once text is extracted
+      if(pdf && pdf.destroy){ try{ pdf.destroy(); }catch(e){} }
     }
   };
   reader.readAsArrayBuffer(file);
@@ -1140,6 +1817,7 @@ function parseDocxFile(file){
       container.innerHTML = result.value;
 
       const sections = splitHtmlOnHeadings(container);
+      container.innerHTML = ''; // low-RAM: release detached DOM
       chapters = sections.map((sec, i)=>({
         index: i, title: sec.title || ('Section ' + (i+1)), item: null, html: sec.html,
         status: 'pending', text: '', originalText: '', retries: 0, excluded: false
@@ -1253,15 +1931,18 @@ function parseTxtFile(file){
   reader.readAsText(file);
 }
 
-/* ============ RENDER CHAPTER LIST ============ */
+/* ============ 7. CHAPTER LIST (low-RAM render) ============ */
 function renderChapterList(){
   chapList.innerHTML = '';
+  const frag = document.createDocumentFragment(); // low-RAM/CPU: single reflow
   chapters.forEach((c, i)=>{
     const wrap = document.createElement('div');
     wrap.className = 'chap-item-wrap';
+    wrap.id = 'chap-wrap-'+i;
     const row = document.createElement('div');
     row.className = 'chap-item' + (i===currentIdx ? ' active' : '');
     row.id = 'chap-row-'+i;
+    row.dataset.idx = i;
     row.innerHTML = `
       <span class="chap-idx">${String(i+1).padStart(2,'0')}</span>
       <span class="chap-name">${escapeHtml(c.title)}</span>
@@ -1273,29 +1954,91 @@ function renderChapterList(){
     panel.id = 'compare-panel-'+i;
     wrap.appendChild(row);
     wrap.appendChild(panel);
-    chapList.appendChild(wrap);
-    // Restore compare button visibility for resumed/finished chapters
+    frag.appendChild(wrap);
     if(c.status === 'done' || c.status === 'unverified'){
       const t = row.querySelector('.compare-toggle');
       if(t && (c.originalText || c.text)) t.style.display = 'inline-block';
     }
   });
+  chapList.appendChild(frag);
+  applyChapterFilters();
 }
 
-chapList.addEventListener('click', (e)=>{
-  const btn = e.target.closest('.compare-toggle');
-  if(!btn) return;
-  toggleComparePanel(parseInt(btn.dataset.idx, 10));
+/* ---- filter/search (debounced for big books) ---- */
+let filterDebounce = null;
+el('chapFilter').addEventListener('input', (e)=>{
+  clearTimeout(filterDebounce);
+  filterDebounce = setTimeout(()=>{
+    textFilter = e.target.value.trim().toLowerCase();
+    applyChapterFilters();
+  }, 120);
 });
+el('statusFilters').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.filter-btn');
+  if(!btn) return;
+  statusFilter = btn.dataset.f;
+  document.querySelectorAll('#statusFilters .filter-btn').forEach(b=>b.classList.toggle('active', b===btn));
+  applyChapterFilters();
+});
+
+function matchesStatusFilter(c){
+  if(statusFilter === 'all') return true;
+  if(statusFilter === 'pending') return c.status === 'pending' || c.status === 'active' || c.status === 'retry';
+  if(statusFilter === 'done') return c.status === 'done';
+  if(statusFilter === 'issues') return c.status === 'unverified' || c.status === 'skipped';
+  return true;
+}
+function applyChapterFilters(){
+  chapters.forEach((c, i)=>{
+    const wrap = el('chap-wrap-'+i);
+    if(!wrap) return;
+    const textOk = !textFilter || c.title.toLowerCase().includes(textFilter);
+    wrap.classList.toggle('hidden', !(textOk && matchesStatusFilter(c)));
+  });
+}
+
+/* ---- click: compare toggle or preview ---- */
+chapList.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('.compare-toggle');
+  if(btn){ toggleComparePanel(parseInt(btn.dataset.idx, 10)); return; }
+  const row = e.target.closest('.chap-item');
+  if(row && !running){
+    await previewChapter(parseInt(row.dataset.idx, 10));
+  }
+});
+
+async function previewChapter(i){
+  const c = chapters[i];
+  if(!c) return;
+  viewerLabel.textContent = `— ${c.title}` + (c.text && c.text.trim() ? ' (translated)' : ' (original)');
+  if(c.text && c.text.trim()){
+    viewer.innerHTML = c.text.split(/\n+/).filter(p=>p.trim()).map(p=>`<p>${escapeHtml(p)}</p>`).join('');
+  } else {
+    try{
+      const html = await loadChapterHtml(c);
+      viewer.innerHTML = html || '<div class="ph">Empty chapter content</div>';
+    }catch(err){
+      viewer.innerHTML = '<div class="ph">Could not load this chapter</div>';
+    }
+  }
+  viewer.scrollTop = 0;
+  viewerPanel.scrollIntoView({block:'nearest', behavior:'smooth'});
+}
 
 function toggleComparePanel(i){
   const c = chapters[i];
   const panel = el('compare-panel-'+i);
   if(!panel) return;
-  if(panel.classList.contains('show')){ panel.classList.remove('show'); return; }
+  if(panel.classList.contains('show')){
+    panel.classList.remove('show');
+    panel.innerHTML = ''; // low-RAM: free compare DOM when closed
+    return;
+  }
+  // low-RAM: only one compare panel open at a time
+  document.querySelectorAll('.compare-panel.show').forEach(p=>{ p.classList.remove('show'); p.innerHTML=''; });
   panel.innerHTML = `
     <div class="compare-col">
-      <div class="compare-col-label">Original</div>
+      <div class="compare-col-label">Original${settings.memSaver==='on' && (c.originalText||'').length >= ORIG_SNIPPET ? ' (first part)' : ''}</div>
       <div class="compare-col-text">${escapeHtml(c.originalText || '(not captured)')}</div>
     </div>
     <div class="compare-col">
@@ -1320,7 +2063,8 @@ function setChapterStatus(i, status){
     badge.className = 'chap-status ' + statusClass(status);
     badge.textContent = statusLabel(status);
   }
-  document.querySelectorAll('.chap-item').forEach(x=>x.classList.remove('active'));
+  const prevActive = chapList.querySelector('.chap-item.active');
+  if(prevActive) prevActive.classList.remove('active');
   const row = el('chap-row-'+i);
   if(row && status==='active') row.classList.add('active');
 
@@ -1329,52 +2073,123 @@ function setChapterStatus(i, status){
     const canCompare = (status==='done' || status==='unverified' || status==='skipped') && !!(chapters[i].originalText || chapters[i].text);
     toggle.style.display = canCompare ? 'inline-block' : 'none';
   }
-  updateProgress();
+  requestProgressUpdate();
+  applyChapterFilters();
   saveSessionProgress();
 }
 
+function bumpChip(id){
+  const chip = el(id).closest('.chip');
+  chip.classList.add('bump');
+  setTimeout(()=>chip.classList.remove('bump'), 250);
+}
+
+/* low-RAM/CPU: progress updates batched into one rAF frame */
+let progressRafQueued = false;
+function requestProgressUpdate(){
+  if(progressRafQueued) return;
+  progressRafQueued = true;
+  requestAnimationFrame(()=>{
+    progressRafQueued = false;
+    updateProgress();
+  });
+}
+
 function updateProgress(){
-  // FIX: count both verified done + unverified/skipped as "processed" for the bar,
-  // but progText clarifies verified vs total.
   const verified = chapters.filter(c=>c.status==='done').length;
-  const processed = chapters.filter(c=>['done','unverified','skipped'].includes(c.status)).length;
+  const unverified = chapters.filter(c=>c.status==='unverified').length;
+  const skipped = chapters.filter(c=>c.status==='skipped').length;
+  const processed = verified + unverified + skipped;
   const total = chapters.length;
   const pct = total ? Math.round((processed/total)*100) : 0;
   progFill.style.width = pct + '%';
+  stickyBar.style.width = pct + '%';
   progText.textContent = `${verified} verified / ${total} chapters`;
   progPercent.textContent = pct + '%';
+
+  if(running){
+    document.title = `${pct}% \u00b7 Translating\u2026 — DTV Pro`;
+  }
+
+  const words = chapters.reduce((sum,c)=> sum + (c.text ? wordCount(c.text) : 0), 0);
+  if(el('statDone').textContent !== String(verified)){ el('statDone').textContent = verified; bumpChip('statDone'); }
+  el('statIssue').textContent = unverified;
+  el('statSkip').textContent = skipped;
+  el('statPending').textContent = total - processed;
+  el('statWords').textContent = formatNum(words);
+  el('statReadTime').textContent = words > 0 ? formatDuration(Math.round(words/200)*60000) : '0m';
+
+  updateEta(processed, total);
+}
+
+function updateEta(processed, total){
+  if(!running || chapterDurations.length === 0){
+    if(!running) etaText.textContent = '';
+    return;
+  }
+  const avg = chapterDurations.reduce((a,b)=>a+b,0) / chapterDurations.length;
+  const remaining = chapters.filter(c=>!['done','unverified','skipped'].includes(c.status)).length;
+  const etaMs = avg * remaining;
+  const elapsed = Date.now() - runStartTime;
+  etaText.textContent = `elapsed ${formatDuration(elapsed)} \u00b7 ~${formatDuration(etaMs)} left`;
+}
+
+function recordDuration(ms){
+  chapterDurations.push(ms);
+  if(chapterDurations.length > MAX_DURATION_SAMPLES) chapterDurations.shift();
+}
+
+function formatDuration(ms){
+  const s = Math.round(ms/1000);
+  if(s < 60) return s + 's';
+  const m = Math.floor(s/60);
+  const rs = s % 60;
+  if(m < 60) return m + 'm ' + (rs ? rs + 's' : '');
+  return Math.floor(m/60) + 'h ' + (m%60) + 'm';
 }
 
 function escapeHtml(s){
-  const d = document.createElement('div');
-  d.textContent = (s == null) ? '' : s;
-  return d.innerHTML;
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function log(msg, type=''){
   logBox.style.display = 'block';
   const line = document.createElement('div');
   line.className = 'log-line ' + type;
-  line.textContent = msg;
+  const ts = new Date().toLocaleTimeString([], {hour12:false});
+  line.textContent = `[${ts}] ${msg}`;
   logBox.appendChild(line);
+  // low-RAM: cap the number of log DOM nodes
+  while(logBox.children.length > MAX_LOG_LINES) logBox.firstChild.remove();
   logBox.scrollTop = logBox.scrollHeight;
 }
 
-/* ============ TRANSLATE-VERIFY CORE ============ */
-/*
-  Chrome translates visible text nodes in place but fires no completion
-  event. We poll node.innerText and decide "translated" based on the
-  chosen verifyMode:
-    - script: rendered text now contains non-Latin script chars
-    - latin : rendered text differs substantially from the original
-              after a settle window (word-overlap heuristic)
-    - auto  : script check OR substantial difference
-*/
+/* ============ VIEWER CONTROLS ============ */
+let viewerFontSize = 13.5;
+el('fontMinus').addEventListener('click', ()=>{
+  viewerFontSize = Math.max(11, viewerFontSize - 1);
+  viewer.style.fontSize = viewerFontSize + 'px';
+});
+el('fontPlus').addEventListener('click', ()=>{
+  viewerFontSize = Math.min(21, viewerFontSize + 1);
+  viewer.style.fontSize = viewerFontSize + 'px';
+});
+el('copyViewer').addEventListener('click', async ()=>{
+  try{
+    await navigator.clipboard.writeText(viewer.innerText || '');
+    showToast('Copied to clipboard', 'ok');
+  }catch(e){
+    showToast('Copy failed — your browser blocked clipboard access', 'err');
+  }
+});
+
+/* ============ 8. TRANSLATE-VERIFY CORE ============ */
 function containsNonLatinScript(str){
   return /[\u0900-\u097F\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF\u0400-\u04FF\u0600-\u06FF\u0E00-\u0E7F]/.test(str);
 }
 
-// Rough measure of how different two strings are (0 = identical, 1 = totally different)
 function textDivergence(a, b){
   a = (a||'').trim(); b = (b||'').trim();
   if(!a && !b) return 0;
@@ -1395,19 +2210,16 @@ function isTranslated(rendered, originalText, elapsed){
     return containsNonLatinScript(now);
   }
   if(verifyMode === 'latin'){
-    // require the text to differ meaningfully AND to have settled a bit
     return elapsed > 2500 && textDivergence(originalText, now) > 0.35;
   }
-  // auto
   if(containsNonLatinScript(now)) return true;
   return elapsed > 2800 && textDivergence(originalText, now) > 0.4;
 }
 
-function waitForTranslation(node, originalText, timeoutMs=8000){
+function waitForTranslation(node, originalText, timeoutMs){
   return new Promise((resolve)=>{
     const start = Date.now();
     const check = setInterval(()=>{
-      // FIX: allow Skip / Stop to interrupt the wait immediately
       if(skipRequested || stopRequested){
         clearInterval(check);
         resolve({success:false, interrupted:true, text: node.innerText || ''});
@@ -1438,35 +2250,55 @@ async function autoScrollNode(node){
       node.scrollTop = pos;
       pos += step;
       if(pos >= height){ clearInterval(timer); node.scrollTop = 0; resolve(); }
-    }, 200);
+    }, settings.scrollMs);
   });
 }
 
 async function loadChapterHtml(c){
   if(c.item){
-    try{
-      if(c.item.document && c.item.document.body){
-        return c.item.document.body.innerHTML;
-      }
-      await c.item.load(book.load.bind(book));
-      if(c.item.document && c.item.document.body){
-        return c.item.document.body.innerHTML;
-      }
-      return '';
-    }catch(err){
-      throw err;
+    if(c.item.document && c.item.document.body){
+      return c.item.document.body.innerHTML;
     }
+    await c.item.load(book.load.bind(book));
+    if(c.item.document && c.item.document.body){
+      return c.item.document.body.innerHTML;
+    }
+    return '';
   }
   return c.html || '';
+}
+
+/* low-RAM: release the epub chapter DOM once we've captured the text */
+function unloadChapterItem(c){
+  if(c.item && typeof c.item.unload === 'function'){
+    try{ c.item.unload(); }catch(e){}
+  }
+}
+
+function storeOriginal(c, fullText){
+  // memory saver keeps a snippet big enough for the compare view + divergence sampling
+  c.originalText = (settings.memSaver === 'on' && fullText.length > ORIG_SNIPPET)
+    ? fullText.slice(0, ORIG_SNIPPET)
+    : fullText;
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+async function waitWhilePaused(){
+  while(paused && !stopRequested){
+    await sleep(250);
+  }
 }
 
 async function processChapter(i){
   const c = chapters[i];
   currentIdx = i;
-  skipRequested = false; // reset per chapter
+  skipRequested = false;
+  const t0 = Date.now();
   setChapterStatus(i, 'active');
   const row = el('chap-row-'+i);
   if(row) row.scrollIntoView({block:'nearest', behavior:'smooth'});
+  viewerLabel.textContent = `— ${c.title} (live)`;
   log(`Loading chapter ${i+1}: ${c.title}`);
 
   let html = '';
@@ -1477,13 +2309,16 @@ async function processChapter(i){
   }
 
   viewer.innerHTML = html || '<div class="ph">Empty chapter content</div>';
+  html = null; // low-RAM: drop reference immediately
   const originalText = viewer.innerText;
-  c.originalText = originalText;
+  storeOriginal(c, originalText);
+  unloadChapterItem(c);
 
   if(!originalText.trim()){
     c.text = '';
     setChapterStatus(i, 'skipped');
     log(`Chapter ${i+1} was empty, marked skipped.`, 'warn');
+    recordDuration(Date.now()-t0);
     return true;
   }
 
@@ -1494,20 +2329,21 @@ async function processChapter(i){
     setChapterStatus(i, 'skipped');
     log(`Chapter ${i+1} manually skipped.`, 'warn');
     skipRequested = false;
+    recordDuration(Date.now()-t0);
     return true;
   }
   if(stopRequested) return true;
 
   log(`Verifying translation for chapter ${i+1}\u2026`);
-  const result = await waitForTranslation(viewer, originalText, 8000);
+  const result = await waitForTranslation(viewer, originalText, settings.timeoutMs);
 
   if(result.interrupted){
     if(stopRequested) return true;
-    // skip
     c.text = result.text;
     setChapterStatus(i, 'skipped');
     log(`Chapter ${i+1} manually skipped.`, 'warn');
     skipRequested = false;
+    recordDuration(Date.now()-t0);
     return true;
   }
 
@@ -1516,56 +2352,78 @@ async function processChapter(i){
     setChapterStatus(i, 'done');
     log(`Chapter ${i+1} verified (${result.text.length} chars).`, 'ok');
     consecutiveVerifyFailures = 0;
+    recordDuration(Date.now()-t0);
     return true;
   } else {
     c.retries += 1;
-    if(c.retries < 2){
+    if(c.retries < settings.maxRetries){
       setChapterStatus(i, 'retry');
-      log(`Chapter ${i+1} — no translation detected, retrying (${c.retries})\u2026`, 'warn');
-      await new Promise(r=>setTimeout(r, 1200));
+      log(`Chapter ${i+1} — no translation detected, retrying (${c.retries}/${settings.maxRetries})\u2026`, 'warn');
+      await sleep(1200);
       if(stopRequested || skipRequested){
-        // treat as skip
         c.text = viewer.innerText;
         setChapterStatus(i, skipRequested ? 'skipped' : 'unverified');
         skipRequested = false;
+        recordDuration(Date.now()-t0);
         return true;
       }
       return await processChapter(i);
     } else {
       c.text = result.text;
-      setChapterStatus(i, 'unverified'); // FIX: distinct "unverified" state, not fake "done"
+      setChapterStatus(i, 'unverified');
       log(`Chapter ${i+1} — translation not verified, saving available text as-is.`, 'err');
       consecutiveVerifyFailures++;
+      recordDuration(Date.now()-t0);
       return false;
     }
   }
 }
 
 /* ============ MAIN LOOP ============ */
-startBtn.addEventListener('click', async ()=>{
+async function runTranslation(){
   if(running) return;
+  const range = clampRangeInputs();
   running = true;
+  paused = false;
   stopRequested = false;
   skipRequested = false;
   consecutiveVerifyFailures = 0;
+  chapterDurations = [];
+  runStartTime = Date.now();
   startBtn.style.display = 'none';
   stopBtn.style.display = 'block';
   skipBtn.style.display = 'block';
+  pauseBtn.style.display = 'block';
+  pauseBtn.textContent = 'Pause';
+  retryFailedBtn.style.display = 'none';
   logBox.innerHTML = '';
   logBox.style.display = 'block';
   hideBanner(globalBanner);
+  progFill.classList.add('animating');
+  stickyProg.classList.add('on');
+  acquireWakeLock();
+  requestNotifyPermission();
 
-  log(`Starting (mode: ${verifyMode}). Confirm Chrome translation is enabled.`);
+  runTimer = setInterval(()=>{
+    const processed = chapters.filter(c=>['done','unverified','skipped'].includes(c.status)).length;
+    updateEta(processed, chapters.length);
+  }, 1000);
 
-  for(let i=0; i<chapters.length; i++){
+  const rangeNote = (range.from > 1 || range.to < chapters.length)
+    ? ` Range: chapters ${range.from}\u2013${range.to}.` : '';
+  log(`Starting (mode: ${verifyMode}, timeout: ${Math.round(settings.timeoutMs/1000)}s, retries: ${settings.maxRetries}).${rangeNote} Confirm Chrome translation is enabled.`);
+
+  for(let i=range.from-1; i<range.to; i++){
+    if(stopRequested){ log('Stopped by user.', 'warn'); break; }
+    await waitWhilePaused();
     if(stopRequested){ log('Stopped by user.', 'warn'); break; }
     if(chapters[i].status === 'done' && chapters[i].text && chapters[i].text.trim()){
-      continue; // already verified in a resumed/previous run
+      continue;
     }
+    chapters[i].retries = 0;
     const verified = await processChapter(i);
 
     if(verified === false && consecutiveVerifyFailures >= 2){
-      // pause and ask the user
       await new Promise(resolve=>{
         showBanner(globalBanner, {
           level: 'warn',
@@ -1578,30 +2436,86 @@ startBtn.addEventListener('click', async ()=>{
         });
       });
     }
+    if(settings.gapMs && !stopRequested) await sleep(settings.gapMs);
   }
 
   running = false;
+  paused = false;
+  clearInterval(runTimer);
+  releaseWakeLock();
+  progFill.classList.remove('animating');
+  stickyProg.classList.remove('on');
   startBtn.style.display = 'block';
   stopBtn.style.display = 'none';
   skipBtn.style.display = 'none';
+  pauseBtn.style.display = 'none';
   startBtn.textContent = 'Run Again (remaining chapters)';
   currentIdx = -1;
+  document.title = BASE_TITLE;
 
   refreshDownloadSummary();
   const doneCount = chapters.filter(c=>c.status==='done' && c.text.trim()).length;
-  log(`Complete — ${doneCount}/${chapters.length} chapters verified.`, doneCount>0?'ok':'warn');
-});
+  const issueCount = chapters.filter(c=>c.status==='unverified' || c.status==='skipped').length;
+  if(issueCount > 0) retryFailedBtn.style.display = 'block';
+  const took = formatDuration(Date.now() - runStartTime);
+  etaText.textContent = `finished in ${took}`;
+  log(`Complete — ${doneCount}/${chapters.length} chapters verified in ${took}.`, doneCount>0?'ok':'warn');
+  if(doneCount > 0){
+    playChime();
+    notifyDone(`${doneCount}/${chapters.length} chapters verified in ${took}. Ready to export.`);
+    showToast(`Run complete: ${doneCount}/${chapters.length} verified in ${took}`, 'ok', 4200);
+    downloadPanel.scrollIntoView({block:'nearest', behavior:'smooth'});
+  } else {
+    showToast('Run finished but nothing was verified — is Chrome translation on?', 'warn', 4200);
+  }
+}
+
+startBtn.addEventListener('click', runTranslation);
 
 stopBtn.addEventListener('click', ()=>{
   stopRequested = true;
+  paused = false;
   log('Stopping after current step\u2026', 'warn');
 });
 
-/* FIX: skip now cooperatively interrupts the running wait loop */
+pauseBtn.addEventListener('click', ()=>{
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+  if(paused){
+    log('Paused — will hold after the current chapter finishes.', 'warn');
+    showToast('Paused (after current chapter)', 'info');
+  } else {
+    log('Resumed.', 'ok');
+    showToast('Resumed', 'ok');
+  }
+});
+
 skipBtn.addEventListener('click', ()=>{
   if(currentIdx >= 0){
     skipRequested = true;
+    showToast('Skipping current chapter\u2026', 'info', 1600);
   }
+});
+
+retryFailedBtn.addEventListener('click', ()=>{
+  const targets = chapters.filter(c=>c.status==='unverified' || c.status==='skipped');
+  if(targets.length === 0){ retryFailedBtn.style.display = 'none'; return; }
+  targets.forEach(c=>{ c.status = 'pending'; c.retries = 0; });
+  rangeFrom.value = 1; rangeTo.value = chapters.length;
+  renderChapterList();
+  requestProgressUpdate();
+  showToast(`Retrying ${targets.length} chapter${targets.length>1?'s':''}\u2026`, 'info');
+  runTranslation();
+});
+
+/* keyboard shortcuts */
+document.addEventListener('keydown', (e)=>{
+  if(e.target.matches('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if(k === 's' && !running && !startBtn.disabled && actionPanel.style.display !== 'none'){ e.preventDefault(); startBtn.click(); }
+  else if(k === 'p' && running){ e.preventDefault(); pauseBtn.click(); }
+  else if(k === 'k' && running){ e.preventDefault(); skipBtn.click(); }
+  else if(e.key === 'Escape' && running){ stopBtn.click(); }
 });
 
 function refreshDownloadSummary(){
@@ -1610,24 +2524,35 @@ function refreshDownloadSummary(){
   if(usable > 0){
     dDone.textContent = doneCount;
     dSkipped.textContent = usable - doneCount;
+    dWords.textContent = formatNum(chapters.reduce((s,c)=> s + wordCount(c.text), 0));
     downloadPanel.style.display = 'block';
     editorPanel.style.display = 'block';
     renderEditorList();
   }
 }
 
-/* ============ CHAPTER EDITOR ============ */
+/* ============ 9. CHAPTER EDITOR (drag & drop, low-RAM render) ============ */
+let dragSrcPos = null;
+
 function renderEditorList(){
   editorList.innerHTML = '';
+  const frag = document.createDocumentFragment();
   exportOrder.forEach((chapIdx, pos)=>{
     const c = chapters[chapIdx];
     const hasText = !!(c.text && c.text.trim());
+    const wc = hasText ? wordCount(c.text) : 0;
     const row = document.createElement('div');
     row.className = 'editor-row' + (c.excluded ? ' excluded' : '');
+    row.draggable = true;
+    row.dataset.pos = pos;
     row.innerHTML = `
+      <span class="drag-handle" title="Drag to reorder" aria-hidden="true">&#8942;&#8942;</span>
       <span class="editor-pos">${String(pos+1).padStart(2,'0')}</span>
-      <input class="editor-title-input" value="${escapeAttr(c.title)}"
-             data-chap="${chapIdx}" ${hasText ? '' : 'disabled'} aria-label="Chapter title" />
+      <div class="editor-main">
+        <input class="editor-title-input" value="${escapeAttr(c.title)}"
+               data-chap="${chapIdx}" ${hasText ? '' : 'disabled'} aria-label="Chapter title" />
+        <span class="editor-wc">${hasText ? formatNum(wc) + ' words \u00b7 ' + statusLabel(c.status) : 'no text captured'}</span>
+      </div>
       <div class="editor-controls">
         <button class="editor-btn" data-act="up" data-pos="${pos}" ${pos===0?'disabled':''} title="Move up" aria-label="Move up">\u2191</button>
         <button class="editor-btn" data-act="down" data-pos="${pos}" ${pos===exportOrder.length-1?'disabled':''} title="Move down" aria-label="Move down">\u2193</button>
@@ -1637,8 +2562,9 @@ function renderEditorList(){
         </button>
       </div>
     `;
-    editorList.appendChild(row);
+    frag.appendChild(row);
   });
+  editorList.appendChild(frag);
 }
 
 function escapeAttr(s){
@@ -1673,30 +2599,196 @@ editorList.addEventListener('click', (e)=>{
   }
 });
 
+/* drag & drop reorder */
+editorList.addEventListener('dragstart', (e)=>{
+  const row = e.target.closest('.editor-row');
+  if(!row) return;
+  dragSrcPos = parseInt(row.dataset.pos, 10);
+  row.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try{ e.dataTransfer.setData('text/plain', String(dragSrcPos)); }catch(err){}
+});
+editorList.addEventListener('dragend', ()=>{
+  dragSrcPos = null;
+  editorList.querySelectorAll('.editor-row').forEach(r=>r.classList.remove('dragging','drop-target'));
+});
+editorList.addEventListener('dragover', (e)=>{
+  if(dragSrcPos === null) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const row = e.target.closest('.editor-row');
+  editorList.querySelectorAll('.editor-row.drop-target').forEach(r=>r.classList.remove('drop-target'));
+  if(row && parseInt(row.dataset.pos,10) !== dragSrcPos) row.classList.add('drop-target');
+});
+editorList.addEventListener('drop', (e)=>{
+  if(dragSrcPos === null) return;
+  e.preventDefault();
+  const row = e.target.closest('.editor-row');
+  if(!row) return;
+  const targetPos = parseInt(row.dataset.pos, 10);
+  if(targetPos === dragSrcPos) return;
+  const [moved] = exportOrder.splice(dragSrcPos, 1);
+  exportOrder.splice(targetPos, 0, moved);
+  dragSrcPos = null;
+  renderEditorList();
+  saveSessionProgress();
+  showToast('Chapter order updated', 'ok', 1600);
+});
+
+el('resetOrderBtn').addEventListener('click', ()=>{
+  exportOrder = chapters.map((c,i)=>i);
+  renderEditorList();
+  saveSessionProgress();
+  showToast('Original order restored', 'info', 1800);
+});
+
 function getExportChapters(){
   return exportOrder.map(idx => chapters[idx]).filter(c => c && c.text && c.text.trim() && !c.excluded);
 }
 
-/* ============ EXPORT MODE TABS ============ */
+/* ---- FIND & REPLACE ---- */
+function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function countFindMatches(){
+  const find = el('fnrFind').value;
+  if(!find) return 0;
+  const flags = el('fnrCase').checked ? 'g' : 'gi';
+  const re = new RegExp(escapeRegExp(find), flags);
+  let count = 0;
+  chapters.forEach(c=>{
+    if(c.text && !c.excluded){
+      const m = c.text.match(re);
+      if(m) count += m.length;
+    }
+  });
+  return count;
+}
+
+let fnrDebounce = null;
+function refreshFnrPreview(){
+  clearTimeout(fnrDebounce);
+  fnrDebounce = setTimeout(()=>{
+    const find = el('fnrFind').value;
+    el('fnrPreview').textContent = find ? countFindMatches() + ' matches' : '';
+  }, 250);
+}
+el('fnrFind').addEventListener('input', refreshFnrPreview);
+el('fnrCase').addEventListener('change', refreshFnrPreview);
+
+el('fnrApplyBtn').addEventListener('click', ()=>{
+  const find = el('fnrFind').value;
+  const replace = el('fnrReplace').value;
+  if(!find){ showToast('Enter text to find first', 'warn'); return; }
+  const flags = el('fnrCase').checked ? 'g' : 'gi';
+  const re = new RegExp(escapeRegExp(find), flags);
+  let total = 0;
+  chapters.forEach(c=>{
+    if(c.text && !c.excluded){
+      const m = c.text.match(re);
+      if(m){ total += m.length; c.text = c.text.replace(re, replace); }
+    }
+  });
+  if(total > 0){
+    renderEditorList();
+    refreshDownloadSummary();
+    requestProgressUpdate();
+    saveSessionProgress();
+    showToast(`Replaced ${total} occurrence${total>1?'s':''}`, 'ok');
+    el('fnrPreview').textContent = '0 matches';
+  } else {
+    showToast('No matches found', 'info');
+  }
+});
+
+/* ---- SESSION BACKUP (export / import JSON) ---- */
+el('backupExportBtn').addEventListener('click', ()=>{
+  if(chapters.length === 0){ showToast('Nothing to back up yet', 'warn'); return; }
+  const payload = {
+    dtvBackup: 1,
+    savedAt: Date.now(),
+    bookTitle: mTitle.textContent,
+    bookLang,
+    exportOrder,
+    chapters: chapters.map(c=>({
+      title: c.title, status: c.status, text: c.text,
+      originalText: c.originalText || '', excluded: !!c.excluded
+    }))
+  };
+  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+  triggerDownload(blob, `${safeFileName(mTitle.textContent,'book')}_dtv_backup.json`);
+  showToast('Backup file download started', 'ok');
+});
+
+el('backupImportBtn').addEventListener('click', ()=> el('backupFileInput').click());
+el('backupFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || data.dtvBackup !== 1 || !Array.isArray(data.chapters)){
+        showToast('Not a valid DTV backup file', 'err');
+        return;
+      }
+      // restore as a standalone session (works even without the original document)
+      resetForNewFile(null);
+      fileNameShow.textContent = '\u2713 restored from backup: ' + file.name;
+      chapters = data.chapters.map((sc, i)=>({
+        index: i, title: sc.title || ('Chapter ' + (i+1)), item: null,
+        html: null,
+        status: sc.status || (sc.text ? 'done' : 'pending'),
+        text: sc.text || '', originalText: sc.originalText || '',
+        retries: 0, excluded: !!sc.excluded
+      }));
+      bookLang = data.bookLang || 'en';
+      mTitle.textContent = data.bookTitle || 'Restored book';
+      mChapters.textContent = chapters.length;
+      mWords.textContent = '—';
+      mStatus.textContent = 'Restored from backup';
+      exportOrder = (Array.isArray(data.exportOrder) && data.exportOrder.length === chapters.length)
+        ? data.exportOrder.slice()
+        : chapters.map((c,i)=>i);
+      sessionKey = computeSessionKey(mTitle.textContent, 0, chapters.length);
+      rangeFrom.max = chapters.length; rangeTo.max = chapters.length;
+      rangeFrom.value = 1; rangeTo.value = chapters.length;
+      renderChapterList();
+      chapPanel.style.display = 'block';
+      viewerPanel.style.display = 'block';
+      requestProgressUpdate();
+      refreshDownloadSummary();
+      showToast(`Backup restored — ${chapters.length} chapters`, 'ok');
+    }catch(err){
+      showToast('Could not read backup file', 'err');
+    }
+  };
+  reader.onerror = ()=> showToast('Could not read backup file', 'err');
+  reader.readAsText(file);
+});
+
+/* ============ 10. EXPORTS ============ */
+const EXPORT_META = {
+  txt:  { btn:'Download ZIP (per-chapter + combined .txt)', note:null },
+  epub: { btn:'Download EPUB (.epub)', note:'Repackages translated chapters into a standard EPUB3 container with a generated table of contents, using the titles and order set above. Opens in any e-reader (Apple Books, Calibre, Kindle after conversion, etc.).' },
+  md:   { btn:'Download Markdown (.md)', note:'A single Markdown file with a linked table of contents and one heading per chapter — great for Obsidian, Notion, GitHub, or further editing.' },
+  html: { btn:'Download HTML (.html)', note:'A single, self-contained styled HTML page with a clickable table of contents — readable in any browser, easy to print or convert to PDF.' },
+};
 exportTabs.addEventListener('click', (e)=>{
   const tab = e.target.closest('.export-tab');
   if(!tab) return;
   exportMode = tab.dataset.mode;
   document.querySelectorAll('.export-tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
-  if(exportMode === 'epub'){
-    downloadBtn.textContent = 'Download EPUB (.epub)';
-    epubNote.style.display = 'flex';
-  } else {
-    downloadBtn.textContent = 'Download ZIP (per-chapter + combined .txt)';
-    epubNote.style.display = 'none';
-  }
+  const meta = EXPORT_META[exportMode];
+  downloadBtn.textContent = meta.btn;
+  if(meta.note){ exportNote.style.display = 'flex'; exportNoteText.textContent = meta.note; }
+  else{ exportNote.style.display = 'none'; }
 });
 
-/* ============ DOWNLOAD DISPATCH ============ */
 downloadBtn.addEventListener('click', async ()=>{
   if(downloadBtn.disabled) return;
-  if(!requireLib(LIB_STATUS.jszip, 'ZIP/EPUB export')){
+  if((exportMode === 'txt' || exportMode === 'epub') && !requireLib(LIB_STATUS.jszip, 'ZIP/EPUB export')){
     showGlobalError('Cannot export', 'The JSZip component failed to load, so files can\u2019t be packaged. Reload the page after checking your connection.');
     return;
   }
@@ -1705,6 +2797,8 @@ downloadBtn.addEventListener('click', async ()=>{
   downloadBtn.textContent = 'Preparing\u2026';
   try{
     if(exportMode === 'epub') await downloadAsEpub();
+    else if(exportMode === 'md') await downloadAsMarkdown();
+    else if(exportMode === 'html') await downloadAsHtml();
     else await downloadAsTxtZip();
   }catch(err){
     log(`Export failed: ${err.message}`, 'err');
@@ -1715,21 +2809,27 @@ downloadBtn.addEventListener('click', async ()=>{
   }
 });
 
-/* ============ EXPORT: TXT + ZIP ============ */
+function requireExportList(){
+  const exportList = getExportChapters();
+  if(exportList.length === 0){
+    log('Nothing to export — all chapters are excluded or empty.', 'err');
+    showGlobalWarning('Nothing to export', 'Every translated chapter is currently excluded (or empty). Include at least one chapter in the "Review & Arrange" panel above.');
+    return null;
+  }
+  return exportList;
+}
+
+/* ---- TXT + ZIP ---- */
 function safeFileName(s, fallback){
   const cleaned = String(s||'').replace(/[^a-zA-Z0-9 \-_]/g,'').trim();
   return cleaned || fallback;
 }
 
 async function downloadAsTxtZip(){
+  const exportList = requireExportList();
+  if(!exportList) return;
   const zip = new JSZip();
   const bookTitle = safeFileName(mTitle.textContent, 'book');
-  const exportList = getExportChapters();
-  if(exportList.length === 0){
-    log('Nothing to export — all chapters are excluded or empty.', 'err');
-    showGlobalWarning('Nothing to export', 'Every translated chapter is currently excluded (or empty). Include at least one chapter in the "Review & Arrange" panel above.');
-    return;
-  }
 
   const usedNames = new Set();
   exportList.forEach((c, pos)=>{
@@ -1758,9 +2858,11 @@ async function downloadAsTxtZip(){
   zip.file(`00_full_${bookTitle}.txt`, combined);
 
   try{
-    const blob = await zip.generateAsync({type:'blob'});
+    // low-RAM: streamFiles compresses incrementally instead of buffering everything
+    const blob = await zip.generateAsync({type:'blob', streamFiles:true});
     triggerDownload(blob, `${bookTitle}_translated_${Math.floor(Date.now()/1000)}.zip`);
     log(`ZIP download started (${exportList.length} chapters).`, 'ok');
+    showToast('ZIP download started', 'ok');
     clearSessionProgress();
   }catch(err){
     log(`ZIP generation failed: ${err.message}`, 'err');
@@ -1778,15 +2880,96 @@ function triggerDownload(blob, filename){
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  // FIX: revoke the object URL to avoid a memory leak
   setTimeout(()=>URL.revokeObjectURL(url), 4000);
 }
 
-/* ============ EXPORT: EPUB REPACKAGING ============ */
+/* ---- MARKDOWN ---- */
+async function downloadAsMarkdown(){
+  const exportList = requireExportList();
+  if(!exportList) return;
+  const bookTitle = mTitle.textContent || 'Translated Book';
+  const lines = [`# ${bookTitle}`, '', '## Table of Contents', ''];
+  const anchors = exportList.map((c, pos)=>{
+    const slug = String(c.title||'chapter').toLowerCase()
+      .replace(/[^\p{L}\p{N}\s-]/gu,'').trim().replace(/\s+/g,'-') || 'chapter-' + (pos+1);
+    return slug + '-' + (pos+1);
+  });
+  exportList.forEach((c, pos)=>{
+    lines.push(`${pos+1}. [${c.title}](#${anchors[pos]})`);
+  });
+  lines.push('', '---', '');
+  exportList.forEach((c, pos)=>{
+    lines.push(`<a id="${anchors[pos]}"></a>`, '', `## ${c.title}`, '');
+    const paras = c.text.split(/\n+/).map(p=>p.trim()).filter(p=>p);
+    paras.forEach(p=>{ lines.push(p, ''); });
+    lines.push('---', '');
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/markdown;charset=utf-8'});
+  triggerDownload(blob, `${safeFileName(bookTitle,'book')}_translated_${Math.floor(Date.now()/1000)}.md`);
+  log(`Markdown download started (${exportList.length} chapters).`, 'ok');
+  showToast('Markdown download started', 'ok');
+  clearSessionProgress();
+}
+
+/* ---- SINGLE HTML ---- */
+async function downloadAsHtml(){
+  const exportList = requireExportList();
+  if(!exportList) return;
+  const bookTitle = mTitle.textContent || 'Translated Book';
+  const lang = (bookLang || 'en').split('-')[0] || 'en';
+  const tocHtml = exportList.map((c, pos)=>
+    `<li><a href="#chap-${pos+1}">${escapeHtml(c.title)}</a></li>`).join('\n');
+  const chapHtml = exportList.map((c, pos)=>{
+    const paras = c.text.split(/\n+/).map(p=>p.trim()).filter(p=>p)
+      .map(p=>`<p>${escapeHtml(p)}</p>`).join('\n');
+    return `<section id="chap-${pos+1}"><h2>${escapeHtml(c.title)}</h2>\n${paras}\n<p class="back"><a href="#top">\u2191 Contents</a></p></section>`;
+  }).join('\n<hr>\n');
+  const doc = `<!DOCTYPE html>
+<html lang="${escapeAttr(lang)}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(bookTitle)}</title>
+<style>
+  body{max-width:680px;margin:0 auto;padding:40px 20px 80px;font-family:Georgia,'Times New Roman',serif;line-height:1.8;color:#222;background:#faf8f4;}
+  h1{font-size:1.9em;line-height:1.3;}
+  h2{margin-top:2em;font-size:1.4em;}
+  nav ol{line-height:2;}
+  a{color:#3a5fa8;}
+  hr{border:none;border-top:1px solid #ddd6c8;margin:3em 0;}
+  .back{font-size:0.85em;margin-top:2em;}
+  .meta{color:#888;font-size:0.85em;font-family:system-ui,sans-serif;}
+  @media print{.back{display:none;}}
+</style>
+</head>
+<body>
+<header id="top">
+  <h1>${escapeHtml(bookTitle)}</h1>
+  <p class="meta">Translated copy &middot; ${exportList.length} chapters &middot; generated ${new Date().toLocaleDateString()}</p>
+</header>
+<nav aria-label="Table of contents">
+  <h2>Contents</h2>
+  <ol>
+${tocHtml}
+  </ol>
+</nav>
+<hr>
+<main>
+${chapHtml}
+</main>
+</body>
+</html>`;
+  const blob = new Blob([doc], {type:'text/html;charset=utf-8'});
+  triggerDownload(blob, `${safeFileName(bookTitle,'book')}_translated_${Math.floor(Date.now()/1000)}.html`);
+  log(`HTML download started (${exportList.length} chapters).`, 'ok');
+  showToast('HTML download started', 'ok');
+  clearSessionProgress();
+}
+
+/* ---- EPUB REPACKAGING ---- */
 function textToXhtmlBody(text){
   const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 0);
   if(paragraphs.length === 0){
-    // fall back to single-newline splitting so we don't produce one giant line
     const lines = text.split(/\n/).map(l=>l.trim()).filter(l=>l.length>0);
     if(lines.length === 0) return '<p></p>';
     return lines.map(l=>`<p>${escapeXml(l)}</p>`).join('\n');
@@ -1810,12 +2993,8 @@ function makeUuid(){
 }
 
 async function downloadAsEpub(){
-  const exportList = getExportChapters();
-  if(exportList.length === 0){
-    log('Nothing to export — all chapters are excluded or empty.', 'err');
-    showGlobalWarning('Nothing to export', 'Every translated chapter is currently excluded (or empty). Include at least one chapter in the "Review & Arrange" panel above.');
-    return;
-  }
+  const exportList = requireExportList();
+  if(!exportList) return;
 
   const bookTitle = mTitle.textContent || 'Translated Book';
   const uuid = makeUuid();
@@ -1894,10 +3073,12 @@ async function downloadAsEpub(){
   zip.file('OEBPS/content.opf', opf);
 
   try{
-    const blob = await zip.generateAsync({ type:'blob', mimeType:'application/epub+zip' });
+    // low-RAM: streamFiles avoids holding the entire archive in memory twice
+    const blob = await zip.generateAsync({ type:'blob', mimeType:'application/epub+zip', streamFiles:true });
     const safeTitle = safeFileName(bookTitle, 'book');
     triggerDownload(blob, `${safeTitle}_translated_${Math.floor(Date.now()/1000)}.epub`);
     log(`EPUB download started (${exportList.length} chapters).`, 'ok');
+    showToast('EPUB download started', 'ok');
     clearSessionProgress();
   }catch(err){
     log(`EPUB generation failed: ${err.message}`, 'err');
@@ -1906,6 +3087,26 @@ async function downloadAsEpub(){
       (err.message||'') + (err.stack ? '\n' + err.stack : ''));
   }
 }
+
+/* ============ 11. UI POLISH — ripple micro-interaction ============ */
+/* Lightweight: one delegated listener, ripple node removed after animation (low-RAM). */
+(function(){
+  const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(REDUCED) return;
+  document.addEventListener('pointerdown', (e)=>{
+    const target = e.target.closest('.btn, .banner-btn, .export-tab, .filter-btn, .fnr-apply, .mini-btn');
+    if(!target || target.disabled) return;
+    const rect = target.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const ink = document.createElement('span');
+    ink.className = 'ripple-ink';
+    ink.style.width = ink.style.height = size + 'px';
+    ink.style.left = (e.clientX - rect.left - size/2) + 'px';
+    ink.style.top = (e.clientY - rect.top - size/2) + 'px';
+    target.appendChild(ink);
+    setTimeout(()=>ink.remove(), 600); // low-RAM: always clean up
+  }, {passive:true});
+})();
 </script>
 
 </body>
