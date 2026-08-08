@@ -737,6 +737,79 @@
     box-shadow:0 0 8px rgba(91,141,239,.6);
   }
 
+  /* घूमने वाले दर्शक मापक की शैली */
+  .odo-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  .odo-label {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+    font-size: 13px;
+    margin-right: 18px;
+    font-family: var(--sans);
+  }
+  .odo-container {
+    display: flex;
+    background: #111;
+    padding: 6px;
+    border-radius: 6px;
+    box-shadow: inset 0 5px 12px rgba(0,0,0,0.9), 0 2px 4px rgba(255,255,255,0.05);
+    border: 3px solid #222;
+  }
+  .odo-window {
+    width: 36px;
+    height: 52px;
+    overflow: hidden;
+    background: #1a1a1a;
+    margin: 0 3px;
+    border: 1px solid #000;
+    border-radius: 3px;
+    position: relative;
+    box-shadow: inset 0 6px 12px rgba(0,0,0,1), inset 0 -6px 12px rgba(0,0,0,1);
+  }
+  .odo-window::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 65%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .odo-window::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 0; right: 0;
+    height: 1px;
+    background: rgba(0,0,0,0.4);
+    z-index: 2;
+  }
+  .odo-window:last-child {
+    background: #c62828;
+  }
+  .odo-column {
+    display: flex;
+    flex-direction: column;
+    transition: transform 2.8s cubic-bezier(0.25, 1, 0.25, 1);
+    transform: translateY(0);
+  }
+  .odo-digit {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-family: var(--mono);
+    color: #f4f4f4;
+    font-weight: bold;
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{transition:none !important;animation:none !important;}
     html{scroll-behavior:auto;}
@@ -748,6 +821,71 @@
 <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
 <div id="stickyProg" aria-hidden="true"><div class="bar" id="stickyBar"></div></div>
 <div id="toastWrap" aria-live="polite"></div>
+
+<!-- घूमने वाला दर्शक मापक -->
+<div class="odo-wrap" aria-hidden="true">
+  <span class="odo-label">कुल दर्शक</span>
+  <div class="odo-container" id="odo-box">
+    <!-- यंत्र द्वारा अंक यहाँ बनेंगे -->
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // असली संख्या प्राप्त करना (नए और अनोखे पते के साथ)
+    fetch('https://api.counterapi.dev/v1/dtv_pro_mera_apna_jaalsthal_001/darshak/up')
+      .then(jabab => jabab.json())
+      .then(ankde => {
+        let asliSankhya = ankde.count || ankde.value || ankde.visits || 1;
+        chalao(asliSankhya);
+      })
+      .catch(() => chalao(0)); // संपर्क टूटने पर शून्य दिखाएगा
+
+    function chalao(sankhya) {
+      sankhya = parseInt(sankhya, 10);
+      if (isNaN(sankhya)) sankhya = 0;
+
+      const ankStr = String(sankhya).padStart(7, '0');
+      const dibba = document.getElementById('odo-box');
+      dibba.innerHTML = '';
+      
+      for (let i = 0; i < ankStr.length; i++) {
+        const khidki = document.createElement('div');
+        khidki.className = 'odo-window';
+        
+        const stambh = document.createElement('div');
+        stambh.className = 'odo-column';
+        
+        // ० से ९ तक अंक
+        for (let j = 0; j <= 9; j++) {
+          const ankDiv = document.createElement('div');
+          ankDiv.className = 'odo-digit';
+          ankDiv.textContent = j;
+          stambh.appendChild(ankDiv);
+        }
+        // घूमने के लिए अतिरिक्त ० से ९
+        for (let j = 0; j <= 9; j++) {
+          const ankDiv = document.createElement('div');
+          ankDiv.className = 'odo-digit';
+          ankDiv.textContent = j;
+          stambh.appendChild(ankDiv);
+        }
+        
+        khidki.appendChild(stambh);
+        dibba.appendChild(khidki);
+        
+        // थोड़ी देर बाद घुमाना शुरू करें
+        setTimeout(() => {
+          let lakshya = parseInt(ankStr[i], 10);
+          if (isNaN(lakshya)) lakshya = 0;
+          // ताकि पूरा घूमे, हम दूसरे समूह (१० + लक्ष्य) पर जाएंगे
+          const doori = - ((10 + lakshya) * 52); 
+          stambh.style.transform = 'translateY(' + doori + 'px)';
+        }, 150 + (i * 200)); // हर अंक थोड़ी देरी से घूमेगा
+      }
+    }
+  });
+</script>
 
 <div class="shell">
 
