@@ -737,77 +737,63 @@
     box-shadow:0 0 8px rgba(91,141,239,.6);
   }
 
-  /* घूमने वाले दर्शक मापक की शैली */
+  /* PREMIUM ODOMETER STYLES */
   .odo-wrap {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 24px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 30px; background: linear-gradient(180deg, #121820 0%, #0b0f14 100%);
+    border-bottom: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 24px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+  }
+  .odo-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  }
+  .live-dot-pulse {
+    width: 10px; height: 10px; background: #ff3b3b; border-radius: 50%;
+    box-shadow: 0 0 12px #ff3b3b; animation: pulseGlow 1.2s infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px #ff3b3b; }
+    50% { opacity: 0.5; box-shadow: 0 0 16px 4px rgba(255, 59, 59, 0.4); }
   }
   .odo-label {
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: 700;
-    font-size: 13px;
-    margin-right: 18px;
-    font-family: var(--sans);
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 4px;
+    font-weight: 700; font-size: 13px; font-family: var(--sans);
   }
   .odo-container {
-    display: flex;
-    background: #111;
-    padding: 6px;
-    border-radius: 6px;
-    box-shadow: inset 0 5px 12px rgba(0,0,0,0.9), 0 2px 4px rgba(255,255,255,0.05);
-    border: 3px solid #222;
+    display: flex; background: #050505; padding: 10px 12px;
+    border-radius: 10px; box-shadow: inset 0 8px 20px rgba(0,0,0,1), 0 2px 5px rgba(255,255,255,0.05);
+    border: 2px solid #222; border-top-color: #333; border-bottom-color: #111;
   }
   .odo-window {
-    width: 36px;
-    height: 52px;
-    overflow: hidden;
-    background: #1a1a1a;
-    margin: 0 3px;
+    width: 42px; height: 64px; overflow: hidden; background: #151515;
+    margin: 0 2px; border-radius: 4px; position: relative;
+    box-shadow: inset 0 10px 18px rgba(0,0,0,0.9), inset 0 -10px 18px rgba(0,0,0,0.9);
     border: 1px solid #000;
-    border-radius: 3px;
-    position: relative;
-    box-shadow: inset 0 6px 12px rgba(0,0,0,1), inset 0 -6px 12px rgba(0,0,0,1);
-  }
-  .odo-window::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 65%, rgba(0,0,0,0.7) 100%);
-    pointer-events: none;
-    z-index: 2;
-  }
-  .odo-window::after {
-    content: '';
-    position: absolute;
-    top: 50%; left: 0; right: 0;
-    height: 1px;
-    background: rgba(0,0,0,0.4);
-    z-index: 2;
   }
   .odo-window:last-child {
-    background: #c62828;
+    background: linear-gradient(180deg, #8b0000 0%, #b30000 50%, #8b0000 100%);
+    color: #fff;
+  }
+  .odo-window::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%); z-index: 2; pointer-events: none;
+  }
+  .odo-window::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%); z-index: 2; pointer-events: none;
+  }
+  .odo-center-line {
+    position: absolute; top: 50%; left: 0; right: 0; height: 2px;
+    background: rgba(255,255,255,0.08); z-index: 3; box-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
   }
   .odo-column {
-    display: flex;
-    flex-direction: column;
-    transition: transform 2.8s cubic-bezier(0.25, 1, 0.25, 1);
-    transform: translateY(0);
+    display: flex; flex-direction: column;
+    will-change: transform;
   }
   .odo-digit {
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    font-family: var(--mono);
-    color: #f4f4f4;
-    font-weight: bold;
+    height: 64px; display: flex; align-items: center; justify-content: center;
+    font-size: 40px; font-family: var(--mono); color: #f0f0f0; font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -822,18 +808,23 @@
 <div id="stickyProg" aria-hidden="true"><div class="bar" id="stickyBar"></div></div>
 <div id="toastWrap" aria-live="polite"></div>
 
-<!-- घूमने वाला दर्शक मापक -->
+<!-- एडवांस्ड लाइव ओडोमीटर (Odometer) -->
 <div class="odo-wrap" aria-hidden="true">
-  <span class="odo-label">कुल दर्शक</span>
+  <div class="odo-header">
+    <span class="live-dot-pulse"></span>
+    <span class="odo-label">कुल लाइव दर्शक</span>
+  </div>
   <div class="odo-container" id="odo-box">
     <!-- यंत्र द्वारा अंक यहाँ बनेंगे -->
   </div>
 </div>
 
 <script type="module">
+  // फायरबेस के असली लिंक्स
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+  // आपकी गुप्त चाबियां (API Keys)
   const firebaseConfig = {
     apiKey: "AIzaSyBVqZNnkReib87I4HQgDD1SOy2Ms8rDtho",
     authDomain: "project-406b757a-8717-4cc8-857.firebaseapp.com",
@@ -847,69 +838,81 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  const darshakRef = ref(db, 'darshak_ginti');
+  
+  // हमने डेटाबेस में एक नया 'नोड' बनाया है ताकि गिनती बिल्कुल साफ रहे
+  const darshakRef = ref(db, 'darshak_ginti_pro');
 
-  document.addEventListener("DOMContentLoaded", function() {
-    
-    // फायरबेस में गिनती जोड़ना और पढ़ना
-    runTransaction(darshakRef, (vartamanGinti) => {
-      if (vartamanGinti === null) {
-        return 1;
-      }
-      return vartamanGinti + 1;
-    }).then((nateeja) => {
-      if (nateeja.committed) {
-        chalao(nateeja.snapshot.val());
-      } else {
-        chalao(0);
-      }
-    }).catch((asafalta) => {
-      chalao(0);
-    });
+  document.addEventListener("DOMContentLoaded", () => {
+    const numDigits = 7;
+    const digitHeight = 64; 
+    const dibba = document.getElementById('odo-box');
+    const columns = [];
+    let currentPositions = Array(numDigits).fill(0);
 
-    function chalao(sankhya) {
-      sankhya = parseInt(sankhya, 10);
-      if (isNaN(sankhya)) sankhya = 0;
-
-      const ankStr = String(sankhya).padStart(7, '0');
-      const dibba = document.getElementById('odo-box');
-      dibba.innerHTML = '';
-      
-      for (let i = 0; i < ankStr.length; i++) {
+    // मीटर का ढांचा तैयार करना
+    for (let i = 0; i < numDigits; i++) {
         const khidki = document.createElement('div');
         khidki.className = 'odo-window';
-        
+        khidki.innerHTML = '<div class="odo-center-line"></div>';
+
         const stambh = document.createElement('div');
         stambh.className = 'odo-column';
-        
-        // ० से ९ तक अंक
-        for (let j = 0; j <= 9; j++) {
-          const ankDiv = document.createElement('div');
-          ankDiv.className = 'odo-digit';
-          ankDiv.textContent = j;
-          stambh.appendChild(ankDiv);
+
+        // स्मूथ और लम्बे रोलिंग इफ़ेक्ट के लिए 0 से 9 के 8 सेट बनाए गए हैं
+        for (let k = 0; k < 8; k++) {
+            for (let j = 0; j <= 9; j++) {
+                const ankDiv = document.createElement('div');
+                ankDiv.className = 'odo-digit';
+                ankDiv.textContent = j;
+                stambh.appendChild(ankDiv);
+            }
         }
-        // घूमने के लिए अतिरिक्त ० से ९
-        for (let j = 0; j <= 9; j++) {
-          const ankDiv = document.createElement('div');
-          ankDiv.className = 'odo-digit';
-          ankDiv.textContent = j;
-          stambh.appendChild(ankDiv);
-        }
-        
+
         khidki.appendChild(stambh);
         dibba.appendChild(khidki);
-        
-        // थोड़ी देर बाद घुमाना शुरू करें
-        setTimeout(() => {
-          let lakshya = parseInt(ankStr[i], 10);
-          if (isNaN(lakshya)) lakshya = 0;
-          // ताकि पूरा घूमे, हम दूसरे समूह (१० + लक्ष्य) पर जाएंगे
-          const doori = - ((10 + lakshya) * 52); 
-          stambh.style.transform = 'translateY(' + doori + 'px)';
-        }, 150 + (i * 200)); // हर अंक थोड़ी देरी से घूमेगा
-      }
+        columns.push(stambh);
     }
+
+    // मीटर को घुमाने का एडवांस्ड तरीका
+    function updateOdometer(newVal, isFirstLoad = false) {
+        if (isNaN(newVal)) newVal = 0;
+        let valStr = String(newVal).padStart(numDigits, '0');
+
+        for (let i = 0; i < numDigits; i++) {
+            let targetDigit = parseInt(valStr[i], 10);
+            let currentPos = currentPositions[i];
+            let currentDigit = currentPos % 10;
+
+            let diff = targetDigit - currentDigit;
+            if (diff < 0) diff += 10;
+
+            // जब पन्ना पहली बार खुलेगा, तो यह बहुत तेज़ी से घूमता हुआ असली संख्या पर रुकेगा
+            let stepsToMove = isFirstLoad ? (30 + targetDigit) : diff;
+
+            if (!isFirstLoad && diff === 0) continue; // अगर अंक नहीं बदला है, तो उसे न घुमाएं
+
+            currentPositions[i] = currentPos + stepsToMove;
+
+            setTimeout(() => {
+                columns[i].style.transition = `transform ${isFirstLoad ? 2.5 : 0.8}s cubic-bezier(0.25, 1, 0.25, 1)`;
+                columns[i].style.transform = `translateY(-${currentPositions[i] * digitHeight}px)`;
+            }, isFirstLoad ? (i * 150) : 0);
+        }
+    }
+
+    // जैसे ही कोई वेबसाइट खोलेगा, डेटाबेस में 1 जुड़ जाएगा
+    runTransaction(darshakRef, (vartamanGinti) => {
+        return (vartamanGinti || 0) + 1;
+    });
+
+    // **सबसे धांसू फीचर:** यह हमेशा फायरबेस से जुड़ा रहेगा (Live Sync)
+    // अगर कोई दूसरा व्यक्ति वेबसाइट खोलेगा, तो यह मीटर अपने आप घूम जाएगा
+    let isFirst = true;
+    onValue(darshakRef, (snapshot) => {
+        const val = snapshot.val() || 0;
+        updateOdometer(val, isFirst);
+        isFirst = false;
+    });
   });
 </script>
 
