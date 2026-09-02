@@ -737,63 +737,93 @@
     box-shadow:0 0 8px rgba(91,141,239,.6);
   }
 
-  /* PREMIUM ODOMETER STYLES */
+  /* ---------- PREMIUM LIVE ODOMETER ---------- */
+  :root{ --odo-h:58px; --odo-w:40px; --odo-fs:34px; }
+  @media (max-width:520px){ :root{ --odo-h:44px; --odo-w:30px; --odo-fs:25px; } }
+  @media (max-width:360px){ :root{ --odo-h:38px; --odo-w:26px; --odo-fs:21px; } }
   .odo-wrap {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 30px; background: linear-gradient(180deg, #121820 0%, #0b0f14 100%);
-    border-bottom: 1px solid var(--border); border-radius: var(--radius);
-    margin-bottom: 24px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    display:none; /* revealed by JS once Firebase connects */
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px 16px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 45%), var(--panel);
+    border:1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    transition:border-color .3s ease, box-shadow .3s ease;
+    animation:panelIn .6s var(--ease-out) both;
+    position:relative;overflow:hidden;
+  }
+  .odo-wrap.ready{display:flex;}
+  .odo-wrap::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(420px 140px at 50% 0%, rgba(91,141,239,0.08), transparent 70%);
+  }
+  .odo-wrap:hover{
+    border-color:color-mix(in srgb, var(--accent) 40%, var(--border));
+    box-shadow:var(--shadow-hover);
   }
   .odo-header {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 9px; margin-bottom: 16px;
   }
   .live-dot-pulse {
-    width: 10px; height: 10px; background: #ff3b3b; border-radius: 50%;
-    box-shadow: 0 0 12px #ff3b3b; animation: pulseGlow 1.2s infinite;
+    width: 8px; height: 8px; background: var(--red); border-radius: 50%;
+    box-shadow: 0 0 10px var(--red); animation: redPulse 1.3s ease-in-out infinite;
   }
-  @keyframes pulseGlow {
-    0%, 100% { opacity: 1; box-shadow: 0 0 8px #ff3b3b; }
-    50% { opacity: 0.5; box-shadow: 0 0 16px 4px rgba(255, 59, 59, 0.4); }
+  @keyframes redPulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--red); }
+    50% { opacity: 0.45; box-shadow: 0 0 14px 4px rgba(229, 83, 75, 0.35); }
   }
   .odo-label {
-    color: var(--text-dim); text-transform: uppercase; letter-spacing: 4px;
-    font-weight: 700; font-size: 13px; font-family: var(--sans);
+    font-family:var(--mono); font-size:10.5px; font-weight:600;
+    letter-spacing:2.6px; text-transform:uppercase; color:var(--text-dim);
   }
   .odo-container {
-    display: flex; background: #050505; padding: 10px 12px;
-    border-radius: 10px; box-shadow: inset 0 8px 20px rgba(0,0,0,1), 0 2px 5px rgba(255,255,255,0.05);
-    border: 2px solid #222; border-top-color: #333; border-bottom-color: #111;
+    display: flex; background: #0a0c10; padding: 9px 11px;
+    border-radius: 12px;
+    box-shadow: inset 0 6px 18px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.25);
+    border: 1px solid #1d2530; border-top-color: #2a3441;
+    position:relative;
   }
   .odo-window {
-    width: 42px; height: 64px; overflow: hidden; background: #151515;
-    margin: 0 2px; border-radius: 4px; position: relative;
-    box-shadow: inset 0 10px 18px rgba(0,0,0,0.9), inset 0 -10px 18px rgba(0,0,0,0.9);
-    border: 1px solid #000;
+    width: var(--odo-w); height: var(--odo-h); overflow: hidden; background: #141821;
+    margin: 0 2px; border-radius: 5px; position: relative;
+    box-shadow: inset 0 8px 14px rgba(0,0,0,0.85), inset 0 -8px 14px rgba(0,0,0,0.85);
+    border: 1px solid #05070a;
   }
   .odo-window:last-child {
-    background: linear-gradient(180deg, #8b0000 0%, #b30000 50%, #8b0000 100%);
-    color: #fff;
+    background: linear-gradient(180deg, #3c2a08 0%, #6b4a0e 50%, #3c2a08 100%);
   }
+  .odo-window:last-child .odo-digit{ color:#ffd684; text-shadow:0 0 10px rgba(255,214,132,.4); }
   .odo-window::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
-    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, transparent 100%); z-index: 2; pointer-events: none;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 38%;
+    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%); z-index: 2; pointer-events: none;
   }
   .odo-window::after {
-    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
-    background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, transparent 100%); z-index: 2; pointer-events: none;
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 38%;
+    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%); z-index: 2; pointer-events: none;
   }
   .odo-center-line {
-    position: absolute; top: 50%; left: 0; right: 0; height: 2px;
-    background: rgba(255,255,255,0.08); z-index: 3; box-shadow: 0 1px 3px rgba(0,0,0,0.6); pointer-events: none;
+    position: absolute; top: 50%; left: 0; right: 0; height: 1.5px;
+    background: rgba(122,165,255,0.12); z-index: 3; pointer-events: none;
   }
   .odo-column {
     display: flex; flex-direction: column;
     will-change: transform;
   }
   .odo-digit {
-    height: 64px; display: flex; align-items: center; justify-content: center;
-    font-size: 40px; font-family: var(--mono); color: #f0f0f0; font-weight: 700;
+    height: var(--odo-h); display: flex; align-items: center; justify-content: center;
+    font-size: var(--odo-fs); font-family: var(--mono); color: #e8ecf4; font-weight: 700;
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  }
+
+  /* accessibility & polish */
+  ::selection{background:rgba(91,141,239,0.35);}
+  .btn:focus-visible, .icon-btn:focus-visible, .vc-btn:focus-visible,
+  .filter-btn:focus-visible, .export-tab:focus-visible, .mini-btn:focus-visible,
+  .editor-btn:focus-visible, .banner-btn:focus-visible, .fnr-apply:focus-visible,
+  select:focus-visible, .chap-search:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -808,23 +838,11 @@
 <div id="stickyProg" aria-hidden="true"><div class="bar" id="stickyBar"></div></div>
 <div id="toastWrap" aria-live="polite"></div>
 
-<!-- एडवांस्ड लाइव ओडोमीटर (Odometer) -->
-<div class="odo-wrap" aria-hidden="true">
-  <div class="odo-header">
-    <span class="live-dot-pulse"></span>
-    <span class="odo-label">कुल लाइव दर्शक</span>
-  </div>
-  <div class="odo-container" id="odo-box">
-    <!-- यंत्र द्वारा अंक यहाँ बनेंगे -->
-  </div>
-</div>
-
 <script type="module">
   // फायरबेस के असली लिंक्स
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getDatabase, ref, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-  // आपकी गुप्त चाबियां (API Keys)
   const firebaseConfig = {
     apiKey: "AIzaSyBVqZNnkReib87I4HQgDD1SOy2Ms8rDtho",
     authDomain: "project-406b757a-8717-4cc8-857.firebaseapp.com",
@@ -836,84 +854,131 @@
     measurementId: "G-W59CENB0G2"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  
-  // हमने डेटाबेस में एक नया 'नोड' बनाया है ताकि गिनती बिल्कुल साफ रहे
-  const darshakRef = ref(db, 'darshak_ginti_pro');
+  function initOdometer(){
+    const NUM_DIGITS = 7;
+    const REEL_SETS = 4;                       // 0-9 के 4 सेट प्रति रील (रोलिंग हेडरूम)
+    const wrap = document.getElementById('odoWrap');
+    const box = document.getElementById('odo-box');
+    if(!wrap || !box) return;
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const numDigits = 7;
-    const digitHeight = 64; 
-    const dibba = document.getElementById('odo-box');
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // BUGFIX: पुराना कोड digit height 64px हार्डकोड करता था — रेस्पॉन्सिव साइज़ पर
+    // अंक गलत जगह रुक जाते थे। अब हम असली रेंडर की गई ऊँचाई नापते हैं।
+    function digitHeight(){
+      const d = box.querySelector('.odo-digit');
+      return d ? d.getBoundingClientRect().height : 58;
+    }
+
     const columns = [];
-    let currentPositions = Array(numDigits).fill(0);
+    const positions = Array(NUM_DIGITS).fill(0); // रील के अंदर की पंक्ति (row index)
 
-    // मीटर का ढांचा तैयार करना
-    for (let i = 0; i < numDigits; i++) {
-        const khidki = document.createElement('div');
-        khidki.className = 'odo-window';
-        khidki.innerHTML = '<div class="odo-center-line"></div>';
-
-        const stambh = document.createElement('div');
-        stambh.className = 'odo-column';
-
-        // स्मूथ और लम्बे रोलिंग इफ़ेक्ट के लिए 0 से 9 के 8 सेट बनाए गए हैं
-        for (let k = 0; k < 8; k++) {
-            for (let j = 0; j <= 9; j++) {
-                const ankDiv = document.createElement('div');
-                ankDiv.className = 'odo-digit';
-                ankDiv.textContent = j;
-                stambh.appendChild(ankDiv);
-            }
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < NUM_DIGITS; i++) {
+      const win = document.createElement('div');
+      win.className = 'odo-window';
+      win.innerHTML = '<div class="odo-center-line"></div>';
+      const col = document.createElement('div');
+      col.className = 'odo-column';
+      for (let k = 0; k < REEL_SETS; k++) {
+        for (let j = 0; j <= 9; j++) {
+          const d = document.createElement('div');
+          d.className = 'odo-digit';
+          d.textContent = j;
+          col.appendChild(d);
         }
+      }
+      win.appendChild(col);
+      frag.appendChild(win);
+      columns.push(col);
+    }
+    box.appendChild(frag);
 
-        khidki.appendChild(stambh);
-        dibba.appendChild(khidki);
-        columns.push(stambh);
+    function setColumn(i, rowIndex, durationS, delayMs){
+      positions[i] = rowIndex;
+      const move = () => {
+        columns[i].style.transition = durationS > 0
+          ? `transform ${durationS}s cubic-bezier(0.22, 1, 0.36, 1)`
+          : 'none';
+        columns[i].style.transform = `translateY(-${rowIndex * digitHeight()}px)`;
+      };
+      delayMs > 0 ? setTimeout(move, delayMs) : move();
     }
 
-    // मीटर को घुमाने का एडवांस्ड तरीका
-    function updateOdometer(newVal, isFirstLoad = false) {
-        if (isNaN(newVal)) newVal = 0;
-        let valStr = String(newVal).padStart(numDigits, '0');
-
-        for (let i = 0; i < numDigits; i++) {
-            let targetDigit = parseInt(valStr[i], 10);
-            let currentPos = currentPositions[i];
-            let currentDigit = currentPos % 10;
-
-            let diff = targetDigit - currentDigit;
-            if (diff < 0) diff += 10;
-
-            // जब पन्ना पहली बार खुलेगा, तो यह बहुत तेज़ी से घूमता हुआ असली संख्या पर रुकेगा
-            let stepsToMove = isFirstLoad ? (30 + targetDigit) : diff;
-
-            if (!isFirstLoad && diff === 0) continue; // अगर अंक नहीं बदला है, तो उसे न घुमाएं
-
-            currentPositions[i] = currentPos + stepsToMove;
-
-            setTimeout(() => {
-                columns[i].style.transition = `transform ${isFirstLoad ? 2.5 : 0.8}s cubic-bezier(0.25, 1, 0.25, 1)`;
-                columns[i].style.transform = `translateY(-${currentPositions[i] * digitHeight}px)`;
-            }, isFirstLoad ? (i * 150) : 0);
-        }
-    }
-
-    // जैसे ही कोई वेबसाइट खोलेगा, डेटाबेस में 1 जुड़ जाएगा
-    runTransaction(darshakRef, (vartamanGinti) => {
-        return (vartamanGinti || 0) + 1;
+    // BUGFIX: पहले positions हमेशा बढ़ती रहती थीं और रील पट्टी के अंत से बाहर
+    // निकल जाती थी (खाली/गलत अंक दिखते थे)। अब हर स्पिन के बाद बिना दिखे
+    // पहले सेट पर वापस स्नैप करते हैं — अनगिनत बार घूम सकता है।
+    columns.forEach((col, i) => {
+      col.addEventListener('transitionend', () => {
+        const digit = positions[i] % 10;
+        if (positions[i] !== digit) setColumn(i, digit, 0, 0);
+      });
     });
 
-    // **सबसे धांसू फीचर:** यह हमेशा फायरबेस से जुड़ा रहेगा (Live Sync)
-    // अगर कोई दूसरा व्यक्ति वेबसाइट खोलेगा, तो यह मीटर अपने आप घूम जाएगा
-    let isFirst = true;
-    onValue(darshakRef, (snapshot) => {
+    function updateOdometer(newVal, isFirstLoad){
+      let v = Math.max(0, Math.floor(Number(newVal) || 0));
+      const MAX = Math.pow(10, NUM_DIGITS) - 1;
+      if (v > MAX) v = MAX; // BUGFIX: 7 अंकों से बड़ी संख्या पहले मीटर तोड़ देती थी
+      const valStr = String(v).padStart(NUM_DIGITS, '0');
+
+      for (let i = 0; i < NUM_DIGITS; i++) {
+        const target = parseInt(valStr[i], 10);
+        const from = positions[i] % 10;
+        let diff = target - from;
+        if (diff < 0) diff += 10;
+        if (!isFirstLoad && diff === 0) continue;
+
+        if (reduceMotion) { setColumn(i, target, 0, 0); continue; }
+
+        const steps = isFirstLoad ? (20 + diff) : diff;
+        // पहले बिना एनीमेशन बेस सेट पर स्नैप करें (कोई दृश्य बदलाव नहीं)…
+        setColumn(i, from, 0, 0);
+        void columns[i].offsetHeight; // reflow ताकि स्नैप पहले लागू हो
+        // …फिर वहाँ से स्मूथ स्पिन
+        setColumn(i, from + steps, isFirstLoad ? 2.2 : 0.9, isFirstLoad ? i * 120 : 0);
+      }
+    }
+
+    // resize पर तुरंत सही अंक पर री-अलाइन (responsive fix)
+    let resizeT = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(() => {
+        for (let i = 0; i < NUM_DIGITS; i++) setColumn(i, positions[i] % 10, 0, 0);
+      }, 150);
+    }, {passive:true});
+
+    // Firebase live sync — पैनल तभी दिखता है जब असली डेटा आ जाए,
+    // ताकि ब्लॉक/ऑफलाइन Firebase पर टूटा हुआ मीटर कभी न दिखे।
+    try{
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      const darshakRef = ref(db, 'darshak_ginti_pro');
+
+      // BUGFIX: हर रीफ्रेश पर +1 हो जाता था — अब एक टैब-सेशन में सिर्फ एक बार
+      let counted = false;
+      try{ counted = sessionStorage.getItem('dtv_counted') === '1'; }catch(e){}
+      if(!counted){
+        runTransaction(darshakRef, (n) => (n || 0) + 1)
+          .then(()=>{ try{ sessionStorage.setItem('dtv_counted','1'); }catch(e){} })
+          .catch(()=>{});
+      }
+
+      let isFirst = true;
+      onValue(darshakRef, (snapshot) => {
         const val = snapshot.val() || 0;
+        if(isFirst) wrap.classList.add('ready');
         updateOdometer(val, isFirst);
         isFirst = false;
-    });
-  });
+      }, ()=>{ /* permission/network error → पैनल छिपा रहेगा */ });
+    }catch(err){ /* firebase blocked → चुपचाप fail, बाकी app चलता रहेगा */ }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initOdometer, { once: true });
+  } else {
+    initOdometer();
+  }
 </script>
 
 <div class="shell">
@@ -934,6 +999,17 @@
     </div>
     <p>Upload EPUB, PDF, DOCX or TXT, turn on Chrome's translate, and let this tool verify every chapter before you export. Nothing ever leaves your browser.</p>
   </header>
+
+  <!-- LIVE VISITORS ODOMETER (shown once Firebase data arrives) -->
+  <div class="odo-wrap" id="odoWrap" role="status" aria-label="Total live visitors counter">
+    <div class="odo-header">
+      <span class="live-dot-pulse" aria-hidden="true"></span>
+      <span class="odo-label">कुल लाइव दर्शक</span>
+    </div>
+    <div class="odo-container" id="odo-box" aria-hidden="true">
+      <!-- digits injected by JS -->
+    </div>
+  </div>
 
   <!-- UPLOAD -->
   <section class="panel fade-up d1" id="upload-section">
