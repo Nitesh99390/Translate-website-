@@ -2,3353 +2,474 @@
 <html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Document Translation Verifier — Pro</title>
 <meta name="description" content="Browser-based document translation verifier. Upload EPUB, PDF, DOCX or TXT, use Chrome's built-in translation, and verify every chapter translated before exporting to TXT, EPUB, Markdown or HTML. 100% local — no uploads.">
-<meta name="theme-color" content="#0b0f14">
+<meta name="theme-color" content="#0a0d12">
 <meta property="og:title" content="Document Translation Verifier — Pro">
-<meta property="og:description" content="Verify Chrome translations chapter-by-chapter for EPUB, PDF, DOCX & TXT files. Pause/resume, live ETA, drag-and-drop arranging, find & replace, session backup, 4 export formats. All processing stays in your browser.">
+<meta property="og:description" content="Verify Chrome translations chapter-by-chapter for EPUB, PDF, DOCX & TXT files. Pause/resume, live ETA, drag-and-drop arranging, find & replace, session backup, 5 export formats. All processing stays in your browser.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235b8def'/%3E%3Ctext x='32' y='42' font-family='monospace' font-size='26' font-weight='700' fill='%2308122a' text-anchor='middle'%3EDT%3C/text%3E%3C/svg%3E">
+
+<!-- Theme applied before first paint to avoid a flash -->
+<script>
+  try{var t=localStorage.getItem('dtv_theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}
+</script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-<style>
-  :root{
-    --bg:#0b0f14;
-    --panel:#141a22;
-    --panel-2:#1a212b;
-    --border:#28303d;
-    --text:#e8ebf1;
-    --text-dim:#8b93a1;
-    --text-faint:#59616f;
-    --accent:#5b8def;
-    --accent-2:#7aa5ff;
-    --green:#3fb950;
-    --amber:#d29922;
-    --red:#e5534b;
-    --purple:#a371f7;
-    --viewer-bg:#f6f4ef;
-    --viewer-text:#1a1a1a;
-    --mono:'JetBrains Mono',monospace;
-    --sans:'Space Grotesk',sans-serif;
-    --radius:14px;
-    --shadow:0 8px 28px rgba(0,0,0,0.35);
-    --shadow-hover:0 14px 40px rgba(0,0,0,0.45);
-    --glow1:rgba(91,141,239,0.10);
-    --glow2:rgba(163,113,247,0.07);
-    --orb1:rgba(91,141,239,0.14);
-    --orb2:rgba(163,113,247,0.11);
-    --orb3:rgba(63,185,80,0.07);
-    --ease-out:cubic-bezier(.22,1,.36,1);
-  }
-  [data-theme="light"]{
-    --bg:#f2f4f8;
-    --panel:#ffffff;
-    --panel-2:#f4f6fa;
-    --border:#d9dee8;
-    --text:#1b2330;
-    --text-dim:#5a6474;
-    --text-faint:#8d97a8;
-    --accent:#3567d6;
-    --accent-2:#4a7de0;
-    --green:#1a7f37;
-    --amber:#9a6700;
-    --red:#cf222e;
-    --purple:#8250df;
-    --viewer-bg:#faf8f2;
-    --viewer-text:#1a1a1a;
-    --shadow:0 8px 24px rgba(30,40,60,0.12);
-    --shadow-hover:0 14px 36px rgba(30,40,60,0.18);
-    --glow1:rgba(53,103,214,0.07);
-    --glow2:rgba(130,80,223,0.05);
-    --orb1:rgba(53,103,214,0.10);
-    --orb2:rgba(130,80,223,0.08);
-    --orb3:rgba(26,127,55,0.06);
-  }
-  *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
-  body{
-    margin:0;
-    background:
-      radial-gradient(900px 420px at 80% -10%, var(--glow1), transparent 60%),
-      radial-gradient(700px 380px at 0% 10%, var(--glow2), transparent 60%),
-      var(--bg);
-    color:var(--text);
-    font-family:var(--sans);
-    min-height:100vh;
-    padding:0;
-    transition:background .4s ease, color .4s ease;
-    overflow-x:hidden;
-  }
-
-  /* ---------- ANIMATED BACKGROUND ORBS ---------- */
-  .bg-orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;}
-  .bg-orbs span{
-    position:absolute;border-radius:50%;filter:blur(80px);
-    will-change:transform;opacity:.9;
-  }
-  .bg-orbs span:nth-child(1){
-    width:520px;height:520px;top:-180px;right:-120px;
-    background:var(--orb1);
-    animation:orbFloat1 22s ease-in-out infinite alternate;
-  }
-  .bg-orbs span:nth-child(2){
-    width:420px;height:420px;top:32%;left:-200px;
-    background:var(--orb2);
-    animation:orbFloat2 28s ease-in-out infinite alternate;
-  }
-  .bg-orbs span:nth-child(3){
-    width:380px;height:380px;bottom:-160px;right:8%;
-    background:var(--orb3);
-    animation:orbFloat3 26s ease-in-out infinite alternate;
-  }
-  @keyframes orbFloat1{from{transform:translate(0,0) scale(1);}to{transform:translate(-70px,60px) scale(1.12);}}
-  @keyframes orbFloat2{from{transform:translate(0,0) scale(1);}to{transform:translate(90px,-50px) scale(1.08);}}
-  @keyframes orbFloat3{from{transform:translate(0,0) scale(1);}to{transform:translate(-50px,-70px) scale(1.1);}}
-
-  .shell{max-width:720px;margin:0 auto;padding:24px 18px 64px;}
-
-  /* global scrollbars */
-  ::-webkit-scrollbar{width:8px;height:8px;}
-  ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;}
-  ::-webkit-scrollbar-thumb:hover{background:var(--text-faint);}
-
-  /* entrance stagger for initial elements */
-  .fade-up{opacity:0;animation:fadeUp .7s var(--ease-out) forwards;}
-  .fade-up.d1{animation-delay:.08s;}
-  .fade-up.d2{animation-delay:.18s;}
-  .fade-up.d3{animation-delay:.3s;}
-  @keyframes fadeUp{
-    from{opacity:0;transform:translateY(18px);}
-    to{opacity:1;transform:translateY(0);}
-  }
-
-  /* ---------- HEADER ---------- */
-  .app-header{
-    padding:28px 0 24px;
-    border-bottom:1px solid var(--border);
-    margin-bottom:24px;
-    position:relative;
-  }
-  .brand-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
-  .brand-mark{
-    width:46px;height:46px;flex-shrink:0;
-    border-radius:13px;
-    background:linear-gradient(135deg,var(--accent),var(--purple),var(--accent));
-    background-size:200% 200%;
-    animation:gradientShift 6s ease infinite, brandFloat 4.5s ease-in-out infinite;
-    display:flex;align-items:center;justify-content:center;
-    font-family:var(--mono);font-weight:700;font-size:16px;color:#08122a;
-    box-shadow:0 6px 22px rgba(91,141,239,0.4);
-  }
-  @keyframes gradientShift{
-    0%,100%{background-position:0% 50%;}
-    50%{background-position:100% 50%;}
-  }
-  @keyframes brandFloat{
-    0%,100%{transform:translateY(0);}
-    50%{transform:translateY(-4px);}
-  }
-  .header-actions{margin-left:auto;display:flex;gap:6px;align-self:flex-start;}
-  .icon-btn{
-    width:34px;height:34px;background:var(--panel-2);border:1px solid var(--border);
-    border-radius:9px;color:var(--text-dim);font-size:15px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;padding:0;
-    transition:all .2s var(--ease-out);
-  }
-  .icon-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-2px) rotate(15deg);box-shadow:0 4px 14px rgba(91,141,239,0.25);}
-  .app-header .tag{
-    font-family:var(--mono);
-    font-size:10.5px;
-    letter-spacing:2.4px;
-    text-transform:uppercase;
-    background:linear-gradient(90deg,var(--accent),var(--purple),var(--accent-2),var(--accent));
-    background-size:300% auto;
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
-    animation:textShine 5s linear infinite;
-    margin-bottom:5px;
-    font-weight:600;
-  }
-  @keyframes textShine{to{background-position:300% center;}}
-  .app-header h1{
-    font-size:24px;font-weight:700;margin:0;letter-spacing:-0.4px;line-height:1.2;
-  }
-  .app-header p{
-    color:var(--text-dim);font-size:13px;line-height:1.7;margin:10px 0 0;max-width:560px;
-  }
-
-  /* ---------- PANELS ---------- */
-  .panel{
-    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 45%), var(--panel);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:20px;
-    margin-bottom:16px;
-    transition:border-color .3s ease, box-shadow .3s ease, transform .3s var(--ease-out);
-    animation:panelIn .5s var(--ease-out) both;
-    position:relative;
-  }
-  .panel:hover{
-    border-color:color-mix(in srgb, var(--accent) 40%, var(--border));
-    box-shadow:var(--shadow);
-  }
-  @supports not (color: color-mix(in srgb, red, blue)){
-    .panel:hover{border-color:var(--accent);}
-  }
-  @keyframes panelIn{
-    from{opacity:0;transform:translateY(16px) scale(.985);}
-    to{opacity:1;transform:translateY(0) scale(1);}
-  }
-  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:8px;}
-  .panel-label{
-    font-family:var(--mono);font-size:11px;font-weight:600;
-    letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);
-    display:flex;align-items:center;gap:8px;
-  }
-  .panel-label::before{
-    content:'';width:5px;height:5px;border-radius:50%;
-    background:var(--accent);flex-shrink:0;
-    box-shadow:0 0 8px var(--accent);
-  }
-
-  .saved-pill{
-    font-family:var(--mono);font-size:9.5px;color:var(--green);
-    border:1px solid rgba(63,185,80,0.3);border-radius:20px;
-    padding:2px 9px;opacity:0;transform:translateX(-4px);
-    transition:opacity .4s ease, transform .4s var(--ease-out);
-    background:rgba(63,185,80,0.08);
-  }
-  .saved-pill.flash{opacity:1;transform:translateX(0);}
-
-  /* upload */
-  .drop{
-    border:1.5px dashed var(--border);
-    border-radius:12px;
-    padding:34px 16px;
-    text-align:center;cursor:pointer;
-    background:var(--panel-2);
-    transition:border-color .25s, background .25s, transform .25s var(--ease-out), box-shadow .25s;
-    display:block;position:relative;overflow:hidden;
-  }
-  .drop::before{
-    content:'';position:absolute;inset:0;
-    background:radial-gradient(400px 120px at 50% 0%, rgba(91,141,239,0.08), transparent 70%);
-    opacity:0;transition:opacity .3s;
-  }
-  .drop:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(91,141,239,0.12);}
-  .drop:hover::before{opacity:1;}
-  .drop.dragover{
-    border-color:var(--accent);
-    box-shadow:0 0 0 4px rgba(91,141,239,0.14) inset, 0 8px 26px rgba(91,141,239,0.18);
-    transform:scale(1.012);
-  }
-  .drop input{display:none;}
-  .drop-icon{
-    font-size:26px;margin-bottom:10px;opacity:0.95;display:block;
-    animation:iconBob 3.5s ease-in-out infinite;
-  }
-  @keyframes iconBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-5px);}}
-  .drop-label{font-size:14px;color:var(--text);font-weight:600;display:block;}
-  .drop-sub{font-size:11.5px;color:var(--text-faint);margin-top:6px;font-family:var(--mono);display:block;letter-spacing:.5px;}
-  #fileNameShow{
-    margin-top:12px;font-family:var(--mono);font-size:12px;color:var(--green);display:none;
-    align-items:center;gap:6px;word-break:break-all;
-    animation:fadeUp .4s var(--ease-out);
-  }
-
-  /* meta */
-  .meta-row{
-    display:flex;justify-content:space-between;font-size:12.5px;padding:9px 2px;
-    border-bottom:1px solid var(--border);gap:12px;
-    transition:background .2s;border-radius:4px;
-  }
-  .meta-row:hover{background:rgba(91,141,239,0.03);}
-  .meta-row:last-child{border-bottom:none;}
-  .meta-row .k{color:var(--text-dim);font-family:var(--mono);font-size:11.5px;flex-shrink:0;letter-spacing:.5px;}
-  .meta-row .v{font-weight:600;text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
-  /* target language selector */
-  .lang-field{margin-top:16px;}
-  .lang-field label{
-    display:block;font-family:var(--mono);font-size:11px;color:var(--text-dim);
-    margin-bottom:7px;text-transform:uppercase;letter-spacing:0.6px;
-  }
-  select, .num-input{
-    width:100%;background:var(--panel-2);
-    border:1px solid var(--border);border-radius:9px;
-    color:var(--text);font-family:var(--sans);font-size:13px;padding:10px 11px;
-    transition:border-color .2s, box-shadow .2s;
-  }
-  select:focus,.num-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.12);}
-  .lang-hint{font-size:11px;color:var(--text-faint);margin-top:7px;line-height:1.55;}
-
-  /* settings */
-  details.settings{
-    margin-top:16px;border:1px solid var(--border);border-radius:10px;
-    background:var(--panel-2);overflow:hidden;
-    transition:border-color .25s;
-  }
-  details.settings:hover{border-color:var(--accent);}
-  details.settings summary{
-    cursor:pointer;padding:11px 13px;
-    font-family:var(--mono);font-size:11px;letter-spacing:0.6px;
-    text-transform:uppercase;color:var(--text-dim);
-    list-style:none;display:flex;align-items:center;justify-content:space-between;
-    user-select:none;transition:color .2s;
-  }
-  details.settings summary:hover{color:var(--text);}
-  details.settings summary::-webkit-details-marker{display:none;}
-  details.settings summary::after{content:'+';font-size:15px;color:var(--text-faint);transition:transform .3s var(--ease-out);}
-  details.settings[open] summary::after{transform:rotate(45deg);color:var(--accent);}
-  .settings-grid{
-    padding:4px 13px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;
-    animation:fadeUp .35s var(--ease-out);
-  }
-  @media(max-width:480px){.settings-grid{grid-template-columns:1fr;}}
-  .setting-field label{
-    display:block;font-family:var(--mono);font-size:10px;color:var(--text-dim);
-    margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px;
-  }
-  .setting-field .range-row{display:flex;align-items:center;gap:10px;}
-  input[type=range]{
-    flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:3px;
-    background:var(--border);outline:none;cursor:pointer;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;width:15px;height:15px;border-radius:50%;
-    background:var(--accent);cursor:pointer;border:2px solid var(--bg);
-    box-shadow:0 0 0 2px var(--accent);
-    transition:transform .15s, box-shadow .2s;
-  }
-  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 0 0 2px var(--accent), 0 0 12px rgba(91,141,239,.5);}
-  .range-val{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:44px;text-align:right;}
-  .range-pair{display:flex;gap:8px;align-items:center;}
-  .range-pair .num-input{padding:7px 8px;font-family:var(--mono);font-size:12px;}
-  .range-pair span{color:var(--text-faint);font-family:var(--mono);font-size:10px;}
-
-  /* progress */
-  .prog-track{
-    height:9px;background:var(--panel-2);border-radius:7px;overflow:hidden;
-    border:1px solid var(--border);position:relative;
-  }
-  .prog-fill{
-    height:100%;width:0%;
-    background:linear-gradient(90deg,var(--accent),var(--purple),var(--accent-2));
-    background-size:200% 100%;
-    animation:gradientShift 4s ease infinite;
-    transition:width .5s var(--ease-out);
-    position:relative;border-radius:7px;
-    box-shadow:0 0 10px rgba(91,141,239,0.4);
-  }
-  .prog-fill.animating::after{
-    content:'';position:absolute;inset:0;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.32),transparent);
-    animation:shimmer 1.5s infinite;
-  }
-  @keyframes shimmer{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
-  .prog-label{
-    display:flex;justify-content:space-between;
-    font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:9px;gap:8px;flex-wrap:wrap;
-  }
-  #etaText{color:var(--text-faint);}
-
-  /* stat chips */
-  .stat-chips{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
-  .chip{
-    font-family:var(--mono);font-size:10px;font-weight:600;
-    padding:5px 10px;border-radius:20px;border:1px solid var(--border);
-    color:var(--text-dim);background:var(--panel-2);
-    display:inline-flex;align-items:center;gap:5px;
-    transition:transform .25s var(--ease-out), box-shadow .25s;
-  }
-  .chip:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(0,0,0,.18);}
-  .chip b{font-weight:700;}
-  .chip-done{color:var(--green);border-color:rgba(63,185,80,0.3);}
-  .chip-issue{color:var(--red);border-color:rgba(229,83,75,0.3);}
-  .chip-skip{color:var(--amber);border-color:rgba(210,153,34,0.3);}
-  .chip-words{color:var(--purple);border-color:rgba(163,113,247,0.3);}
-  .chip.bump{transform:scale(1.14);}
-
-  /* chapter toolbar */
-  .chap-toolbar{display:flex;gap:8px;margin-top:16px;}
-  .chap-search{
-    flex:1;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
-    color:var(--text);font-family:var(--sans);font-size:12.5px;padding:9px 11px;min-width:0;
-    transition:border-color .2s, box-shadow .2s;
-  }
-  .chap-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.12);}
-  .filter-btns{display:flex;gap:4px;flex-shrink:0;}
-  .filter-btn{
-    background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
-    color:var(--text-dim);font-family:var(--mono);font-size:10px;font-weight:600;
-    padding:0 11px;cursor:pointer;transition:all .2s var(--ease-out);
-  }
-  .filter-btn:hover{transform:translateY(-1px);border-color:var(--accent);}
-  .filter-btn.active{color:var(--accent);border-color:var(--accent);background:rgba(91,141,239,0.08);box-shadow:0 2px 10px rgba(91,141,239,0.15);}
-
-  /* chapter list — content-visibility keeps RAM/CPU low for huge books */
-  .chap-list{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;margin-top:12px;padding-right:2px;}
-  .chap-item-wrap{
-    display:flex;flex-direction:column;
-    content-visibility:auto;
-    contain-intrinsic-size:auto 40px;
-  }
-  .chap-item-wrap.hidden{display:none;}
-  .chap-list::-webkit-scrollbar{width:5px;}
-  .chap-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-  .chap-item{
-    display:flex;align-items:center;gap:10px;
-    background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
-    padding:9px 11px;font-size:12.5px;cursor:pointer;
-    transition:border-color .2s, background .2s, transform .2s var(--ease-out), box-shadow .2s;
-  }
-  .chap-item:hover{border-color:var(--accent);transform:translateX(3px);box-shadow:-3px 0 0 0 rgba(91,141,239,.35);}
-  .chap-item.active{
-    border-color:var(--accent);
-    box-shadow:0 0 0 3px rgba(91,141,239,0.14);
-    background:rgba(91,141,239,0.05);
-  }
-  .chap-idx{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);min-width:24px;}
-  .chap-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
-  .chap-status{
-    font-family:var(--mono);font-size:9.5px;font-weight:600;
-    padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:0.4px;
-    white-space:nowrap;border:1px solid transparent;transition:all .3s var(--ease-out);
-  }
-  .st-pending{background:transparent;color:var(--text-faint);border-color:var(--border);}
-  .st-active{
-    background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);
-    animation:pulseGlow 1.4s ease-in-out infinite;
-  }
-  @keyframes pulseGlow{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(210,153,34,.25);}50%{opacity:0.6;box-shadow:0 0 8px 2px rgba(210,153,34,.15);}}
-  .st-done{background:rgba(63,185,80,0.12);color:var(--green);border-color:rgba(63,185,80,0.3);animation:statusPop .35s var(--ease-out);}
-  @keyframes statusPop{0%{transform:scale(.7);}60%{transform:scale(1.12);}100%{transform:scale(1);}}
-  .st-retry{background:rgba(210,153,34,0.12);color:var(--amber);border-color:rgba(210,153,34,0.3);animation:pulseGlow 1.4s infinite;}
-  .st-unverified{background:rgba(229,83,75,0.12);color:var(--red);border-color:rgba(229,83,75,0.3);animation:statusPop .35s var(--ease-out);}
-  .st-skipped{background:rgba(139,147,161,0.12);color:var(--text-dim);border-color:var(--border);}
-
-  /* live viewer */
-  .viewer-controls{display:flex;gap:4px;align-items:center;}
-  .vc-btn{
-    width:28px;height:28px;background:var(--panel-2);border:1px solid var(--border);
-    border-radius:7px;color:var(--text-dim);font-family:var(--mono);font-size:11px;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
-    transition:all .2s var(--ease-out);
-  }
-  .vc-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-2px);}
-  .vc-btn:active{transform:scale(.92);}
-  #viewerLabel{
-    font-family:var(--mono);font-size:9.5px;color:var(--text-faint);
-    text-transform:none;letter-spacing:0;font-weight:400;
-  }
-  .live-badge{
-    display:none;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;
-    color:var(--amber);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;
-    margin-left:6px;
-  }
-  .live-badge.on{display:inline-flex;}
-  .live-dot{
-    width:6px;height:6px;border-radius:50%;background:var(--amber);
-    box-shadow:0 0 6px var(--amber);animation:pulseGlow 1.2s ease-in-out infinite;
-  }
-  #viewer{
-    background:var(--viewer-bg);color:var(--viewer-text);border-radius:10px;padding:20px;
-    min-height:140px;max-height:360px;overflow-y:auto;
-    font-size:13.5px;line-height:1.75;word-wrap:break-word;
-    border:1px solid var(--border);
-    transition:font-size .15s, box-shadow .3s, border-color .3s;
-    box-shadow:inset 0 2px 8px rgba(0,0,0,.04);
-  }
-  #viewer.live{border-color:var(--amber);box-shadow:inset 0 2px 8px rgba(0,0,0,.04), 0 0 0 3px rgba(210,153,34,0.14);}
-  #viewer::-webkit-scrollbar{width:6px;}
-  #viewer::-webkit-scrollbar-thumb{background:#c9c4b8;border-radius:6px;}
-  #viewer .ph{color:#8a8578;text-align:center;padding:38px 10px;font-size:12.5px;font-family:var(--mono);}
-  #viewer p{margin:0 0 0.8em;}
-  #viewer h1,#viewer h2,#viewer h3{margin:0.6em 0 0.4em;}
-  #viewer img{max-width:100%;height:auto;}
-
-  /* buttons */
-  .btn{
-    width:100%;padding:14px;border:1px solid transparent;border-radius:11px;
-    font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer;
-    transition:filter .15s, transform .15s var(--ease-out), box-shadow .25s;
-    position:relative;overflow:hidden;
-  }
-  .btn:hover:not(:disabled){transform:translateY(-2px);}
-  .btn:active{filter:brightness(0.92);transform:scale(0.985);}
-  .btn-primary{
-    background:linear-gradient(135deg,var(--accent),#4a7de0,var(--purple));
-    background-size:200% 200%;
-    animation:gradientShift 5s ease infinite;
-    color:#08122a;
-    box-shadow:0 4px 18px rgba(91,141,239,0.3);
-  }
-  [data-theme="light"] .btn-primary{color:#fff;}
-  .btn-primary:hover:not(:disabled){box-shadow:0 8px 28px rgba(91,141,239,0.45);}
-  .btn-primary:disabled{background:var(--panel-2);color:var(--text-faint);cursor:not-allowed;border-color:var(--border);box-shadow:none;animation:none;transform:none;}
-  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);margin-top:8px;}
-  .btn-ghost:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(91,141,239,0.12);}
-  .btn-amber{background:rgba(210,153,34,0.1);color:var(--amber);border:1px solid rgba(210,153,34,0.35);margin-top:8px;}
-  .btn-amber:hover{box-shadow:0 4px 14px rgba(210,153,34,0.18);}
-  .btn-danger{background:rgba(229,83,75,0.1);color:var(--red);border:1px solid rgba(229,83,75,0.35);margin-top:8px;}
-  .btn-danger:hover{box-shadow:0 4px 14px rgba(229,83,75,0.18);}
-  .btn-row{display:flex;gap:8px;}
-  .btn-row .btn{margin-top:8px;}
-
-  /* ripple (added via JS) */
-  .ripple-ink{
-    position:absolute;border-radius:50%;pointer-events:none;
-    background:rgba(255,255,255,0.35);
-    transform:scale(0);animation:rippleGo .55s ease-out forwards;
-  }
-  [data-theme="light"] .btn-ghost .ripple-ink,
-  [data-theme="light"] .filter-btn .ripple-ink{background:rgba(53,103,214,0.18);}
-  @keyframes rippleGo{to{transform:scale(3.2);opacity:0;}}
-
-  .note-box{
-    display:flex;gap:10px;background:var(--panel-2);border:1px solid var(--border);
-    border-radius:10px;padding:13px;font-size:12px;line-height:1.6;color:var(--text-dim);margin-top:14px;
-  }
-  .note-box .ic{
-    font-family:var(--mono);color:var(--accent);font-size:11px;flex-shrink:0;font-weight:700;
-    width:18px;height:18px;border:1px solid rgba(91,141,239,.4);border-radius:50%;
-    display:flex;align-items:center;justify-content:center;margin-top:1px;
-  }
-  kbd{
-    font-family:var(--mono);font-size:10px;background:var(--bg);
-    border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:1px 5px;color:var(--text-dim);
-  }
-
-  .log-box{
-    font-family:var(--mono);font-size:11px;margin-top:14px;max-height:150px;
-    overflow-y:auto;display:none;border-top:1px solid var(--border);padding-top:10px;
-  }
-  .log-line{color:var(--text-faint);padding:2px 0;animation:logIn .25s ease;}
-  @keyframes logIn{from{opacity:0;transform:translateX(-6px);}to{opacity:1;transform:none;}}
-  .log-line.ok{color:var(--green);}
-  .log-line.err{color:var(--red);}
-  .log-line.warn{color:var(--amber);}
-
-  .footer-note{
-    text-align:center;font-size:10.5px;color:var(--text-faint);
-    margin-top:10px;padding:14px;font-family:var(--mono);line-height:1.9;
-  }
-  .footer-note .dot{color:var(--border);margin:0 6px;}
-
-  /* ---------- CHAPTER EDITOR ---------- */
-  .panel-sub{font-size:12px;color:var(--text-dim);line-height:1.55;margin:-6px 0 16px;}
-  .editor-list{max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px;}
-  .editor-list::-webkit-scrollbar{width:5px;}
-  .editor-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
-  .editor-row{
-    display:flex;align-items:center;gap:8px;
-    background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:9px;
-    transition:border-color .2s, opacity .25s, box-shadow .2s, transform .2s var(--ease-out);
-    content-visibility:auto;
-    contain-intrinsic-size:auto 58px;
-  }
-  .editor-row:hover{border-color:var(--accent);}
-  .editor-row.excluded{opacity:0.4;}
-  .editor-row.dragging{opacity:0.35;border-style:dashed;transform:scale(.99);}
-  .editor-row.drop-target{border-color:var(--accent);box-shadow:0 0 0 2px rgba(91,141,239,0.2);transform:translateY(-1px);}
-  .drag-handle{
-    cursor:grab;color:var(--text-faint);font-size:13px;padding:0 2px;
-    flex-shrink:0;user-select:none;letter-spacing:-2px;font-family:var(--mono);
-    transition:color .2s;
-  }
-  .editor-row:hover .drag-handle{color:var(--accent);}
-  .drag-handle:active{cursor:grabbing;}
-  .editor-pos{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);min-width:20px;text-align:center;}
-  .editor-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
-  .editor-title-input{
-    width:100%;background:var(--bg);border:1px solid var(--border);border-radius:7px;
-    color:var(--text);font-family:var(--sans);font-size:12.5px;padding:7px 9px;min-width:0;
-    transition:border-color .2s, box-shadow .2s;
-  }
-  .editor-title-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.1);}
-  .editor-title-input:disabled{color:var(--text-faint);cursor:not-allowed;}
-  .editor-wc{font-family:var(--mono);font-size:9px;color:var(--text-faint);padding-left:2px;}
-  .editor-controls{display:flex;gap:3px;flex-shrink:0;}
-  .editor-btn{
-    width:27px;height:27px;background:var(--bg);border:1px solid var(--border);border-radius:7px;
-    color:var(--text-dim);font-family:var(--mono);font-size:12px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;padding:0;
-    transition:all .18s var(--ease-out);
-  }
-  .editor-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-1px);}
-  .editor-btn:active{transform:scale(.9);}
-  .editor-btn:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
-  .editor-btn.toggle-off{color:var(--red);border-color:rgba(229,83,75,0.35);}
-  .editor-footer{display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap;}
-  .editor-footer-group{display:flex;gap:6px;flex-wrap:wrap;}
-  .mini-btn{
-    background:transparent;border:1px solid var(--border);border-radius:7px;
-    color:var(--text-dim);font-family:var(--mono);font-size:10px;padding:6px 11px;cursor:pointer;
-    transition:all .2s var(--ease-out);
-  }
-  .mini-btn:hover{color:var(--text);border-color:var(--accent);transform:translateY(-1px);box-shadow:0 3px 10px rgba(91,141,239,.12);}
-
-  /* find & replace */
-  .fnr{
-    margin-top:14px;border:1px solid var(--border);border-radius:10px;
-    background:var(--panel-2);overflow:hidden;transition:border-color .25s;
-  }
-  .fnr:hover{border-color:var(--accent);}
-  .fnr summary{
-    cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:11px;
-    letter-spacing:0.6px;text-transform:uppercase;color:var(--text-dim);
-    list-style:none;display:flex;justify-content:space-between;user-select:none;
-    transition:color .2s;
-  }
-  .fnr summary:hover{color:var(--text);}
-  .fnr summary::-webkit-details-marker{display:none;}
-  .fnr summary::after{content:'+';font-size:15px;color:var(--text-faint);transition:transform .3s var(--ease-out);}
-  .fnr[open] summary::after{transform:rotate(45deg);color:var(--accent);}
-  .fnr-body{padding:4px 13px 15px;display:flex;flex-direction:column;gap:8px;animation:fadeUp .35s var(--ease-out);}
-  .fnr-row{display:flex;gap:8px;}
-  .fnr-row input[type=text]{
-    flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;
-    color:var(--text);font-family:var(--sans);font-size:12.5px;padding:9px 11px;min-width:0;
-    transition:border-color .2s, box-shadow .2s;
-  }
-  .fnr-row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,141,239,0.1);}
-  .fnr-opts{display:flex;align-items:center;gap:14px;font-size:11.5px;color:var(--text-dim);flex-wrap:wrap;}
-  .fnr-opts label{display:flex;align-items:center;gap:5px;cursor:pointer;}
-  .fnr-apply{
-    background:var(--accent);color:#08122a;border:none;border-radius:8px;
-    font-family:var(--sans);font-weight:600;font-size:12px;padding:9px 15px;cursor:pointer;
-    transition:transform .18s var(--ease-out), box-shadow .25s;
-  }
-  .fnr-apply:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(91,141,239,.35);}
-  .fnr-apply:active{transform:scale(.96);}
-  [data-theme="light"] .fnr-apply{color:#fff;}
-  .fnr-hint{font-size:10.5px;color:var(--text-faint);line-height:1.55;}
-
-  /* ---------- EXPORT TABS ---------- */
-  .export-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
-  .export-tab{
-    flex:1 1 30%;min-width:96px;
-    padding:10px 4px;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;
-    color:var(--text-dim);font-family:var(--mono);font-size:11px;font-weight:600;
-    cursor:pointer;text-align:center;transition:all .2s var(--ease-out);
-    position:relative;overflow:hidden;
-  }
-  .export-tab:hover{border-color:var(--accent);transform:translateY(-2px);}
-  .export-tab.active{
-    border-color:var(--accent);color:var(--accent);background:rgba(91,141,239,0.08);
-    box-shadow:0 4px 14px rgba(91,141,239,0.18);
-  }
-
-  /* ---------- GLOBAL BANNERS ---------- */
-  .global-banner{
-    display:none;border-radius:var(--radius);padding:15px 17px;margin-bottom:16px;
-    font-size:12.5px;line-height:1.6;animation:panelIn .35s var(--ease-out);
-  }
-  .global-banner.show{display:block;}
-  .global-banner.error{background:rgba(229,83,75,0.1);border:1px solid rgba(229,83,75,0.4);color:var(--text);}
-  .global-banner.warn{background:rgba(210,153,34,0.1);border:1px solid rgba(210,153,34,0.4);color:var(--text);}
-  .global-banner.info{background:rgba(91,141,239,0.08);border:1px solid rgba(91,141,239,0.35);color:var(--text);}
-  .global-banner-head{
-    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
-    font-weight:700;font-family:var(--mono);font-size:11.5px;
-    text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;
-  }
-  .global-banner.error .global-banner-head{color:var(--red);}
-  .global-banner.warn .global-banner-head{color:var(--amber);}
-  .global-banner.info .global-banner-head{color:var(--accent);}
-  .banner-dismiss{
-    background:none;border:none;color:var(--text-faint);cursor:pointer;
-    font-family:var(--mono);font-size:13px;padding:0;line-height:1;flex-shrink:0;
-    transition:color .2s, transform .2s;
-  }
-  .banner-dismiss:hover{color:var(--text);transform:rotate(90deg);}
-  .banner-actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;}
-  .banner-btn{
-    padding:8px 13px;border-radius:8px;font-family:var(--sans);font-size:12px;font-weight:600;
-    cursor:pointer;border:1px solid var(--border);background:var(--panel-2);color:var(--text);
-    transition:all .2s var(--ease-out);
-  }
-  .banner-btn:hover{border-color:var(--accent);transform:translateY(-1px);}
-  .banner-btn.primary{background:var(--accent);color:#08122a;border-color:var(--accent);}
-  [data-theme="light"] .banner-btn.primary{color:#fff;}
-  .banner-detail{
-    margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--text-faint);
-    white-space:pre-wrap;word-break:break-word;
-  }
-  .banner-detail summary{cursor:pointer;color:var(--text-dim);}
-
-  /* ---------- DIFF / COMPARE VIEW ---------- */
-  .compare-toggle{
-    background:none;border:1px solid var(--border);color:var(--text-faint);
-    font-family:var(--mono);font-size:9.5px;padding:3px 8px;border-radius:6px;
-    cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s var(--ease-out);
-  }
-  .compare-toggle:hover{color:var(--text);border-color:var(--accent);transform:translateY(-1px);}
-  .compare-panel{display:none;margin-top:6px;margin-bottom:2px;border:1px solid var(--border);border-radius:9px;overflow:hidden;}
-  .compare-panel.show{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);animation:panelIn .3s var(--ease-out);}
-  @media (max-width:560px){.compare-panel.show{grid-template-columns:1fr;}}
-  .compare-col{background:var(--panel-2);padding:11px;max-height:220px;overflow-y:auto;}
-  .compare-col-label{
-    font-family:var(--mono);font-size:9.5px;font-weight:700;text-transform:uppercase;
-    letter-spacing:0.5px;color:var(--text-faint);margin-bottom:6px;
-  }
-  .compare-col-text{font-size:12px;line-height:1.65;color:var(--text-dim);white-space:pre-wrap;}
-  .compare-col-text.translated{color:var(--text);}
-
-  /* ---------- TOASTS ---------- */
-  #toastWrap{
-    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-    display:flex;flex-direction:column;gap:8px;z-index:9999;
-    width:min(400px, calc(100vw - 32px));pointer-events:none;
-  }
-  .toast{
-    background:var(--panel);border:1px solid var(--border);border-radius:11px;
-    padding:12px 15px;font-size:12.5px;color:var(--text);
-    box-shadow:var(--shadow);display:flex;align-items:center;gap:10px;
-    animation:toastIn .35s var(--ease-out);pointer-events:auto;
-    backdrop-filter:blur(8px);
-  }
-  .toast.out{animation:toastOut .3s ease forwards;}
-  @keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.96);}to{opacity:1;transform:none;}}
-  @keyframes toastOut{to{opacity:0;transform:translateY(10px) scale(.97);}}
-  .toast .t-ic{font-family:var(--mono);font-weight:700;font-size:12px;flex-shrink:0;}
-  .toast.ok .t-ic{color:var(--green);}
-  .toast.err .t-ic{color:var(--red);}
-  .toast.info .t-ic{color:var(--accent);}
-  .toast.warn .t-ic{color:var(--amber);}
-
-  /* sticky mini progress */
-  #stickyProg{
-    position:fixed;top:0;left:0;right:0;height:3px;z-index:9998;
-    background:transparent;pointer-events:none;opacity:0;transition:opacity .3s;
-  }
-  #stickyProg.on{opacity:1;}
-  #stickyProg .bar{
-    height:100%;width:0%;
-    background:linear-gradient(90deg,var(--accent),var(--purple));
-    transition:width .45s ease;
-    box-shadow:0 0 8px rgba(91,141,239,.6);
-  }
-
-  /* ---------- PREMIUM LIVE ODOMETER ---------- */
-  :root{ --odo-h:58px; --odo-w:40px; --odo-fs:34px; }
-  @media (max-width:520px){ :root{ --odo-h:44px; --odo-w:30px; --odo-fs:25px; } }
-  @media (max-width:360px){ :root{ --odo-h:38px; --odo-w:26px; --odo-fs:21px; } }
-  .odo-wrap {
-    display:none; /* revealed by JS once Firebase connects */
-    flex-direction: column; align-items: center; justify-content: center;
-    padding: 24px 16px;
-    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent 45%), var(--panel);
-    border:1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 16px;
-    box-shadow: var(--shadow);
-    transition:border-color .3s ease, box-shadow .3s ease;
-    animation:panelIn .6s var(--ease-out) both;
-    position:relative;overflow:hidden;
-  }
-  .odo-wrap.ready{display:flex;}
-  .odo-wrap::before{
-    content:'';position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(420px 140px at 50% 0%, rgba(91,141,239,0.08), transparent 70%);
-  }
-  .odo-wrap:hover{
-    border-color:color-mix(in srgb, var(--accent) 40%, var(--border));
-    box-shadow:var(--shadow-hover);
-  }
-  .odo-header {
-    display: flex; align-items: center; gap: 9px; margin-bottom: 16px;
-  }
-  .live-dot-pulse {
-    width: 8px; height: 8px; background: var(--red); border-radius: 50%;
-    box-shadow: 0 0 10px var(--red); animation: redPulse 1.3s ease-in-out infinite;
-  }
-  @keyframes redPulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--red); }
-    50% { opacity: 0.45; box-shadow: 0 0 14px 4px rgba(229, 83, 75, 0.35); }
-  }
-  .odo-label {
-    font-family:var(--mono); font-size:10.5px; font-weight:600;
-    letter-spacing:2.6px; text-transform:uppercase; color:var(--text-dim);
-  }
-  .odo-container {
-    display: flex; background: #0a0c10; padding: 9px 11px;
-    border-radius: 12px;
-    box-shadow: inset 0 6px 18px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.25);
-    border: 1px solid #1d2530; border-top-color: #2a3441;
-    position:relative;
-  }
-  .odo-window {
-    width: var(--odo-w); height: var(--odo-h); overflow: hidden; background: #141821;
-    margin: 0 2px; border-radius: 5px; position: relative;
-    box-shadow: inset 0 8px 14px rgba(0,0,0,0.85), inset 0 -8px 14px rgba(0,0,0,0.85);
-    border: 1px solid #05070a;
-  }
-  .odo-window:last-child {
-    background: linear-gradient(180deg, #3c2a08 0%, #6b4a0e 50%, #3c2a08 100%);
-  }
-  .odo-window:last-child .odo-digit{ color:#ffd684; text-shadow:0 0 10px rgba(255,214,132,.4); }
-  .odo-window::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 38%;
-    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%); z-index: 2; pointer-events: none;
-  }
-  .odo-window::after {
-    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 38%;
-    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%); z-index: 2; pointer-events: none;
-  }
-  .odo-center-line {
-    position: absolute; top: 50%; left: 0; right: 0; height: 1.5px;
-    background: rgba(122,165,255,0.12); z-index: 3; pointer-events: none;
-  }
-  .odo-column {
-    display: flex; flex-direction: column;
-    will-change: transform;
-  }
-  .odo-digit {
-    height: var(--odo-h); display: flex; align-items: center; justify-content: center;
-    font-size: var(--odo-fs); font-family: var(--mono); color: #e8ecf4; font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-  }
-
-  /* accessibility & polish */
-  ::selection{background:rgba(91,141,239,0.35);}
-  .btn:focus-visible, .icon-btn:focus-visible, .vc-btn:focus-visible,
-  .filter-btn:focus-visible, .export-tab:focus-visible, .mini-btn:focus-visible,
-  .editor-btn:focus-visible, .banner-btn:focus-visible, .fnr-apply:focus-visible,
-  select:focus-visible, .chap-search:focus-visible{
-    outline:2px solid var(--accent);outline-offset:2px;
-  }
-
-  @media (prefers-reduced-motion: reduce){
-    *{transition:none !important;animation:none !important;}
-    html{scroll-behavior:auto;}
-    .fade-up{opacity:1;}
-  }
-</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
-<div id="stickyProg" aria-hidden="true"><div class="bar" id="stickyBar"></div></div>
 <div id="toastWrap" aria-live="polite"></div>
 
-<script type="module">
-  // फायरबेस के असली लिंक्स
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+<!-- Full-page drag & drop overlay -->
+<div id="dropOverlay" aria-hidden="true">
+  <div class="drop-overlay-card">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+    <b>Drop your document</b>
+    <span>.epub · .pdf · .docx · .txt</span>
+  </div>
+</div>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBVqZNnkReib87I4HQgDD1SOy2Ms8rDtho",
-    authDomain: "project-406b757a-8717-4cc8-857.firebaseapp.com",
-    databaseURL: "https://project-406b757a-8717-4cc8-857-default-rtdb.firebaseio.com",
-    projectId: "project-406b757a-8717-4cc8-857",
-    storageBucket: "project-406b757a-8717-4cc8-857.firebasestorage.app",
-    messagingSenderId: "629212608512",
-    appId: "1:629212608512:web:0df8d0a3354557824200e5",
-    measurementId: "G-W59CENB0G2"
-  };
+<!-- ============ TOP BAR ============ -->
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#" id="brandLink" aria-label="Document Translation Verifier — home">
+      <div class="brand-mark">DT</div>
+      <div class="brand-text">
+        <span class="brand-name">Translation Verifier</span>
+        <span class="brand-tag">100% local · Pro</span>
+      </div>
+    </a>
 
-  function initOdometer(){
-    const NUM_DIGITS = 7;
-    const REEL_SETS = 4;                       // 0-9 के 4 सेट प्रति रील (रोलिंग हेडरूम)
-    const wrap = document.getElementById('odoWrap');
-    const box = document.getElementById('odo-box');
-    if(!wrap || !box) return;
+    <ol class="stepper" id="stepper" aria-label="Workflow">
+      <li class="step is-active" data-step="1"><span class="step-num">1</span><span class="step-name">Upload</span></li>
+      <li class="step-sep" aria-hidden="true"></li>
+      <li class="step" data-step="2"><span class="step-num">2</span><span class="step-name">Translate</span></li>
+      <li class="step-sep" aria-hidden="true"></li>
+      <li class="step" data-step="3"><span class="step-num">3</span><span class="step-name">Review</span></li>
+      <li class="step-sep" aria-hidden="true"></li>
+      <li class="step" data-step="4"><span class="step-num">4</span><span class="step-name">Export</span></li>
+    </ol>
 
-    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    <div class="topbar-right">
+      <div class="run-pill" id="runPill" title="Run progress">
+        <svg class="ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="ring-bg" cx="11" cy="11" r="9"/><circle class="ring-fg" id="ringFg" cx="11" cy="11" r="9"/></svg>
+        <span id="runPillText">0%</span>
+      </div>
+      <button class="icon-btn" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6"/></svg>
+      </button>
+      <button class="icon-btn" id="themeToggle" title="Toggle light/dark theme" aria-label="Toggle theme">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="stickyProg" aria-hidden="true"><div class="bar" id="stickyBar"></div></div>
+</header>
 
-    // BUGFIX: पुराना कोड digit height 64px हार्डकोड करता था — रेस्पॉन्सिव साइज़ पर
-    // अंक गलत जगह रुक जाते थे। अब हम असली रेंडर की गई ऊँचाई नापते हैं।
-    function digitHeight(){
-      const d = box.querySelector('.odo-digit');
-      return d ? d.getBoundingClientRect().height : 58;
-    }
+<main class="shell" id="main">
 
-    const columns = [];
-    const positions = Array(NUM_DIGITS).fill(0); // रील के अंदर की पंक्ति (row index)
-
-    const frag = document.createDocumentFragment();
-    for (let i = 0; i < NUM_DIGITS; i++) {
-      const win = document.createElement('div');
-      win.className = 'odo-window';
-      win.innerHTML = '<div class="odo-center-line"></div>';
-      const col = document.createElement('div');
-      col.className = 'odo-column';
-      for (let k = 0; k < REEL_SETS; k++) {
-        for (let j = 0; j <= 9; j++) {
-          const d = document.createElement('div');
-          d.className = 'odo-digit';
-          d.textContent = j;
-          col.appendChild(d);
-        }
-      }
-      win.appendChild(col);
-      frag.appendChild(win);
-      columns.push(col);
-    }
-    box.appendChild(frag);
-
-    function setColumn(i, rowIndex, durationS, delayMs){
-      positions[i] = rowIndex;
-      const move = () => {
-        columns[i].style.transition = durationS > 0
-          ? `transform ${durationS}s cubic-bezier(0.22, 1, 0.36, 1)`
-          : 'none';
-        columns[i].style.transform = `translateY(-${rowIndex * digitHeight()}px)`;
-      };
-      delayMs > 0 ? setTimeout(move, delayMs) : move();
-    }
-
-    // BUGFIX: पहले positions हमेशा बढ़ती रहती थीं और रील पट्टी के अंत से बाहर
-    // निकल जाती थी (खाली/गलत अंक दिखते थे)। अब हर स्पिन के बाद बिना दिखे
-    // पहले सेट पर वापस स्नैप करते हैं — अनगिनत बार घूम सकता है।
-    columns.forEach((col, i) => {
-      col.addEventListener('transitionend', () => {
-        const digit = positions[i] % 10;
-        if (positions[i] !== digit) setColumn(i, digit, 0, 0);
-      });
-    });
-
-    function updateOdometer(newVal, isFirstLoad){
-      let v = Math.max(0, Math.floor(Number(newVal) || 0));
-      const MAX = Math.pow(10, NUM_DIGITS) - 1;
-      if (v > MAX) v = MAX; // BUGFIX: 7 अंकों से बड़ी संख्या पहले मीटर तोड़ देती थी
-      const valStr = String(v).padStart(NUM_DIGITS, '0');
-
-      for (let i = 0; i < NUM_DIGITS; i++) {
-        const target = parseInt(valStr[i], 10);
-        const from = positions[i] % 10;
-        let diff = target - from;
-        if (diff < 0) diff += 10;
-        if (!isFirstLoad && diff === 0) continue;
-
-        if (reduceMotion) { setColumn(i, target, 0, 0); continue; }
-
-        const steps = isFirstLoad ? (20 + diff) : diff;
-        // पहले बिना एनीमेशन बेस सेट पर स्नैप करें (कोई दृश्य बदलाव नहीं)…
-        setColumn(i, from, 0, 0);
-        void columns[i].offsetHeight; // reflow ताकि स्नैप पहले लागू हो
-        // …फिर वहाँ से स्मूथ स्पिन
-        setColumn(i, from + steps, isFirstLoad ? 2.2 : 0.9, isFirstLoad ? i * 120 : 0);
-      }
-    }
-
-    // resize पर तुरंत सही अंक पर री-अलाइन (responsive fix)
-    let resizeT = null;
-    window.addEventListener('resize', () => {
-      clearTimeout(resizeT);
-      resizeT = setTimeout(() => {
-        for (let i = 0; i < NUM_DIGITS; i++) setColumn(i, positions[i] % 10, 0, 0);
-      }, 150);
-    }, {passive:true});
-
-    // Firebase live sync — पैनल तभी दिखता है जब असली डेटा आ जाए,
-    // ताकि ब्लॉक/ऑफलाइन Firebase पर टूटा हुआ मीटर कभी न दिखे।
-    try{
-      const app = initializeApp(firebaseConfig);
-      const db = getDatabase(app);
-      const darshakRef = ref(db, 'darshak_ginti_pro');
-
-      // BUGFIX: हर रीफ्रेश पर +1 हो जाता था — अब एक टैब-सेशन में सिर्फ एक बार
-      let counted = false;
-      try{ counted = sessionStorage.getItem('dtv_counted') === '1'; }catch(e){}
-      if(!counted){
-        runTransaction(darshakRef, (n) => (n || 0) + 1)
-          .then(()=>{ try{ sessionStorage.setItem('dtv_counted','1'); }catch(e){} })
-          .catch(()=>{});
-      }
-
-      let isFirst = true;
-      onValue(darshakRef, (snapshot) => {
-        const val = snapshot.val() || 0;
-        if(isFirst) wrap.classList.add('ready');
-        updateOdometer(val, isFirst);
-        isFirst = false;
-      }, ()=>{ /* permission/network error → पैनल छिपा रहेगा */ });
-    }catch(err){ /* firebase blocked → चुपचाप fail, बाकी app चलता रहेगा */ }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initOdometer, { once: true });
-  } else {
-    initOdometer();
-  }
-</script>
-
-<div class="shell">
-
-  <div id="globalBanner" class="global-banner"></div>
+  <div id="globalBanner" class="global-banner" role="alert"></div>
   <div id="resumeBanner" class="global-banner info"></div>
 
-  <header class="app-header fade-up">
-    <div class="brand-row">
-      <div class="brand-mark">DT</div>
-      <div>
-        <div class="tag">100% Local &middot; Pro</div>
-        <h1>Document Translation Verifier</h1>
-      </div>
-      <div class="header-actions">
-        <button class="icon-btn" id="themeToggle" title="Toggle light/dark theme" aria-label="Toggle theme">&#9788;</button>
-      </div>
+  <!-- ============ HERO / EMPTY STATE ============ -->
+  <section class="hero" id="hero">
+    <div class="hero-top">
+      <span class="hero-badge fade-up"><span class="dot"></span>Runs entirely in your browser</span>
+      <h1 class="fade-up d1">Verify every chapter of your<br><span class="grad">Chrome translation</span> before you export</h1>
+      <p class="hero-sub fade-up d2">Upload an EPUB, PDF, DOCX or TXT. Turn on Chrome's built-in translate. The verifier walks through each chapter, confirms the text actually changed, and packages the result — nothing ever leaves your device.</p>
     </div>
-    <p>Upload EPUB, PDF, DOCX or TXT, turn on Chrome's translate, and let this tool verify every chapter before you export. Nothing ever leaves your browser.</p>
-  </header>
 
-  <!-- LIVE VISITORS ODOMETER (shown once Firebase data arrives) -->
-  <div class="odo-wrap" id="odoWrap" role="status" aria-label="Total live visitors counter">
-    <div class="odo-header">
-      <span class="live-dot-pulse" aria-hidden="true"></span>
-      <span class="odo-label">कुल लाइव दर्शक</span>
+    <label class="drop drop-hero fade-up d3" id="dropZone" for="epubFile">
+      <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt" hidden>
+      <span class="drop-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+      </span>
+      <span class="drop-label">Drop a document here, or <em>browse</em></span>
+      <span class="drop-sub">Large books are fine — chapters are streamed and memory-capped.</span>
+      <span class="format-chips" aria-hidden="true">
+        <span class="format-chip">EPUB</span><span class="format-chip">PDF</span><span class="format-chip">DOCX</span><span class="format-chip">TXT</span>
+      </span>
+      <span class="drop-cta"><span class="btn-inline" role="presentation">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        Choose a file
+      </span></span>
+    </label>
+
+    <div class="feature-grid fade-up d4">
+      <article class="feature">
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <h3>Chapter-by-chapter verification</h3>
+        <p>Each section is rendered, scrolled, and checked for a real script or text change before it's accepted.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <h3>Private by design</h3>
+        <p>Parsing, verification and export all happen locally. Progress is auto-saved in your browser's IndexedDB.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+        <h3>Review &amp; arrange</h3>
+        <p>Rename, reorder with drag-and-drop, exclude chapters, and fix recurring mistranslations with find &amp; replace.</p>
+      </article>
+      <article class="feature">
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></div>
+        <h3>Five export formats</h3>
+        <p>Story TXT, per-chapter ZIP, EPUB3 with table of contents, Markdown, or a self-contained HTML page.</p>
+      </article>
     </div>
-    <div class="odo-container" id="odo-box" aria-hidden="true">
-      <!-- digits injected by JS -->
+
+    <div class="how">
+      <div class="how-title">How it works</div>
+      <ol class="how-steps">
+        <li class="how-step"><span class="how-num">1</span><h4>Upload</h4><p>Pick or drop a file. The document is split into chapters, pages or sections.</p></li>
+        <li class="how-step"><span class="how-num">2</span><h4>Enable Chrome translate</h4><p>Use the address-bar icon (or right-click → Translate) and pick your target language.</p></li>
+        <li class="how-step"><span class="how-num">3</span><h4>Run &amp; export</h4><p>Press <kbd>S</kbd> to start. Watch live progress, then download in the format you need.</p></li>
+      </ol>
+    </div>
+
+    <!-- LIVE VISITORS ODOMETER (shown once Firebase data arrives) -->
+    <div class="odo-wrap" id="odoWrap" role="status" aria-label="Total live visitors counter">
+      <div class="odo-header">
+        <span class="live-dot-pulse" aria-hidden="true"></span>
+        <span class="odo-label">कुल लाइव दर्शक</span>
+      </div>
+      <div class="odo-container" id="odo-box" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- ============ WORKSPACE (2-column) ============ -->
+  <div class="workspace" id="workspace">
+
+    <!-- ---------- SIDEBAR ---------- -->
+    <aside class="sidebar" id="sidebar">
+
+      <section class="panel" id="upload-section">
+        <div class="panel-head">
+          <span class="panel-label">Source</span>
+          <div class="panel-actions">
+            <button class="mini-btn" id="changeFileBtn" title="Load a different document">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+              Change file
+            </button>
+          </div>
+        </div>
+
+        <div class="file-card" id="fileCard">
+          <div class="file-ext" id="fileExt" data-ext="epub">EPUB</div>
+          <div class="file-info">
+            <div class="file-name" id="fileNameShow">—</div>
+            <div class="file-size" id="fileSizeShow"></div>
+          </div>
+        </div>
+
+        <div class="meta-grid" id="metaBox">
+          <div class="meta-cell wide"><div class="k">Title</div><div class="v" id="mTitle">—</div></div>
+          <div class="meta-cell"><div class="k">Chapters</div><div class="v" id="mChapters">—</div></div>
+          <div class="meta-cell"><div class="k">Est. words</div><div class="v" id="mWords">—</div></div>
+          <div class="meta-cell wide"><div class="k">Status</div><div class="v" id="mStatus">Loaded</div></div>
+        </div>
+
+        <div class="lang-field" id="langField">
+          <label class="field-label" for="targetLang">Target language (helps verification)</label>
+          <select id="targetLang">
+            <option value="auto">Auto-detect any translation</option>
+            <option value="script">Non-Latin script (Hindi, Chinese, Arabic, Russian…)</option>
+            <option value="latin">Latin-script language (French, Spanish, German…)</option>
+          </select>
+          <div class="lang-hint">Pick "Latin-script" for languages sharing the English alphabet — it uses a stricter text-difference check instead of a script change.</div>
+
+          <details class="settings" id="settingsBox">
+            <summary>Advanced settings</summary>
+            <div class="settings-grid">
+              <div class="setting-field">
+                <label for="setTimeout">Verify timeout / chapter</label>
+                <div class="range-row"><input type="range" id="setTimeout" min="4" max="25" step="1" value="8"><span class="range-val" id="setTimeoutVal">8s</span></div>
+              </div>
+              <div class="setting-field">
+                <label for="setRetries">Max retries / chapter</label>
+                <div class="range-row"><input type="range" id="setRetries" min="1" max="4" step="1" value="2"><span class="range-val" id="setRetriesVal">2</span></div>
+              </div>
+              <div class="setting-field">
+                <label for="setGap">Delay between chapters</label>
+                <div class="range-row"><input type="range" id="setGap" min="0" max="4000" step="250" value="500"><span class="range-val" id="setGapVal">0.5s</span></div>
+              </div>
+              <div class="setting-field">
+                <label for="setScroll">Auto-scroll speed</label>
+                <div class="range-row"><input type="range" id="setScroll" min="80" max="500" step="20" value="200"><span class="range-val" id="setScrollVal">200ms</span></div>
+              </div>
+              <div class="setting-field">
+                <label for="rangeFrom">Chapter range (from – to)</label>
+                <div class="range-pair">
+                  <input type="number" class="num-input" id="rangeFrom" min="1" value="1" aria-label="From chapter">
+                  <span>&ndash;</span>
+                  <input type="number" class="num-input" id="rangeTo" min="1" value="1" aria-label="To chapter">
+                </div>
+              </div>
+              <div class="setting-field">
+                <label for="setFollow">Follow active chapter</label>
+                <select id="setFollow"><option value="on">On (auto-scroll list)</option><option value="off">Off</option></select>
+              </div>
+              <div class="setting-field">
+                <label for="setSound">Completion sound</label>
+                <select id="setSound"><option value="on">On</option><option value="off">Off</option></select>
+              </div>
+              <div class="setting-field">
+                <label for="setNotify">Desktop notification</label>
+                <select id="setNotify"><option value="on">On (when tab hidden)</option><option value="off">Off</option></select>
+              </div>
+              <div class="setting-field">
+                <label for="setMemSaver">Memory saver</label>
+                <select id="setMemSaver"><option value="on">On (recommended)</option><option value="off">Off (full compare text)</option></select>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div id="parseWarnings" class="global-banner warn"></div>
+      </section>
+
+      <section class="panel" id="chapPanel">
+        <div class="panel-head">
+          <span class="panel-label">Chapters <span class="saved-pill" id="savedPill">auto-saved</span></span>
+          <div class="panel-actions">
+            <button class="vc-btn" id="jumpActiveBtn" title="Jump to active chapter" aria-label="Jump to active chapter" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+        <div class="prog-label">
+          <span id="progText">0 / 0 completed</span>
+          <span id="progPercent">0%</span>
+          <span id="etaText"></span>
+        </div>
+        <div class="stat-grid" id="statChips">
+          <div class="stat done"><b id="statDone">0</b><span>verified</span></div>
+          <div class="stat issue"><b id="statIssue">0</b><span>unverified</span></div>
+          <div class="stat skip"><b id="statSkip">0</b><span>skipped</span></div>
+          <div class="stat"><b id="statPending">0</b><span>pending</span></div>
+          <div class="stat words"><b id="statWords">0</b><span>words out</span></div>
+          <div class="stat"><b id="statReadTime">0m</b><span>read time</span></div>
+        </div>
+        <div class="chap-toolbar">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input class="chap-search" id="chapFilter" type="search" placeholder="Filter chapters…" aria-label="Filter chapters">
+          </div>
+          <div class="filter-btns" id="statusFilters" role="tablist">
+            <button class="filter-btn active" data-f="all">All</button>
+            <button class="filter-btn" data-f="pending">Pending</button>
+            <button class="filter-btn" data-f="done">Done</button>
+            <button class="filter-btn" data-f="issues">Issues</button>
+          </div>
+        </div>
+        <div class="chap-list scroll-area" id="chapList" role="list"></div>
+      </section>
+    </aside>
+
+    <!-- ---------- CONTENT ---------- -->
+    <div class="content" id="content">
+
+      <!-- Run bar -->
+      <section class="runbar" id="actionPanel" aria-label="Run controls">
+        <div class="run-status">
+          <b id="runStatusTitle">Ready to translate</b>
+          <span id="runStatusSub">Enable Chrome translate, then press Start (or S)</span>
+        </div>
+        <div class="run-buttons">
+          <button class="btn btn-primary btn-lg" id="startBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <span class="lbl" id="startBtnLabel">Start Verified Translation</span>
+          </button>
+          <button class="btn btn-amber" id="pauseBtn" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+            <span class="lbl" id="pauseBtnLabel">Pause</span>
+          </button>
+          <button class="btn btn-ghost" id="skipBtn" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l8.5 6L6 18zM16 6h2v12h-2z"/></svg>
+            <span class="lbl">Skip</span>
+          </button>
+          <button class="btn btn-danger" id="stopBtn" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            <span class="lbl">Stop</span>
+          </button>
+          <button class="btn btn-ghost" id="retryFailedBtn" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+            <span class="lbl">Retry issues</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Preview -->
+      <section class="panel" id="viewerPanel">
+        <div class="panel-head">
+          <div class="viewer-title">
+            <span class="panel-label">Preview</span>
+            <span id="viewerLabel"></span>
+            <span class="live-badge" id="liveBadge"><span class="live-dot"></span>Live</span>
+          </div>
+          <div class="viewer-controls">
+            <button class="vc-btn" id="prevChapBtn" title="Previous chapter (←)" aria-label="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+            <button class="vc-btn" id="nextChapBtn" title="Next chapter (→)" aria-label="Next chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            <span class="vc-sep"></span>
+            <button class="vc-btn" id="fontMinus" title="Smaller text" aria-label="Decrease font size">A−</button>
+            <button class="vc-btn" id="fontPlus" title="Larger text" aria-label="Increase font size">A+</button>
+            <span class="vc-sep"></span>
+            <button class="vc-btn" id="copyViewer" title="Copy visible text" aria-label="Copy visible text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+            <button class="vc-btn" id="expandViewer" title="Expand / collapse preview (F)" aria-label="Expand preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+          </div>
+        </div>
+        <div class="viewer-frame" id="viewerFrame">
+          <div class="viewer-scrollbar" aria-hidden="true"><i id="viewerScrollBar"></i></div>
+          <div class="viewer-fade top" aria-hidden="true"></div>
+          <div id="viewer" class="scroll-area" tabindex="0" aria-live="off"><div class="ph">Click a chapter to preview it, or start the run to watch live</div></div>
+          <div class="viewer-fade bottom" aria-hidden="true"></div>
+        </div>
+        <div class="viewer-foot">
+          <span id="viewerMeta"></span>
+          <span class="kbd-hints"><span><kbd>S</kbd> start</span><span><kbd>P</kbd> pause</span><span><kbd>K</kbd> skip</span><span><kbd>Esc</kbd> stop</span><span><kbd>←</kbd><kbd>→</kbd> chapters</span></span>
+        </div>
+
+        <details class="log-details" id="logDetails">
+          <summary><span>Activity log <span class="log-count" id="logCount"></span></span></summary>
+          <div id="logBox" class="log-box scroll-area"><div class="log-empty">No activity yet.</div></div>
+        </details>
+
+        <div class="note-box">
+          <div class="ic">i</div>
+          <div>Enable Chrome's translation first (address-bar icon, or right-click → Translate). Each chapter is scrolled and checked for translated text automatically; nothing is uploaded anywhere.</div>
+        </div>
+      </section>
+
+      <!-- Review & Arrange -->
+      <section class="panel" id="editorPanel" style="display:none;">
+        <div class="panel-head">
+          <span class="panel-label">Review &amp; Arrange</span>
+          <div class="panel-actions">
+            <button class="mini-btn" id="resetOrderBtn">Reset order</button>
+          </div>
+        </div>
+        <p class="panel-sub">Rename chapters, drag <span style="font-family:var(--mono);">⋮⋮</span> to reorder, or exclude chapters — affects exports only.</p>
+        <div class="editor-list scroll-area" id="editorList"></div>
+
+        <details class="fnr" id="fnrBox">
+          <summary>Find &amp; Replace</summary>
+          <div class="fnr-body">
+            <div class="fnr-row">
+              <input type="text" id="fnrFind" placeholder="Find text…" aria-label="Find text">
+              <input type="text" id="fnrReplace" placeholder="Replace with…" aria-label="Replace with">
+            </div>
+            <div class="fnr-opts">
+              <label><input type="checkbox" id="fnrCase"> Match case</label>
+              <span id="fnrPreview" style="font-family:var(--mono);font-size:10.5px;"></span>
+              <button class="fnr-apply" id="fnrApplyBtn">Replace All</button>
+            </div>
+            <div class="fnr-hint">Fixes recurring mistranslations across all included chapters. Auto-saved and reflected in every export.</div>
+          </div>
+        </details>
+
+        <div class="editor-footer">
+          <div class="editor-footer-group">
+            <button class="mini-btn" id="backupExportBtn" title="Save all progress as a .json file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+              Backup .json
+            </button>
+            <button class="mini-btn" id="backupImportBtn" title="Restore progress from a backup file">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+              Restore backup
+            </button>
+            <input type="file" id="backupFileInput" accept=".json,application/json" hidden>
+          </div>
+        </div>
+      </section>
+
+      <!-- Export -->
+      <section class="panel" id="downloadPanel" style="display:none;">
+        <div class="panel-head">
+          <span class="panel-label">Export</span>
+        </div>
+        <div class="export-summary">
+          <div class="meta-cell"><div class="k">Translated</div><div class="v" id="dDone">0</div></div>
+          <div class="meta-cell"><div class="k">Skipped / unverified</div><div class="v" id="dSkipped">0</div></div>
+          <div class="meta-cell"><div class="k">Words</div><div class="v" id="dWords">0</div></div>
+        </div>
+
+        <div class="export-tabs" id="exportTabs" role="tablist">
+          <button class="export-tab active" data-mode="story" role="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+            <b>Story TXT</b><small>plain text</small>
+          </button>
+          <button class="export-tab" data-mode="txt" role="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M10 4v4h4V4M10 12h4M12 12v4"/></svg>
+            <b>ZIP</b><small>per chapter</small>
+          </button>
+          <button class="export-tab" data-mode="epub" role="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <b>EPUB</b><small>e-reader</small>
+          </button>
+          <button class="export-tab" data-mode="md" role="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 15V9l3 3 3-3v6M16 9v6M14 13l2 2 2-2"/></svg>
+            <b>Markdown</b><small>.md</small>
+          </button>
+          <button class="export-tab" data-mode="html" role="tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>
+            <b>HTML</b><small>web page</small>
+          </button>
+        </div>
+
+        <button class="btn btn-primary btn-block" id="downloadBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+          <span id="downloadBtnLabel">Download story as a single .txt file</span>
+        </button>
+        <div class="note-box" id="exportNote"><div class="ic">i</div><div id="exportNoteText">One plain .txt file with just the translated story text, in order — no chapter numbers, titles or dividers.</div></div>
+      </section>
+
     </div>
   </div>
 
-  <!-- UPLOAD -->
-  <section class="panel fade-up d1" id="upload-section">
-    <div class="panel-head">
-      <span class="panel-label">Source File</span>
-    </div>
-    <label class="drop" id="dropZone">
-      <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt">
-      <span class="drop-icon">&#128218;</span>
-      <span class="drop-label">Select or drop a document</span>
-      <span class="drop-sub">.epub &middot; .pdf &middot; .docx &middot; .txt</span>
-    </label>
-    <div id="fileNameShow"></div>
-
-    <div id="metaBox" style="display:none;margin-top:14px;">
-      <div class="meta-row"><span class="k">TITLE</span><span class="v" id="mTitle">—</span></div>
-      <div class="meta-row"><span class="k">CHAPTERS</span><span class="v" id="mChapters">—</span></div>
-      <div class="meta-row"><span class="k">EST. WORDS</span><span class="v" id="mWords">—</span></div>
-      <div class="meta-row"><span class="k">STATUS</span><span class="v" id="mStatus">Loaded</span></div>
-    </div>
-
-    <div class="lang-field" id="langField" style="display:none;">
-      <label for="targetLang">Target language (helps verification)</label>
-      <select id="targetLang">
-        <option value="auto">Auto-detect any translation</option>
-        <option value="script">Non-Latin script (Hindi, Chinese, Arabic, Russian…)</option>
-        <option value="latin">Latin-script language (French, Spanish, German…)</option>
-      </select>
-      <div class="lang-hint">Pick "Latin-script" for languages using the same alphabet as English — it uses a stricter text-difference check instead of a script change.</div>
-
-      <details class="settings" id="settingsBox">
-        <summary>Advanced settings</summary>
-        <div class="settings-grid">
-          <div class="setting-field">
-            <label for="setTimeout">Verify timeout per chapter</label>
-            <div class="range-row">
-              <input type="range" id="setTimeout" min="4" max="25" step="1" value="8">
-              <span class="range-val" id="setTimeoutVal">8s</span>
-            </div>
-          </div>
-          <div class="setting-field">
-            <label for="setRetries">Max retries per chapter</label>
-            <div class="range-row">
-              <input type="range" id="setRetries" min="1" max="4" step="1" value="2">
-              <span class="range-val" id="setRetriesVal">2</span>
-            </div>
-          </div>
-          <div class="setting-field">
-            <label for="setGap">Delay between chapters</label>
-            <div class="range-row">
-              <input type="range" id="setGap" min="0" max="4000" step="250" value="500">
-              <span class="range-val" id="setGapVal">0.5s</span>
-            </div>
-          </div>
-          <div class="setting-field">
-            <label for="setScroll">Auto-scroll speed</label>
-            <div class="range-row">
-              <input type="range" id="setScroll" min="80" max="500" step="20" value="200">
-              <span class="range-val" id="setScrollVal">200ms</span>
-            </div>
-          </div>
-          <div class="setting-field">
-            <label for="rangeFrom">Chapter range (from – to)</label>
-            <div class="range-pair">
-              <input type="number" class="num-input" id="rangeFrom" min="1" value="1" aria-label="From chapter">
-              <span>&ndash;</span>
-              <input type="number" class="num-input" id="rangeTo" min="1" value="1" aria-label="To chapter">
-            </div>
-          </div>
-          <div class="setting-field">
-            <label for="setSound">Completion sound</label>
-            <select id="setSound" class="num-input" style="padding:6px 10px;">
-              <option value="on">On</option>
-              <option value="off">Off</option>
-            </select>
-          </div>
-          <div class="setting-field">
-            <label for="setNotify">Desktop notification</label>
-            <select id="setNotify" class="num-input" style="padding:6px 10px;">
-              <option value="on">On (when tab hidden)</option>
-              <option value="off">Off</option>
-            </select>
-          </div>
-          <div class="setting-field">
-            <label for="setMemSaver">Memory saver</label>
-            <select id="setMemSaver" class="num-input" style="padding:6px 10px;">
-              <option value="on">On (recommended)</option>
-              <option value="off">Off (full compare text)</option>
-            </select>
-          </div>
-        </div>
-      </details>
-    </div>
-
-    <div id="parseWarnings" class="global-banner warn" style="margin-top:12px;margin-bottom:0;"></div>
-  </section>
-
-  <!-- CHAPTERS + PROGRESS -->
-  <section class="panel" id="chapPanel" style="display:none;">
-    <div class="panel-head">
-      <span class="panel-label">Chapters <span class="saved-pill" id="savedPill">auto-saved</span></span>
-    </div>
-    <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
-    <div class="prog-label">
-      <span id="progText">0 / 0 completed</span>
-      <span id="etaText"></span>
-      <span id="progPercent">0%</span>
-    </div>
-    <div class="stat-chips" id="statChips">
-      <span class="chip chip-done">&#10003; <b id="statDone">0</b> verified</span>
-      <span class="chip chip-issue">&#9888; <b id="statIssue">0</b> unverified</span>
-      <span class="chip chip-skip">&#8631; <b id="statSkip">0</b> skipped</span>
-      <span class="chip"><b id="statPending">0</b> pending</span>
-      <span class="chip chip-words"><b id="statWords">0</b> words out</span>
-      <span class="chip"><b id="statReadTime">0m</b> read time</span>
-    </div>
-    <div class="chap-toolbar">
-      <input class="chap-search" id="chapFilter" type="search" placeholder="Filter chapters&hellip;" aria-label="Filter chapters">
-      <div class="filter-btns" id="statusFilters">
-        <button class="filter-btn active" data-f="all">All</button>
-        <button class="filter-btn" data-f="pending">Pending</button>
-        <button class="filter-btn" data-f="done">Done</button>
-        <button class="filter-btn" data-f="issues">Issues</button>
-      </div>
-    </div>
-    <div class="chap-list" id="chapList"></div>
-  </section>
-
-  <!-- LIVE VIEWER -->
-  <section class="panel" id="viewerPanel" style="display:none;">
-    <div class="panel-head">
-      <span class="panel-label">Preview <span id="viewerLabel"></span><span class="live-badge" id="liveBadge"><span class="live-dot"></span>Live</span></span>
-      <div class="viewer-controls">
-        <button class="vc-btn" id="fontMinus" title="Smaller text" aria-label="Decrease font size">A-</button>
-        <button class="vc-btn" id="fontPlus" title="Larger text" aria-label="Increase font size">A+</button>
-        <button class="vc-btn" id="copyViewer" title="Copy visible text" aria-label="Copy visible text">&#10697;</button>
-      </div>
-    </div>
-    <div id="viewer"><div class="ph">Click a chapter to preview it, or start the run to watch live</div></div>
-  </section>
-
-  <!-- ACTION -->
-  <section class="panel" id="actionPanel" style="display:none;">
-    <div class="panel-head">
-      <span class="panel-label">Run</span>
-    </div>
-    <button class="btn btn-primary" id="startBtn" disabled>Start Verified Translation</button>
-    <div class="btn-row">
-      <button class="btn btn-amber" id="pauseBtn" style="display:none;">Pause</button>
-      <button class="btn btn-ghost" id="skipBtn" style="display:none;">Skip Chapter</button>
-      <button class="btn btn-danger" id="stopBtn" style="display:none;">Stop</button>
-    </div>
-    <button class="btn btn-ghost" id="retryFailedBtn" style="display:none;">Retry Unverified / Skipped Chapters</button>
-
-    <div class="note-box">
-      <div class="ic">i</div>
-      <div>Enable Chrome's translation first (address bar icon, or right-click &rarr; Translate). Each chapter is scrolled and checked for translated text automatically.<br>
-      <kbd>S</kbd> start &middot; <kbd>P</kbd> pause &middot; <kbd>K</kbd> skip &middot; <kbd>Esc</kbd> stop</div>
-    </div>
-
-    <div id="logBox" class="log-box"></div>
-  </section>
-
-  <!-- CHAPTER EDITOR -->
-  <section class="panel" id="editorPanel" style="display:none;">
-    <div class="panel-head">
-      <span class="panel-label">Review &amp; Arrange</span>
-    </div>
-    <p class="panel-sub">Rename chapters, drag <span style="font-family:var(--mono);">&#8942;&#8942;</span> to reorder, or exclude chapters — affects exports only.</p>
-    <div class="editor-list" id="editorList"></div>
-
-    <details class="fnr" id="fnrBox">
-      <summary>Find &amp; Replace</summary>
-      <div class="fnr-body">
-        <div class="fnr-row">
-          <input type="text" id="fnrFind" placeholder="Find text&hellip;" aria-label="Find text">
-          <input type="text" id="fnrReplace" placeholder="Replace with&hellip;" aria-label="Replace with">
-        </div>
-        <div class="fnr-opts">
-          <label><input type="checkbox" id="fnrCase"> Match case</label>
-          <span id="fnrPreview" style="font-family:var(--mono);font-size:10.5px;"></span>
-          <button class="fnr-apply" id="fnrApplyBtn" style="margin-left:auto;">Replace All</button>
-        </div>
-        <div class="fnr-hint">Fixes recurring mistranslations across all included chapters. Auto-saved and reflected in every export.</div>
-      </div>
-    </details>
-
-    <div class="editor-footer">
-      <div class="editor-footer-group">
-        <button class="mini-btn" id="backupExportBtn" title="Save all progress as a .json file">&#8681; Backup .json</button>
-        <button class="mini-btn" id="backupImportBtn" title="Restore progress from a backup file">&#8683; Restore backup</button>
-        <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none;">
-      </div>
-      <button class="mini-btn" id="resetOrderBtn">Reset original order</button>
-    </div>
-  </section>
-
-  <!-- DOWNLOAD -->
-  <section class="panel" id="downloadPanel" style="display:none;">
-    <div class="panel-head">
-      <span class="panel-label">Export</span>
-    </div>
-    <div class="meta-row"><span class="k">TRANSLATED</span><span class="v" id="dDone">0</span></div>
-    <div class="meta-row"><span class="k">SKIPPED / UNVERIFIED</span><span class="v" id="dSkipped">0</span></div>
-    <div class="meta-row"><span class="k">WORDS</span><span class="v" id="dWords">0</span></div>
-
-    <div class="export-tabs" id="exportTabs" style="margin-top:12px;">
-      <button class="export-tab active" data-mode="story">Story TXT</button>
-      <button class="export-tab" data-mode="txt">Chapters ZIP</button>
-      <button class="export-tab" data-mode="epub">EPUB</button>
-      <button class="export-tab" data-mode="md">Markdown</button>
-      <button class="export-tab" data-mode="html">HTML</button>
-    </div>
-
-    <button class="btn btn-primary" id="downloadBtn">Download story as a single .txt file</button>
-    <div class="note-box" id="exportNote" style="display:none;"><div class="ic">i</div><div id="exportNoteText"></div></div>
-  </section>
-
-  <p class="footer-note fade-up d2">
-    100% local<span class="dot">&bull;</span>No uploads<span class="dot">&bull;</span>Auto-saved progress
+  <p class="footer-note">
+    100% local<span class="dot">•</span>No uploads<span class="dot">•</span>Auto-saved progress<span class="dot">•</span>Press <kbd>?</kbd> for shortcuts
   </p>
+</main>
 
+<button id="toTopBtn" title="Back to top" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+</button>
+
+<!-- Shortcuts modal -->
+<div class="modal" id="shortcutsModal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="shortcutsTitle">Keyboard shortcuts</h2>
+      <button class="icon-btn" id="shortcutsClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <ul class="shortcut-list">
+      <li>Start run <kbd>S</kbd></li>
+      <li>Pause / resume <kbd>P</kbd></li>
+      <li>Skip chapter <kbd>K</kbd></li>
+      <li>Stop run <kbd>Esc</kbd></li>
+      <li>Previous chapter <kbd>←</kbd></li>
+      <li>Next chapter <kbd>→</kbd></li>
+      <li>Expand preview <kbd>F</kbd></li>
+      <li>Focus chapter filter <kbd>/</kbd></li>
+      <li>Toggle theme <kbd>T</kbd></li>
+      <li>This help <kbd>?</kbd></li>
+    </ul>
+  </div>
 </div>
 
-<script>
-"use strict";
-/* ================================================================
-   DOCUMENT TRANSLATION VERIFIER — PRO
-   Single-file app. Sections:
-   1. State & DOM refs          6. Parsing (EPUB/PDF/DOCX/TXT)
-   2. Theme                     7. Chapter list (low-RAM render)
-   3. Settings                  8. Translate-verify core & main loop
-   4. Toasts / sound / wakelock 9. Editor, Find&Replace, Backup
-   5. Sessions (IndexedDB)     10. Exports (Story TXT/ZIP/EPUB/MD/HTML)
-   11. UI polish (ripple micro-interactions)
-   ================================================================ */
-
-/* ============ 1. STATE ============ */
-let book = null;
-let currentFile = null;
-let chapters = [];
-let currentIdx = -1;
-let running = false;
-let paused = false;
-let stopRequested = false;
-let skipRequested = false;
-let exportOrder = [];
-let bookLang = 'en';
-let sessionKey = null;
-let idbAvailable = true;
-let consecutiveVerifyFailures = 0;
-let verifyMode = 'auto';        // auto | script | latin
-let statusFilter = 'all';
-let textFilter = '';
-let runStartTime = 0;
-let runTimer = null;
-let chapterDurations = [];      // capped ring buffer for ETA
-let wakeLock = null;
-let exportMode = 'story';
-const BASE_TITLE = document.title;
-const MAX_LOG_LINES = 150;      // low-RAM: cap log DOM nodes
-const MAX_DURATION_SAMPLES = 40;
-const ORIG_SNIPPET = 4000;      // low-RAM: cap stored original text (memory saver mode)
-
-const el = id => document.getElementById(id);
-
-const fileInput = el('epubFile');
-const dropZone = el('dropZone');
-const fileNameShow = el('fileNameShow');
-const metaBox = el('metaBox');
-const mTitle = el('mTitle'), mChapters = el('mChapters'), mStatus = el('mStatus'), mWords = el('mWords');
-const langField = el('langField');
-const targetLang = el('targetLang');
-const parseWarnings = el('parseWarnings');
-const chapPanel = el('chapPanel');
-const chapList = el('chapList');
-const progFill = el('progFill');
-const progText = el('progText');
-const progPercent = el('progPercent');
-const etaText = el('etaText');
-const viewerPanel = el('viewerPanel');
-const viewer = el('viewer');
-const viewerLabel = el('viewerLabel');
-const liveBadge = el('liveBadge');
-const actionPanel = el('actionPanel');
-const startBtn = el('startBtn');
-const pauseBtn = el('pauseBtn');
-const skipBtn = el('skipBtn');
-const stopBtn = el('stopBtn');
-const retryFailedBtn = el('retryFailedBtn');
-const logBox = el('logBox');
-const downloadPanel = el('downloadPanel');
-const dDone = el('dDone');
-const dSkipped = el('dSkipped');
-const dWords = el('dWords');
-const downloadBtn = el('downloadBtn');
-const editorPanel = el('editorPanel');
-const editorList = el('editorList');
-const exportTabs = el('exportTabs');
-const exportNote = el('exportNote');
-const exportNoteText = el('exportNoteText');
-const globalBanner = el('globalBanner');
-const resumeBanner = el('resumeBanner');
-const savedPill = el('savedPill');
-const stickyProg = el('stickyProg');
-const stickyBar = el('stickyBar');
-const rangeFrom = el('rangeFrom');
-const rangeTo = el('rangeTo');
-
-targetLang.addEventListener('change', ()=>{ verifyMode = targetLang.value; saveSettings(); });
-
-/* ============ 2. THEME ============ */
-const THEME_KEY = 'dtv_theme';
-function applyTheme(t){
-  document.documentElement.dataset.theme = t;
-  el('themeToggle').innerHTML = t === 'dark' ? '&#9788;' : '&#9789;';
-  const metaTheme = document.querySelector('meta[name="theme-color"]');
-  if(metaTheme) metaTheme.content = t === 'dark' ? '#0b0f14' : '#f2f4f8';
-  try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
-}
-el('themeToggle').addEventListener('click', ()=>{
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
-});
-try{
-  const savedTheme = localStorage.getItem(THEME_KEY);
-  if(savedTheme === 'light' || savedTheme === 'dark') applyTheme(savedTheme);
-}catch(e){}
-
-/* ============ 3. SETTINGS ============ */
-const SETTINGS_KEY = 'dtv_settings_v3';
-const settings = {
-  timeoutMs: 8000, maxRetries: 2, gapMs: 500,
-  scrollMs: 200, sound: 'on', notify: 'on', memSaver: 'on'
-};
-
-function loadSettings(){
-  try{
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if(raw){
-      const s = JSON.parse(raw);
-      if(typeof s.timeoutMs === 'number') settings.timeoutMs = s.timeoutMs;
-      if(typeof s.maxRetries === 'number') settings.maxRetries = s.maxRetries;
-      if(typeof s.gapMs === 'number') settings.gapMs = s.gapMs;
-      if(typeof s.scrollMs === 'number') settings.scrollMs = s.scrollMs;
-      if(s.sound) settings.sound = s.sound;
-      if(s.notify) settings.notify = s.notify;
-      if(s.memSaver) settings.memSaver = s.memSaver;
-      if(s.verifyMode){ verifyMode = s.verifyMode; targetLang.value = s.verifyMode; }
-    }
-  }catch(e){}
-  el('setTimeout').value = Math.round(settings.timeoutMs/1000);
-  el('setRetries').value = settings.maxRetries;
-  el('setGap').value = settings.gapMs;
-  el('setScroll').value = settings.scrollMs;
-  el('setSound').value = settings.sound;
-  el('setNotify').value = settings.notify;
-  el('setMemSaver').value = settings.memSaver;
-  refreshSettingLabels();
-}
-function saveSettings(){
-  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify({...settings, verifyMode})); }catch(e){}
-}
-function refreshSettingLabels(){
-  el('setTimeoutVal').textContent = Math.round(settings.timeoutMs/1000) + 's';
-  el('setRetriesVal').textContent = settings.maxRetries;
-  el('setGapVal').textContent = (settings.gapMs/1000).toFixed(2).replace(/\.?0+$/,'') + 's';
-  el('setScrollVal').textContent = settings.scrollMs + 'ms';
-}
-el('setTimeout').addEventListener('input', e=>{ settings.timeoutMs = parseInt(e.target.value,10)*1000; refreshSettingLabels(); saveSettings(); });
-el('setRetries').addEventListener('input', e=>{ settings.maxRetries = parseInt(e.target.value,10); refreshSettingLabels(); saveSettings(); });
-el('setGap').addEventListener('input', e=>{ settings.gapMs = parseInt(e.target.value,10); refreshSettingLabels(); saveSettings(); });
-el('setScroll').addEventListener('input', e=>{ settings.scrollMs = parseInt(e.target.value,10); refreshSettingLabels(); saveSettings(); });
-el('setSound').addEventListener('change', e=>{ settings.sound = e.target.value; saveSettings(); });
-el('setNotify').addEventListener('change', e=>{ settings.notify = e.target.value; saveSettings(); });
-el('setMemSaver').addEventListener('change', e=>{ settings.memSaver = e.target.value; saveSettings(); });
-loadSettings();
-
-function clampRangeInputs(){
-  const n = chapters.length || 1;
-  let from = parseInt(rangeFrom.value, 10) || 1;
-  let to = parseInt(rangeTo.value, 10) || n;
-  from = Math.min(Math.max(1, from), n);
-  to = Math.min(Math.max(from, to), n);
-  rangeFrom.value = from; rangeTo.value = to;
-  return {from, to};
-}
-rangeFrom.addEventListener('change', clampRangeInputs);
-rangeTo.addEventListener('change', clampRangeInputs);
-
-/* ============ 4. TOASTS / SOUND / NOTIFY / WAKELOCK ============ */
-const toastWrap = el('toastWrap');
-function showToast(msg, type='info', ms=2800){
-  const icons = {ok:'\u2713', err:'\u2715', info:'i', warn:'!'};
-  // low-RAM: never allow more than 4 toasts at once
-  while(toastWrap.children.length >= 4) toastWrap.firstChild.remove();
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.innerHTML = `<span class="t-ic">${icons[type]||'i'}</span><span></span>`;
-  t.lastElementChild.textContent = msg;
-  toastWrap.appendChild(t);
-  setTimeout(()=>{
-    t.classList.add('out');
-    setTimeout(()=>t.remove(), 320);
-  }, ms);
-}
-
-function playChime(){
-  if(settings.sound !== 'on') return;
-  try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [523.25, 659.25, 783.99];
-    notes.forEach((f, i)=>{
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = 'sine'; o.frequency.value = f;
-      g.gain.setValueAtTime(0, ctx.currentTime + i*0.12);
-      g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + i*0.12 + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + i*0.12 + 0.5);
-      o.connect(g); g.connect(ctx.destination);
-      o.start(ctx.currentTime + i*0.12);
-      o.stop(ctx.currentTime + i*0.12 + 0.55);
-    });
-    setTimeout(()=>ctx.close().catch(()=>{}), 1500);
-  }catch(e){}
-}
-
-function requestNotifyPermission(){
-  if(settings.notify !== 'on' || !('Notification' in window)) return;
-  if(Notification.permission === 'default'){
-    try{ Notification.requestPermission().catch(()=>{}); }catch(e){}
-  }
-}
-function notifyDone(msg){
-  if(settings.notify !== 'on' || !('Notification' in window)) return;
-  if(document.visibilityState === 'visible') return; // only when tab hidden
-  if(Notification.permission === 'granted'){
-    try{
-      const n = new Notification('Translation run finished', {body: msg, tag:'dtv-done'});
-      n.onclick = ()=>{ window.focus(); n.close(); };
-    }catch(e){}
-  }
-}
-
-async function acquireWakeLock(){
-  if(!('wakeLock' in navigator)) return;
-  try{
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener('release', ()=>{ wakeLock = null; });
-  }catch(e){}
-}
-function releaseWakeLock(){
-  if(wakeLock){ try{ wakeLock.release(); }catch(e){} wakeLock = null; }
-}
-document.addEventListener('visibilitychange', ()=>{
-  if(running && document.visibilityState === 'visible' && !wakeLock) acquireWakeLock();
-});
-
-/* ============ GLOBAL BANNER ============ */
-function showBanner(node, {level='error', title, message, detail, actions=[]}){
-  node.className = 'global-banner show ' + level;
-  const actionsHtml = actions.length
-    ? `<div class="banner-actions">${actions.map(a=>`<button class="banner-btn ${a.primary?'primary':''}" data-banner-action="${a.id}">${escapeHtml(a.label)}</button>`).join('')}</div>`
-    : '';
-  const detailHtml = detail
-    ? `<details class="banner-detail"><summary>Technical detail</summary>${escapeHtml(detail)}</details>`
-    : '';
-  node.innerHTML = `
-    <div class="global-banner-head">
-      <span>${escapeHtml(title)}</span>
-      <button class="banner-dismiss" data-banner-dismiss="1" aria-label="Dismiss">\u2715</button>
-    </div>
-    <div>${escapeHtml(message)}</div>
-    ${detailHtml}
-    ${actionsHtml}
-  `;
-  node._actionHandlers = {};
-  actions.forEach(a => node._actionHandlers[a.id] = a.onClick);
-}
-function hideBanner(node){ node.classList.remove('show'); node.innerHTML = ''; }
-
-document.addEventListener('click', (e)=>{
-  const dismissBtn = e.target.closest('[data-banner-dismiss]');
-  if(dismissBtn){ hideBanner(dismissBtn.closest('.global-banner')); return; }
-  const actionBtn = e.target.closest('[data-banner-action]');
-  if(actionBtn){
-    const node = actionBtn.closest('.global-banner');
-    const id = actionBtn.dataset.bannerAction;
-    if(node._actionHandlers && node._actionHandlers[id]) node._actionHandlers[id]();
-  }
-});
-
-function showGlobalError(title, message, detail){ showBanner(globalBanner, {level:'error', title, message, detail}); }
-function showGlobalWarning(title, message, detail){ showBanner(globalBanner, {level:'warn', title, message, detail}); }
-
-/* ============ CRASH HANDLING ============ */
-window.addEventListener('error', (e)=>{
-  showGlobalError(
-    'Something went wrong',
-    'An unexpected error occurred. You can keep using the tool, but this action may not have completed — check the chapter list and log below before continuing.',
-    (e.error && e.error.stack) ? e.error.stack : e.message
-  );
-});
-window.addEventListener('unhandledrejection', (e)=>{
-  showGlobalError(
-    'Something went wrong',
-    'An unexpected error occurred in a background operation. You can keep using the tool, but check whether the last action completed correctly.',
-    e.reason && e.reason.stack ? e.reason.stack : String(e.reason)
-  );
-});
-window.addEventListener('beforeunload', (e)=>{
-  if(running){ e.preventDefault(); e.returnValue = ''; }
-});
-
-/* ============ STARTUP DEPENDENCY CHECK ============ */
-const LIB_STATUS = {
-  jszip:   typeof JSZip !== 'undefined',
-  epub:    typeof ePub !== 'undefined',
-  pdf:     typeof pdfjsLib !== 'undefined',
-  mammoth: typeof mammoth !== 'undefined',
-};
-function checkStartupDependencies(){
-  const missingLabels = [];
-  if(!LIB_STATUS.jszip)   missingLabels.push('JSZip — needed for ZIP and EPUB export');
-  if(!LIB_STATUS.epub)    missingLabels.push('epub.js — needed to read .epub files');
-  if(!LIB_STATUS.pdf)     missingLabels.push('PDF.js — needed to read .pdf files');
-  if(!LIB_STATUS.mammoth) missingLabels.push('Mammoth.js — needed to read .docx files');
-  if(missingLabels.length){
-    showGlobalWarning(
-      'Some features may not work',
-      'The following components failed to load from their CDN, usually caused by an ad-blocker, offline connection, or restrictive network: ' + missingLabels.join('; ') + '. Formats that don\u2019t depend on the missing component will still work — reload the page after checking your connection to restore full functionality.'
-    );
-  }
-}
-checkStartupDependencies();
-
-function requireLib(globalCheck, formatLabel){
-  if(!globalCheck){
-    mStatus.textContent = `Error: cannot read ${formatLabel} — a required component failed to load (see warning above). Try reloading the page.`;
-    return false;
-  }
-  return true;
-}
-
-/* ============ 5. INDEXEDDB SESSIONS ============ */
-const IDB_NAME = 'docTranslatorDB';
-const IDB_STORE = 'sessions';
-let idbHandle = null;
-
-function idbOpen(){
-  return new Promise((resolve, reject)=>{
-    if(!('indexedDB' in window)){ reject(new Error('IndexedDB not supported')); return; }
-    let req;
-    try { req = indexedDB.open(IDB_NAME, 1); }
-    catch(err){ reject(err); return; }
-    req.onupgradeneeded = ()=>{ req.result.createObjectStore(IDB_STORE, {keyPath:'key'}); };
-    req.onsuccess = ()=> resolve(req.result);
-    req.onerror = ()=> reject(req.error);
-  });
-}
-async function idbGetHandle(){
-  if(idbHandle) return idbHandle;
-  idbHandle = await idbOpen();
-  return idbHandle;
-}
-async function idbGet(key){
-  try{
-    const db = await idbGetHandle();
-    return await new Promise((resolve, reject)=>{
-      const tx = db.transaction(IDB_STORE, 'readonly');
-      const req = tx.objectStore(IDB_STORE).get(key);
-      req.onsuccess = ()=> resolve(req.result || null);
-      req.onerror = ()=> reject(req.error);
-    });
-  }catch(err){ idbAvailable = false; return null; }
-}
-async function idbPut(value){
-  try{
-    const db = await idbGetHandle();
-    return await new Promise((resolve, reject)=>{
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).put(value);
-      tx.oncomplete = ()=> resolve(true);
-      tx.onerror = ()=> reject(tx.error);
-    });
-  }catch(err){ idbAvailable = false; return false; }
-}
-async function idbDelete(key){
-  try{
-    const db = await idbGetHandle();
-    return await new Promise((resolve, reject)=>{
-      const tx = db.transaction(IDB_STORE, 'readwrite');
-      tx.objectStore(IDB_STORE).delete(key);
-      tx.oncomplete = ()=> resolve(true);
-      tx.onerror = ()=> reject(tx.error);
-    });
-  }catch(err){ return false; }
-}
-
-function computeSessionKey(fileName, fileSize, chapterCount){
-  return `${fileName}::${fileSize}::${chapterCount}`;
-}
-
-function buildSessionPayload(){
-  return {
-    key: sessionKey,
-    savedAt: Date.now(),
-    bookTitle: mTitle.textContent,
-    bookLang,
-    exportOrder,
-    chapters: chapters.map(c=>({
-      title: c.title,
-      status: c.status,
-      text: c.text,
-      originalText: c.originalText || '',
-      retries: c.retries,
-      excluded: !!c.excluded
-    }))
-  };
-}
-
-/* Coalesced + debounced save — low-RAM & low-IO, never drops the latest state */
-let saveInFlight = false;
-let savePending = false;
-let savedPillTimer = null;
-let saveDebounce = null;
-
-function saveSessionProgress(){
-  if(!sessionKey || !idbAvailable) return;
-  clearTimeout(saveDebounce);
-  saveDebounce = setTimeout(doSave, 600);
-}
-async function doSave(){
-  if(!sessionKey || !idbAvailable) return;
-  if(saveInFlight){ savePending = true; return; }
-  saveInFlight = true;
-  try{
-    const ok = await idbPut(buildSessionPayload());
-    if(ok){
-      savedPill.classList.add('flash');
-      clearTimeout(savedPillTimer);
-      savedPillTimer = setTimeout(()=>savedPill.classList.remove('flash'), 1400);
-    }
-  } finally {
-    saveInFlight = false;
-    if(savePending){ savePending = false; doSave(); }
-  }
-}
-async function clearSessionProgress(){
-  if(!sessionKey) return;
-  await idbDelete(sessionKey);
-}
-
-async function checkForResumableSession(bookTitle, fileSize, chapterCount){
-  sessionKey = computeSessionKey(bookTitle, fileSize, chapterCount);
-  if(!idbAvailable) return;
-  const saved = await idbGet(sessionKey);
-  if(!saved || !saved.chapters || saved.chapters.length !== chapters.length) return;
-  const doneCount = saved.chapters.filter(c=>c.status==='done' && c.text && c.text.trim()).length;
-  if(doneCount === 0) return;
-  showBanner(resumeBanner, {
-    level: 'info',
-    title: 'Saved progress found',
-    message: `A previous session for this file has ${doneCount} of ${saved.chapters.length} chapters already translated (saved ${new Date(saved.savedAt).toLocaleString()}).`,
-    actions: [
-      { id:'resume', label:'Resume', primary:true, onClick: ()=>applyResumedSession(saved) },
-      { id:'discard', label:'Start Fresh', onClick: ()=>{ clearSessionProgress(); hideBanner(resumeBanner); showToast('Previous session discarded', 'info'); } }
-    ]
-  });
-}
-
-function applyResumedSession(saved){
-  saved.chapters.forEach((sc, i)=>{
-    if(!chapters[i]) return;
-    chapters[i].status = sc.status;
-    chapters[i].text = sc.text;
-    chapters[i].originalText = sc.originalText;
-    chapters[i].retries = sc.retries || 0;
-    chapters[i].excluded = !!sc.excluded;
-    if(sc.title) chapters[i].title = sc.title;
-  });
-  if(Array.isArray(saved.exportOrder) && saved.exportOrder.length === chapters.length){
-    exportOrder = saved.exportOrder.slice();
-  }
-  renderChapterList();
-  requestProgressUpdate();
-  hideBanner(resumeBanner);
-  refreshDownloadSummary();
-  showToast('Progress restored — continue from where you left off', 'ok');
-}
-
-/* ============ 6. FILE UPLOAD & PARSING ============ */
-fileInput.addEventListener('change', function(e){
-  const file = e.target.files[0];
-  if(file) handleFile(file);
-});
-
-['dragenter','dragover'].forEach(ev=>{
-  dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.add('dragover'); });
-});
-['dragleave','drop'].forEach(ev=>{
-  dropZone.addEventListener(ev, (e)=>{ e.preventDefault(); dropZone.classList.remove('dragover'); });
-});
-dropZone.addEventListener('drop', (e)=>{
-  const file = e.dataTransfer.files && e.dataTransfer.files[0];
-  if(file){ fileInput.value = ''; handleFile(file); }
-});
-
-function resetForNewFile(file){
-  currentFile = file;
-  // low-RAM: explicitly free the previous book & chapter payloads
-  if(book && book.destroy){ try{ book.destroy(); }catch(e){} }
-  book = null;
-  chapters = [];
-  currentIdx = -1;
-  exportOrder = [];
-  consecutiveVerifyFailures = 0;
-  chapterDurations = [];
-  document.title = BASE_TITLE;
-  fileNameShow.style.display = 'flex';
-  fileNameShow.textContent = file ? ('\u2713 ' + file.name + '  (' + formatBytes(file.size) + ')') : '';
-  mStatus.textContent = 'Extracting\u2026';
-  mTitle.textContent = '—';
-  mChapters.textContent = '—';
-  mWords.textContent = '—';
-  metaBox.style.display = 'block';
-  parseWarnings.classList.remove('show');
-  parseWarnings.innerHTML = '';
-  hideBanner(resumeBanner);
-  hideBanner(globalBanner);
-  chapPanel.style.display = 'none';
-  viewerPanel.style.display = 'none';
-  actionPanel.style.display = 'none';
-  editorPanel.style.display = 'none';
-  downloadPanel.style.display = 'none';
-  langField.style.display = 'none';
-  retryFailedBtn.style.display = 'none';
-  startBtn.disabled = true;
-  startBtn.textContent = 'Start Verified Translation';
-  viewer.innerHTML = '<div class="ph">Click a chapter to preview it, or start the run to watch live</div>';
-  viewerLabel.textContent = '';
-  liveBadge.classList.remove('on');
-  viewer.classList.remove('live');
-  logBox.innerHTML = '';
-  logBox.style.display = 'none';
-  chapList.innerHTML = '';
-  editorList.innerHTML = '';
-  el('chapFilter').value = '';
-  textFilter = '';
-  statusFilter = 'all';
-  document.querySelectorAll('#statusFilters .filter-btn').forEach(b=>b.classList.toggle('active', b.dataset.f==='all'));
-}
-
-function handleFile(file){
-  resetForNewFile(file);
-  const ext = file.name.split('.').pop().toLowerCase();
-  if(ext === 'epub') return parseEpubFile(file);
-  if(ext === 'pdf') return parsePdfFile(file);
-  if(ext === 'docx') return parseDocxFile(file);
-  if(ext === 'txt') return parseTxtFile(file);
-  mStatus.textContent = 'Error: unsupported file type (.' + ext + '). Supported: .epub, .pdf, .docx, .txt';
-  showGlobalWarning('Unsupported file', 'This tool only reads .epub, .pdf, .docx and .txt files. The file you selected has a .' + ext + ' extension.');
-}
-
-function formatBytes(b){
-  if(b < 1024) return b + ' B';
-  if(b < 1048576) return (b/1024).toFixed(1) + ' KB';
-  return (b/1048576).toFixed(1) + ' MB';
-}
-function formatNum(n){ return n.toLocaleString('en-US'); }
-function wordCount(s){
-  const t = (s||'').trim();
-  return t ? t.split(/\s+/).length : 0;
-}
-
-function estimateSourceWords(){
-  // best-effort: count words in html chapters (epub items load lazily → skip those)
-  let total = 0, counted = 0;
-  const tmp = document.createElement('div'); // low-RAM: reuse one node
-  chapters.forEach(c=>{
-    if(c.html){
-      tmp.innerHTML = c.html;
-      total += wordCount(tmp.textContent);
-      counted++;
-    }
-  });
-  tmp.innerHTML = '';
-  if(counted === 0) return null;
-  if(counted < chapters.length){
-    total = Math.round(total / counted * chapters.length);
-    return '~' + formatNum(total);
-  }
-  return formatNum(total);
-}
-
-function finishLoadingChapters(bookTitle, lang){
-  mTitle.textContent = bookTitle;
-  bookLang = lang || 'en';
-  mChapters.textContent = chapters.length;
-
-  if(chapters.length === 0){
-    mStatus.textContent = 'Error: no readable content found in this file';
-    startBtn.disabled = true;
-    showGlobalWarning(
-      'No content extracted',
-      'The file loaded without a technical error, but no chapters or readable text could be found. This can happen with a scanned/image-only PDF, an empty document, or a file that\u2019s corrupted despite having the right extension.'
-    );
-    return;
-  }
-
-  const est = estimateSourceWords();
-  mWords.textContent = est || '—';
-
-  mStatus.textContent = 'Ready';
-  exportOrder = chapters.map((c,i)=>i);
-  rangeFrom.max = chapters.length; rangeTo.max = chapters.length;
-  rangeFrom.value = 1; rangeTo.value = chapters.length;
-  renderChapterList();
-  chapPanel.style.display = 'block';
-  viewerPanel.style.display = 'block';
-  actionPanel.style.display = 'block';
-  langField.style.display = 'block';
-  startBtn.disabled = false;
-  requestProgressUpdate();
-  showToast(`Loaded ${chapters.length} chapter${chapters.length>1?'s':''}`, 'ok');
-
-  const fileSize = currentFile ? currentFile.size : 0;
-  checkForResumableSession(bookTitle, fileSize, chapters.length);
-}
-
-/* ---- EPUB ---- */
-function parseEpubFile(file){
-  if(!requireLib(LIB_STATUS.epub, '.epub files')) return;
-  const reader = new FileReader();
-  reader.onerror = ()=>{
-    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
-  };
-  reader.onload = async function(event){
-    try{
-      book = ePub(event.target.result);
-      await book.ready;
-      const nav = await book.loaded.navigation.catch(()=>null);
-      const metadata = await book.loaded.metadata.catch(()=>({}));
-      await book.loaded.spine;
-
-      chapters = [];
-      let skippedCount = 0;
-
-      const spineArr = (book.spine && Array.isArray(book.spine.spineItems))
-        ? book.spine.spineItems
-        : null;
-      const spineLen = spineArr ? spineArr.length : (book.spine.length || 0);
-
-      for(let i=0; i<spineLen; i++){
-        try{
-          const item = spineArr ? spineArr[i] : book.spine.get(i);
-          if(!item){ skippedCount++; continue; }
-          let chapTitle = 'Chapter ' + (i+1);
-          if(nav && nav.toc){
-            const match = findNavMatch(nav.toc, item.href);
-            if(match) chapTitle = match;
-          }
-          chapters.push({
-            index: i, title: chapTitle, item: item, html: null,
-            status: 'pending', text: '', originalText: '', retries: 0, excluded: false
-          });
-        }catch(chapErr){ skippedCount++; }
-      }
-
-      if(skippedCount > 0){
-        showParseWarning(`${skippedCount} chapter${skippedCount>1?'s':''} could not be read and ${skippedCount>1?'were':'was'} skipped. The rest of the book loaded normally.`);
-      }
-      finishLoadingChapters(metadata.title || file.name.replace(/\.epub$/i,''), metadata.language);
-    }catch(err){
-      const friendly = /zip|central directory|corrupt/i.test(err.message||'')
-        ? 'This doesn\u2019t look like a valid EPUB file — it may be corrupted or not actually an EPUB despite the extension.'
-        : 'Could not open this EPUB file.';
-      mStatus.textContent = 'Error: ' + friendly;
-      showGlobalError('Could not read EPUB', friendly, (err.message||'') + (err.stack ? '\n' + err.stack : ''));
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function findNavMatch(tocArr, href){
-  if(!href) return null;
-  for(const entry of tocArr){
-    if(entry.href && entry.href.split('#')[0] === href.split('#')[0]){
-      return entry.label ? entry.label.trim() : null;
-    }
-    if(entry.subitems && entry.subitems.length){
-      const r = findNavMatch(entry.subitems, href);
-      if(r) return r;
-    }
-  }
-  return null;
-}
-
-function showParseWarning(msg){
-  parseWarnings.classList.add('show');
-  parseWarnings.innerHTML = `<div class="global-banner-head"><span>Heads up</span></div><div>${escapeHtml(msg)}</div>`;
-}
-
-/* ---- PDF ---- */
-function parsePdfFile(file){
-  if(!requireLib(LIB_STATUS.pdf, '.pdf files')) return;
-  const reader = new FileReader();
-  reader.onerror = ()=>{
-    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
-  };
-  reader.onload = async function(event){
-    let pdf = null;
-    try{
-      const pdfVersion = pdfjsLib.version || '3.11.174';
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfVersion}/pdf.worker.min.js`;
-
-      try{
-        pdf = await pdfjsLib.getDocument({data: event.target.result}).promise;
-      }catch(loadErr){
-        if(loadErr && loadErr.name === 'PasswordException'){
-          mStatus.textContent = 'Error: this PDF is password-protected';
-          showGlobalError('Password-protected PDF',
-            'This tool reads PDFs directly in the browser and has no way to prompt for a password. Remove the password (many PDF readers offer "print to PDF" or "export without password") and upload again.');
-          return;
-        }
-        throw loadErr;
-      }
-
-      chapters = [];
-      let emptyPageCount = 0;
-      let failedPageCount = 0;
-
-      for(let p=1; p<=pdf.numPages; p++){
-        try{
-          const page = await pdf.getPage(p);
-          const content = await page.getTextContent();
-          const rawLines = groupPdfTextIntoLines(content.items);
-          const paragraphs = guessParagraphs(rawLines);
-          const pageText = paragraphs.join(' ');
-          const html = paragraphs.map(par=>`<p>${escapeHtml(par)}</p>`).join('\n');
-          if(pageText.trim().length < 3) emptyPageCount++;
-          chapters.push({
-            index: p-1, title: 'Page ' + p, item: null, html: html || '<p></p>',
-            status: 'pending', text: '', originalText: '', retries: 0, excluded: false
-          });
-          // low-RAM: free page resources as we go
-          if(page.cleanup) try{ page.cleanup(); }catch(e){}
-        }catch(pageErr){ failedPageCount++; }
-        if(p % 25 === 0) mStatus.textContent = `Extracting\u2026 page ${p}/${pdf.numPages}`;
-      }
-
-      if(pdf.numPages > 0 && emptyPageCount / pdf.numPages > 0.6){
-        showParseWarning(`${emptyPageCount} of ${pdf.numPages} pages had little or no extractable text. This usually means the PDF is scanned images rather than real text — this tool can\u2019t OCR it, so those pages will translate as empty.`);
-      }
-      if(failedPageCount > 0){
-        showParseWarning(`${failedPageCount} page${failedPageCount>1?'s':''} could not be read and ${failedPageCount>1?'were':'was'} skipped.`);
-      }
-      finishLoadingChapters(file.name.replace(/\.pdf$/i,''), 'en');
-    }catch(err){
-      mStatus.textContent = 'Error: could not read this PDF';
-      showGlobalError('Could not read PDF', 'This file could not be parsed as a PDF — it may be corrupted or not a valid PDF despite the extension.', (err.message||'') + (err.stack ? '\n' + err.stack : ''));
-    }finally{
-      // low-RAM: destroy the pdf.js worker & document once text is extracted
-      if(pdf && pdf.destroy){ try{ pdf.destroy(); }catch(e){} }
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function groupPdfTextIntoLines(items){
-  const lines = [];
-  let currentY = null;
-  let currentLine = [];
-  items.forEach(item=>{
-    if(!item.transform) return;
-    const y = Math.round(item.transform[5]);
-    if(currentY === null || Math.abs(y - currentY) > 2){
-      if(currentLine.length) lines.push(currentLine.join(''));
-      currentLine = [item.str];
-      currentY = y;
-    } else {
-      currentLine.push(item.str);
-    }
-  });
-  if(currentLine.length) lines.push(currentLine.join(''));
-  return lines.filter(l=>l.trim().length>0);
-}
-
-function guessParagraphs(lines){
-  const paragraphs = [];
-  let buf = '';
-  lines.forEach(line=>{
-    const trimmed = line.trim();
-    const endsSentence = /[.!?"')\u0964]$/.test(buf.trim());
-    const looksLikeNewPara = buf && endsSentence && /^[A-Z"'(]/.test(trimmed) && buf.trim().length < 90;
-    if(looksLikeNewPara){
-      paragraphs.push(buf.trim());
-      buf = trimmed;
-    } else {
-      buf = buf ? buf + ' ' + trimmed : trimmed;
-    }
-  });
-  if(buf.trim()) paragraphs.push(buf.trim());
-  return paragraphs;
-}
-
-/* ---- DOCX ---- */
-function parseDocxFile(file){
-  if(!requireLib(LIB_STATUS.mammoth, '.docx files')) return;
-  const reader = new FileReader();
-  reader.onerror = ()=>{
-    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
-  };
-  reader.onload = async function(event){
-    try{
-      const result = await mammoth.convertToHtml({arrayBuffer: event.target.result});
-      const container = document.createElement('div');
-      container.innerHTML = result.value;
-
-      const sections = splitHtmlOnHeadings(container);
-      container.innerHTML = ''; // low-RAM: release detached DOM
-      chapters = sections.map((sec, i)=>({
-        index: i, title: sec.title || ('Section ' + (i+1)), item: null, html: sec.html,
-        status: 'pending', text: '', originalText: '', retries: 0, excluded: false
-      }));
-
-      if(result.messages && result.messages.length){
-        const warningMsgs = result.messages.filter(m=>m.type==='warning');
-        if(warningMsgs.length){
-          const preview = warningMsgs.slice(0,3).map(m=>m.message).join('; ');
-          const more = warningMsgs.length > 3 ? ` (+${warningMsgs.length-3} more)` : '';
-          showParseWarning(`Some formatting couldn\u2019t be fully preserved during conversion: ${preview}${more}. This affects layout only, not the text content.`);
-        }
-      }
-      finishLoadingChapters(file.name.replace(/\.docx$/i,''), 'en');
-    }catch(err){
-      const friendly = /central directory|zip|not a valid/i.test(err.message||'')
-        ? 'This doesn\u2019t look like a valid .docx file — if this was saved from an older Word (.doc) format, re-save it as .docx first.'
-        : 'Could not convert this document.';
-      mStatus.textContent = 'Error: ' + friendly;
-      showGlobalError('Could not read DOCX', friendly, (err.message||'') + (err.stack ? '\n' + err.stack : ''));
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function splitHtmlOnHeadings(container){
-  const nodes = Array.from(container.childNodes);
-  const headingTags = new Set(['H1','H2']);
-  const hasHeadings = nodes.some(n=>n.nodeType===1 && headingTags.has(n.tagName));
-  if(!hasHeadings){
-    return [{ title: null, html: container.innerHTML }];
-  }
-  const sections = [];
-  let currentTitle = null;
-  let currentNodes = [];
-  function flush(){
-    if(currentNodes.length){
-      sections.push({
-        title: currentTitle,
-        html: currentNodes.map(n=>n.outerHTML || escapeHtml(n.textContent)).join('\n')
-      });
-    }
-    currentNodes = [];
-  }
-  nodes.forEach(n=>{
-    if(n.nodeType===1 && headingTags.has(n.tagName)){
-      flush();
-      currentTitle = n.textContent.trim();
-      currentNodes = [n];
-    } else {
-      currentNodes.push(n);
-    }
-  });
-  flush();
-  return sections.filter(s=>s.html && s.html.trim().length>0);
-}
-
-/* ---- TXT ---- */
-function parseTxtFile(file){
-  const reader = new FileReader();
-  reader.onerror = ()=>{
-    mStatus.textContent = 'Error: could not read the file from disk (' + (reader.error ? reader.error.message : 'unknown reason') + ')';
-  };
-  reader.onload = function(event){
-    try{
-      const text = event.target.result;
-      if(!text || !text.trim()){
-        chapters = [];
-        finishLoadingChapters(file.name.replace(/\.txt$/i,''), 'en');
-        return;
-      }
-      let paragraphs = text.split(/\n{2,}/).map(p=>p.trim()).filter(p=>p.length>0);
-
-      const MAX_SINGLE_PARA = 4000;
-      paragraphs = paragraphs.flatMap(p=>{
-        if(p.length <= MAX_SINGLE_PARA) return [p];
-        const sentences = p.match(/[^.!?\u0964]+[.!?\u0964]+(\s|$)/g);
-        const units = sentences || (p.match(/\S+\s*/g) || [p]);
-        const rebuilt = [];
-        let buf = '';
-        units.forEach(u=>{
-          if(buf.length + u.length > MAX_SINGLE_PARA && buf){ rebuilt.push(buf.trim()); buf = ''; }
-          buf += u;
-        });
-        if(buf.trim()) rebuilt.push(buf.trim());
-        return rebuilt.length ? rebuilt : [p];
-      });
-
-      const CHUNK_CHARS = 3000;
-      const chunks = [];
-      let buf = [];
-      let bufLen = 0;
-      paragraphs.forEach(p=>{
-        buf.push(p);
-        bufLen += p.length;
-        if(bufLen >= CHUNK_CHARS){ chunks.push(buf); buf = []; bufLen = 0; }
-      });
-      if(buf.length) chunks.push(buf);
-
-      chapters = chunks.map((chunkParas, i)=>({
-        index: i, title: 'Part ' + (i+1), item: null,
-        html: chunkParas.map(p=>`<p>${escapeHtml(p)}</p>`).join('\n'),
-        status: 'pending', text: '', originalText: '', retries: 0, excluded: false
-      }));
-      finishLoadingChapters(file.name.replace(/\.txt$/i,''), 'en');
-    }catch(err){
-      mStatus.textContent = 'Error: could not read this text file';
-      showGlobalError('Could not read TXT', 'This file could not be processed as plain text.', (err.message||'') + (err.stack ? '\n' + err.stack : ''));
-    }
-  };
-  reader.readAsText(file);
-}
-
-/* ============ 7. CHAPTER LIST (low-RAM render) ============ */
-function renderChapterList(){
-  chapList.innerHTML = '';
-  const frag = document.createDocumentFragment(); // low-RAM/CPU: single reflow
-  chapters.forEach((c, i)=>{
-    const wrap = document.createElement('div');
-    wrap.className = 'chap-item-wrap';
-    wrap.id = 'chap-wrap-'+i;
-    const row = document.createElement('div');
-    row.className = 'chap-item' + (i===currentIdx ? ' active' : '');
-    row.id = 'chap-row-'+i;
-    row.dataset.idx = i;
-    row.innerHTML = `
-      <span class="chap-idx">${String(i+1).padStart(2,'0')}</span>
-      <span class="chap-name">${escapeHtml(c.title)}</span>
-      <span class="chap-status ${statusClass(c.status)}" id="chap-status-${i}">${statusLabel(c.status)}</span>
-      <button class="compare-toggle" data-idx="${i}" id="compare-toggle-${i}" style="display:none;">Compare</button>
-    `;
-    const panel = document.createElement('div');
-    panel.className = 'compare-panel';
-    panel.id = 'compare-panel-'+i;
-    wrap.appendChild(row);
-    wrap.appendChild(panel);
-    frag.appendChild(wrap);
-    if(c.status === 'done' || c.status === 'unverified'){
-      const t = row.querySelector('.compare-toggle');
-      if(t && (c.originalText || c.text)) t.style.display = 'inline-block';
-    }
-  });
-  chapList.appendChild(frag);
-  applyChapterFilters();
-}
-
-/* ---- filter/search (debounced for big books) ---- */
-let filterDebounce = null;
-el('chapFilter').addEventListener('input', (e)=>{
-  clearTimeout(filterDebounce);
-  filterDebounce = setTimeout(()=>{
-    textFilter = e.target.value.trim().toLowerCase();
-    applyChapterFilters();
-  }, 120);
-});
-el('statusFilters').addEventListener('click', (e)=>{
-  const btn = e.target.closest('.filter-btn');
-  if(!btn) return;
-  statusFilter = btn.dataset.f;
-  document.querySelectorAll('#statusFilters .filter-btn').forEach(b=>b.classList.toggle('active', b===btn));
-  applyChapterFilters();
-});
-
-function matchesStatusFilter(c){
-  if(statusFilter === 'all') return true;
-  if(statusFilter === 'pending') return c.status === 'pending' || c.status === 'active' || c.status === 'retry';
-  if(statusFilter === 'done') return c.status === 'done';
-  if(statusFilter === 'issues') return c.status === 'unverified' || c.status === 'skipped';
-  return true;
-}
-function applyChapterFilters(){
-  chapters.forEach((c, i)=>{
-    const wrap = el('chap-wrap-'+i);
-    if(!wrap) return;
-    const textOk = !textFilter || c.title.toLowerCase().includes(textFilter);
-    wrap.classList.toggle('hidden', !(textOk && matchesStatusFilter(c)));
-  });
-}
-
-/* ---- click: compare toggle or preview ---- */
-chapList.addEventListener('click', async (e)=>{
-  const btn = e.target.closest('.compare-toggle');
-  if(btn){ toggleComparePanel(parseInt(btn.dataset.idx, 10)); return; }
-  const row = e.target.closest('.chap-item');
-  if(row && !running){
-    await previewChapter(parseInt(row.dataset.idx, 10));
-  }
-});
-
-async function previewChapter(i){
-  const c = chapters[i];
-  if(!c) return;
-  viewerLabel.textContent = `— ${c.title}` + (c.text && c.text.trim() ? ' (translated)' : ' (original)');
-  if(c.text && c.text.trim()){
-    viewer.innerHTML = c.text.split(/\n+/).filter(p=>p.trim()).map(p=>`<p>${escapeHtml(p)}</p>`).join('');
-  } else {
-    try{
-      const html = await loadChapterHtml(c);
-      viewer.innerHTML = html || '<div class="ph">Empty chapter content</div>';
-    }catch(err){
-      viewer.innerHTML = '<div class="ph">Could not load this chapter</div>';
-    }
-  }
-  viewer.scrollTop = 0;
-  viewerPanel.scrollIntoView({block:'nearest', behavior:'smooth'});
-}
-
-function toggleComparePanel(i){
-  const c = chapters[i];
-  const panel = el('compare-panel-'+i);
-  if(!panel) return;
-  if(panel.classList.contains('show')){
-    panel.classList.remove('show');
-    panel.innerHTML = ''; // low-RAM: free compare DOM when closed
-    return;
-  }
-  // low-RAM: only one compare panel open at a time
-  document.querySelectorAll('.compare-panel.show').forEach(p=>{ p.classList.remove('show'); p.innerHTML=''; });
-  panel.innerHTML = `
-    <div class="compare-col">
-      <div class="compare-col-label">Original${settings.memSaver==='on' && (c.originalText||'').length >= ORIG_SNIPPET ? ' (first part)' : ''}</div>
-      <div class="compare-col-text">${escapeHtml(c.originalText || '(not captured)')}</div>
-    </div>
-    <div class="compare-col">
-      <div class="compare-col-label">Translated</div>
-      <div class="compare-col-text translated">${escapeHtml(c.text || '(not captured)')}</div>
-    </div>
-  `;
-  panel.classList.add('show');
-}
-
-function statusClass(s){
-  return {pending:'st-pending', active:'st-active', done:'st-done', retry:'st-retry', unverified:'st-unverified', skipped:'st-skipped'}[s] || 'st-pending';
-}
-function statusLabel(s){
-  return {pending:'Pending', active:'Translating', done:'Done', retry:'Retrying', unverified:'Unverified', skipped:'Skipped'}[s] || 'Pending';
-}
-
-function setChapterStatus(i, status){
-  chapters[i].status = status;
-  const badge = el('chap-status-'+i);
-  if(badge){
-    badge.className = 'chap-status ' + statusClass(status);
-    badge.textContent = statusLabel(status);
-  }
-  const prevActive = chapList.querySelector('.chap-item.active');
-  if(prevActive) prevActive.classList.remove('active');
-  const row = el('chap-row-'+i);
-  if(row && status==='active') row.classList.add('active');
-
-  const toggle = el('compare-toggle-'+i);
-  if(toggle){
-    const canCompare = (status==='done' || status==='unverified' || status==='skipped') && !!(chapters[i].originalText || chapters[i].text);
-    toggle.style.display = canCompare ? 'inline-block' : 'none';
-  }
-  requestProgressUpdate();
-  applyChapterFilters();
-  saveSessionProgress();
-}
-
-function bumpChip(id){
-  const chip = el(id).closest('.chip');
-  chip.classList.add('bump');
-  setTimeout(()=>chip.classList.remove('bump'), 250);
-}
-
-/* low-RAM/CPU: progress updates batched into one rAF frame */
-let progressRafQueued = false;
-function requestProgressUpdate(){
-  if(progressRafQueued) return;
-  progressRafQueued = true;
-  requestAnimationFrame(()=>{
-    progressRafQueued = false;
-    updateProgress();
-  });
-}
-
-function updateProgress(){
-  const verified = chapters.filter(c=>c.status==='done').length;
-  const unverified = chapters.filter(c=>c.status==='unverified').length;
-  const skipped = chapters.filter(c=>c.status==='skipped').length;
-  const processed = verified + unverified + skipped;
-  const total = chapters.length;
-  const pct = total ? Math.round((processed/total)*100) : 0;
-  progFill.style.width = pct + '%';
-  stickyBar.style.width = pct + '%';
-  progText.textContent = `${verified} verified / ${total} chapters`;
-  progPercent.textContent = pct + '%';
-
-  if(running){
-    document.title = `${pct}% \u00b7 Translating\u2026 — DTV Pro`;
-  }
-
-  const words = chapters.reduce((sum,c)=> sum + (c.text ? wordCount(c.text) : 0), 0);
-  if(el('statDone').textContent !== String(verified)){ el('statDone').textContent = verified; bumpChip('statDone'); }
-  el('statIssue').textContent = unverified;
-  el('statSkip').textContent = skipped;
-  el('statPending').textContent = total - processed;
-  el('statWords').textContent = formatNum(words);
-  el('statReadTime').textContent = words > 0 ? formatDuration(Math.round(words/200)*60000) : '0m';
-
-  updateEta(processed, total);
-}
-
-function updateEta(processed, total){
-  if(!running || chapterDurations.length === 0){
-    if(!running) etaText.textContent = '';
-    return;
-  }
-  const avg = chapterDurations.reduce((a,b)=>a+b,0) / chapterDurations.length;
-  const remaining = chapters.filter(c=>!['done','unverified','skipped'].includes(c.status)).length;
-  const etaMs = avg * remaining;
-  const elapsed = Date.now() - runStartTime;
-  etaText.textContent = `elapsed ${formatDuration(elapsed)} \u00b7 ~${formatDuration(etaMs)} left`;
-}
-
-function recordDuration(ms){
-  chapterDurations.push(ms);
-  if(chapterDurations.length > MAX_DURATION_SAMPLES) chapterDurations.shift();
-}
-
-function formatDuration(ms){
-  const s = Math.round(ms/1000);
-  if(s < 60) return s + 's';
-  const m = Math.floor(s/60);
-  const rs = s % 60;
-  if(m < 60) return m + 'm ' + (rs ? rs + 's' : '');
-  return Math.floor(m/60) + 'h ' + (m%60) + 'm';
-}
-
-function escapeHtml(s){
-  return String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-function log(msg, type=''){
-  logBox.style.display = 'block';
-  const line = document.createElement('div');
-  line.className = 'log-line ' + type;
-  const ts = new Date().toLocaleTimeString([], {hour12:false});
-  line.textContent = `[${ts}] ${msg}`;
-  logBox.appendChild(line);
-  // low-RAM: cap the number of log DOM nodes
-  while(logBox.children.length > MAX_LOG_LINES) logBox.firstChild.remove();
-  logBox.scrollTop = logBox.scrollHeight;
-}
-
-/* ============ VIEWER CONTROLS ============ */
-let viewerFontSize = 13.5;
-el('fontMinus').addEventListener('click', ()=>{
-  viewerFontSize = Math.max(11, viewerFontSize - 1);
-  viewer.style.fontSize = viewerFontSize + 'px';
-});
-el('fontPlus').addEventListener('click', ()=>{
-  viewerFontSize = Math.min(21, viewerFontSize + 1);
-  viewer.style.fontSize = viewerFontSize + 'px';
-});
-el('copyViewer').addEventListener('click', async ()=>{
-  try{
-    await navigator.clipboard.writeText(viewer.innerText || '');
-    showToast('Copied to clipboard', 'ok');
-  }catch(e){
-    showToast('Copy failed — your browser blocked clipboard access', 'err');
-  }
-});
-
-/* ============ 8. TRANSLATE-VERIFY CORE ============ */
-function containsNonLatinScript(str){
-  return /[\u0900-\u097F\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF\u0400-\u04FF\u0600-\u06FF\u0E00-\u0E7F]/.test(str);
-}
-
-function textDivergence(a, b){
-  a = (a||'').trim(); b = (b||'').trim();
-  if(!a && !b) return 0;
-  if(!a || !b) return 1;
-  if(a === b) return 0;
-  const wa = a.toLowerCase().split(/\s+/);
-  const wb = new Set(b.toLowerCase().split(/\s+/));
-  let common = 0;
-  wa.forEach(w=>{ if(wb.has(w)) common++; });
-  const overlap = common / wa.length;
-  return 1 - overlap;
-}
-
-function isTranslated(rendered, originalText, elapsed){
-  const now = (rendered||'');
-  if(!now.trim()) return false;
-  if(verifyMode === 'script'){
-    return containsNonLatinScript(now);
-  }
-  if(verifyMode === 'latin'){
-    return elapsed > 2500 && textDivergence(originalText, now) > 0.35;
-  }
-  if(containsNonLatinScript(now)) return true;
-  return elapsed > 2800 && textDivergence(originalText, now) > 0.4;
-}
-
-function waitForTranslation(node, originalText, timeoutMs){
-  return new Promise((resolve)=>{
-    const start = Date.now();
-    const check = setInterval(()=>{
-      if(skipRequested || stopRequested){
-        clearInterval(check);
-        resolve({success:false, interrupted:true, text: node.innerText || ''});
-        return;
-      }
-      const now = node.innerText || '';
-      const elapsed = Date.now()-start;
-      if(isTranslated(now, originalText, elapsed)){
-        clearInterval(check);
-        resolve({success:true, text: now});
-        return;
-      }
-      if(elapsed > timeoutMs){
-        clearInterval(check);
-        resolve({success:false, text: now});
-      }
-    }, 400);
-  });
-}
-
-async function autoScrollNode(node){
-  const height = node.scrollHeight;
-  let pos = 0;
-  const step = Math.max(120, Math.floor(node.clientHeight * 0.8));
-  return new Promise(resolve=>{
-    const timer = setInterval(()=>{
-      if(skipRequested || stopRequested){ clearInterval(timer); node.scrollTop = 0; resolve(); return; }
-      node.scrollTop = pos;
-      pos += step;
-      if(pos >= height){ clearInterval(timer); node.scrollTop = 0; resolve(); }
-    }, settings.scrollMs);
-  });
-}
-
-async function loadChapterHtml(c){
-  if(c.item){
-    if(c.item.document && c.item.document.body){
-      return c.item.document.body.innerHTML;
-    }
-    await c.item.load(book.load.bind(book));
-    if(c.item.document && c.item.document.body){
-      return c.item.document.body.innerHTML;
-    }
-    return '';
-  }
-  return c.html || '';
-}
-
-/* low-RAM: release the epub chapter DOM once we've captured the text */
-function unloadChapterItem(c){
-  if(c.item && typeof c.item.unload === 'function'){
-    try{ c.item.unload(); }catch(e){}
-  }
-}
-
-function storeOriginal(c, fullText){
-  // memory saver keeps a snippet big enough for the compare view + divergence sampling
-  c.originalText = (settings.memSaver === 'on' && fullText.length > ORIG_SNIPPET)
-    ? fullText.slice(0, ORIG_SNIPPET)
-    : fullText;
-}
-
-function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
-
-async function waitWhilePaused(){
-  while(paused && !stopRequested){
-    await sleep(250);
-  }
-}
-
-async function processChapter(i){
-  const c = chapters[i];
-  currentIdx = i;
-  skipRequested = false;
-  const t0 = Date.now();
-  setChapterStatus(i, 'active');
-  const row = el('chap-row-'+i);
-  if(row) row.scrollIntoView({block:'nearest', behavior:'smooth'});
-  viewerLabel.textContent = `— ${c.title}`;
-  liveBadge.classList.add('on');
-  viewer.classList.add('live');
-  log(`Loading chapter ${i+1}: ${c.title}`);
-
-  let html = '';
-  try{
-    html = await loadChapterHtml(c);
-  }catch(err){
-    log(`Chapter ${i+1} failed to load: ${err.message}`, 'warn');
-  }
-
-  viewer.innerHTML = html || '<div class="ph">Empty chapter content</div>';
-  html = null; // low-RAM: drop reference immediately
-  const originalText = viewer.innerText;
-  storeOriginal(c, originalText);
-  unloadChapterItem(c);
-
-  if(!originalText.trim()){
-    c.text = '';
-    setChapterStatus(i, 'skipped');
-    log(`Chapter ${i+1} was empty, marked skipped.`, 'warn');
-    recordDuration(Date.now()-t0);
-    liveBadge.classList.remove('on');
-    viewer.classList.remove('live');
-    return true;
-  }
-
-  await autoScrollNode(viewer);
-
-  if(skipRequested){
-    c.text = viewer.innerText;
-    setChapterStatus(i, 'skipped');
-    log(`Chapter ${i+1} manually skipped.`, 'warn');
-    skipRequested = false;
-    recordDuration(Date.now()-t0);
-    liveBadge.classList.remove('on');
-    viewer.classList.remove('live');
-    return true;
-  }
-  if(stopRequested){
-    liveBadge.classList.remove('on');
-    viewer.classList.remove('live');
-    return true;
-  }
-
-  log(`Verifying translation for chapter ${i+1}\u2026`);
-  const result = await waitForTranslation(viewer, originalText, settings.timeoutMs);
-  liveBadge.classList.remove('on');
-  viewer.classList.remove('live');
-
-  if(result.interrupted){
-    if(stopRequested) return true;
-    c.text = result.text;
-    setChapterStatus(i, 'skipped');
-    log(`Chapter ${i+1} manually skipped.`, 'warn');
-    skipRequested = false;
-    recordDuration(Date.now()-t0);
-    return true;
-  }
-
-  if(result.success){
-    c.text = result.text;
-    setChapterStatus(i, 'done');
-    log(`Chapter ${i+1} verified (${result.text.length} chars).`, 'ok');
-    consecutiveVerifyFailures = 0;
-    recordDuration(Date.now()-t0);
-    viewerLabel.textContent = `— ${c.title} (translated)`;
-    return true;
-  } else {
-    c.retries += 1;
-    if(c.retries < settings.maxRetries){
-      setChapterStatus(i, 'retry');
-      log(`Chapter ${i+1} — no translation detected, retrying (${c.retries}/${settings.maxRetries})\u2026`, 'warn');
-      await sleep(1200);
-      if(stopRequested || skipRequested){
-        c.text = viewer.innerText;
-        setChapterStatus(i, skipRequested ? 'skipped' : 'unverified');
-        skipRequested = false;
-        recordDuration(Date.now()-t0);
-        return true;
-      }
-      return await processChapter(i);
-    } else {
-      c.text = result.text;
-      setChapterStatus(i, 'unverified');
-      log(`Chapter ${i+1} — translation not verified, saving available text as-is.`, 'err');
-      consecutiveVerifyFailures++;
-      recordDuration(Date.now()-t0);
-      return false;
-    }
-  }
-}
-
-/* ============ MAIN LOOP ============ */
-async function runTranslation(){
-  if(running) return;
-  const range = clampRangeInputs();
-  running = true;
-  paused = false;
-  stopRequested = false;
-  skipRequested = false;
-  consecutiveVerifyFailures = 0;
-  chapterDurations = [];
-  runStartTime = Date.now();
-  startBtn.style.display = 'none';
-  stopBtn.style.display = 'block';
-  skipBtn.style.display = 'block';
-  pauseBtn.style.display = 'block';
-  pauseBtn.textContent = 'Pause';
-  retryFailedBtn.style.display = 'none';
-  logBox.innerHTML = '';
-  logBox.style.display = 'block';
-  hideBanner(globalBanner);
-  progFill.classList.add('animating');
-  stickyProg.classList.add('on');
-  acquireWakeLock();
-  requestNotifyPermission();
-
-  runTimer = setInterval(()=>{
-    const processed = chapters.filter(c=>['done','unverified','skipped'].includes(c.status)).length;
-    updateEta(processed, chapters.length);
-  }, 1000);
-
-  const rangeNote = (range.from > 1 || range.to < chapters.length)
-    ? ` Range: chapters ${range.from}\u2013${range.to}.` : '';
-  log(`Starting (mode: ${verifyMode}, timeout: ${Math.round(settings.timeoutMs/1000)}s, retries: ${settings.maxRetries}).${rangeNote} Confirm Chrome translation is enabled.`);
-
-  for(let i=range.from-1; i<range.to; i++){
-    if(stopRequested){ log('Stopped by user.', 'warn'); break; }
-    await waitWhilePaused();
-    if(stopRequested){ log('Stopped by user.', 'warn'); break; }
-    if(chapters[i].status === 'done' && chapters[i].text && chapters[i].text.trim()){
-      continue;
-    }
-    chapters[i].retries = 0;
-    const verified = await processChapter(i);
-
-    if(verified === false && consecutiveVerifyFailures >= 2){
-      await new Promise(resolve=>{
-        showBanner(globalBanner, {
-          level: 'warn',
-          title: 'Translation not detected',
-          message: `The last ${consecutiveVerifyFailures} chapters finished without any translated text being detected. This usually means Chrome's translation isn't active, or the target language doesn't match your selection above. Check the translate icon in the address bar, then continue.`,
-          actions: [
-            { id:'stop', label:'Stop Now', primary:true, onClick: ()=>{ stopRequested = true; hideBanner(globalBanner); resolve(); } },
-            { id:'continue', label:'Keep Going', onClick: ()=>{ consecutiveVerifyFailures = 0; hideBanner(globalBanner); resolve(); } }
-          ]
-        });
-      });
-    }
-    if(settings.gapMs && !stopRequested) await sleep(settings.gapMs);
-  }
-
-  running = false;
-  paused = false;
-  clearInterval(runTimer);
-  releaseWakeLock();
-  progFill.classList.remove('animating');
-  stickyProg.classList.remove('on');
-  startBtn.style.display = 'block';
-  stopBtn.style.display = 'none';
-  skipBtn.style.display = 'none';
-  pauseBtn.style.display = 'none';
-  startBtn.textContent = 'Run Again (remaining chapters)';
-  currentIdx = -1;
-  document.title = BASE_TITLE;
-
-  refreshDownloadSummary();
-  const doneCount = chapters.filter(c=>c.status==='done' && c.text.trim()).length;
-  const issueCount = chapters.filter(c=>c.status==='unverified' || c.status==='skipped').length;
-  if(issueCount > 0) retryFailedBtn.style.display = 'block';
-  const took = formatDuration(Date.now() - runStartTime);
-  etaText.textContent = `finished in ${took}`;
-  log(`Complete — ${doneCount}/${chapters.length} chapters verified in ${took}.`, doneCount>0?'ok':'warn');
-  if(doneCount > 0){
-    playChime();
-    notifyDone(`${doneCount}/${chapters.length} chapters verified in ${took}. Ready to export.`);
-    showToast(`Run complete: ${doneCount}/${chapters.length} verified in ${took}`, 'ok', 4200);
-    downloadPanel.scrollIntoView({block:'nearest', behavior:'smooth'});
-  } else {
-    showToast('Run finished but nothing was verified — is Chrome translation on?', 'warn', 4200);
-  }
-}
-
-startBtn.addEventListener('click', runTranslation);
-
-stopBtn.addEventListener('click', ()=>{
-  stopRequested = true;
-  paused = false;
-  log('Stopping after current step\u2026', 'warn');
-});
-
-pauseBtn.addEventListener('click', ()=>{
-  paused = !paused;
-  pauseBtn.textContent = paused ? 'Resume' : 'Pause';
-  if(paused){
-    log('Paused — will hold after the current chapter finishes.', 'warn');
-    showToast('Paused (after current chapter)', 'info');
-  } else {
-    log('Resumed.', 'ok');
-    showToast('Resumed', 'ok');
-  }
-});
-
-skipBtn.addEventListener('click', ()=>{
-  if(currentIdx >= 0){
-    skipRequested = true;
-    showToast('Skipping current chapter\u2026', 'info', 1600);
-  }
-});
-
-retryFailedBtn.addEventListener('click', ()=>{
-  const targets = chapters.filter(c=>c.status==='unverified' || c.status==='skipped');
-  if(targets.length === 0){ retryFailedBtn.style.display = 'none'; return; }
-  targets.forEach(c=>{ c.status = 'pending'; c.retries = 0; });
-  rangeFrom.value = 1; rangeTo.value = chapters.length;
-  renderChapterList();
-  requestProgressUpdate();
-  showToast(`Retrying ${targets.length} chapter${targets.length>1?'s':''}\u2026`, 'info');
-  runTranslation();
-});
-
-/* keyboard shortcuts */
-document.addEventListener('keydown', (e)=>{
-  if(e.target.matches('input, select, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
-  const k = e.key.toLowerCase();
-  if(k === 's' && !running && !startBtn.disabled && actionPanel.style.display !== 'none'){ e.preventDefault(); startBtn.click(); }
-  else if(k === 'p' && running){ e.preventDefault(); pauseBtn.click(); }
-  else if(k === 'k' && running){ e.preventDefault(); skipBtn.click(); }
-  else if(e.key === 'Escape' && running){ stopBtn.click(); }
-});
-
-function refreshDownloadSummary(){
-  const doneCount = chapters.filter(c=>c.status==='done' && c.text && c.text.trim()).length;
-  const usable = chapters.filter(c=>c.text && c.text.trim()).length;
-  if(usable > 0){
-    dDone.textContent = doneCount;
-    dSkipped.textContent = usable - doneCount;
-    dWords.textContent = formatNum(chapters.reduce((s,c)=> s + wordCount(c.text), 0));
-    downloadPanel.style.display = 'block';
-    editorPanel.style.display = 'block';
-    renderEditorList();
-  }
-}
-
-/* ============ 9. CHAPTER EDITOR (drag & drop, low-RAM render) ============ */
-let dragSrcPos = null;
-
-function renderEditorList(){
-  editorList.innerHTML = '';
-  const frag = document.createDocumentFragment();
-  exportOrder.forEach((chapIdx, pos)=>{
-    const c = chapters[chapIdx];
-    const hasText = !!(c.text && c.text.trim());
-    const wc = hasText ? wordCount(c.text) : 0;
-    const row = document.createElement('div');
-    row.className = 'editor-row' + (c.excluded ? ' excluded' : '');
-    row.draggable = true;
-    row.dataset.pos = pos;
-    row.innerHTML = `
-      <span class="drag-handle" title="Drag to reorder" aria-hidden="true">&#8942;&#8942;</span>
-      <span class="editor-pos">${String(pos+1).padStart(2,'0')}</span>
-      <div class="editor-main">
-        <input class="editor-title-input" value="${escapeAttr(c.title)}"
-               data-chap="${chapIdx}" ${hasText ? '' : 'disabled'} aria-label="Chapter title" />
-        <span class="editor-wc">${hasText ? formatNum(wc) + ' words \u00b7 ' + statusLabel(c.status) : 'no text captured'}</span>
-      </div>
-      <div class="editor-controls">
-        <button class="editor-btn" data-act="up" data-pos="${pos}" ${pos===0?'disabled':''} title="Move up" aria-label="Move up">\u2191</button>
-        <button class="editor-btn" data-act="down" data-pos="${pos}" ${pos===exportOrder.length-1?'disabled':''} title="Move down" aria-label="Move down">\u2193</button>
-        <button class="editor-btn ${c.excluded?'toggle-off':''}" data-act="toggle" data-chap="${chapIdx}"
-                title="${c.excluded ? 'Include in export' : 'Exclude from export'}" ${hasText ? '' : 'disabled'} aria-label="Toggle include">
-          ${c.excluded ? '\uFF0B' : '\u2715'}
-        </button>
-      </div>
-    `;
-    frag.appendChild(row);
-  });
-  editorList.appendChild(frag);
-}
-
-function escapeAttr(s){
-  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-}
-
-editorList.addEventListener('input', (e)=>{
-  if(e.target.classList.contains('editor-title-input')){
-    const idx = parseInt(e.target.dataset.chap, 10);
-    chapters[idx].title = e.target.value;
-    saveSessionProgress();
-  }
-});
-
-editorList.addEventListener('click', (e)=>{
-  const btn = e.target.closest('.editor-btn');
-  if(!btn || btn.disabled) return;
-  const act = btn.dataset.act;
-  if(act === 'up' || act === 'down'){
-    const pos = parseInt(btn.dataset.pos, 10);
-    const swapWith = act === 'up' ? pos-1 : pos+1;
-    if(swapWith < 0 || swapWith >= exportOrder.length) return;
-    [exportOrder[pos], exportOrder[swapWith]] = [exportOrder[swapWith], exportOrder[pos]];
-    renderEditorList();
-    saveSessionProgress();
-  }
-  if(act === 'toggle'){
-    const idx = parseInt(btn.dataset.chap, 10);
-    chapters[idx].excluded = !chapters[idx].excluded;
-    renderEditorList();
-    saveSessionProgress();
-  }
-});
-
-/* drag & drop reorder */
-editorList.addEventListener('dragstart', (e)=>{
-  const row = e.target.closest('.editor-row');
-  if(!row) return;
-  dragSrcPos = parseInt(row.dataset.pos, 10);
-  row.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
-  try{ e.dataTransfer.setData('text/plain', String(dragSrcPos)); }catch(err){}
-});
-editorList.addEventListener('dragend', ()=>{
-  dragSrcPos = null;
-  editorList.querySelectorAll('.editor-row').forEach(r=>r.classList.remove('dragging','drop-target'));
-});
-editorList.addEventListener('dragover', (e)=>{
-  if(dragSrcPos === null) return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  const row = e.target.closest('.editor-row');
-  editorList.querySelectorAll('.editor-row.drop-target').forEach(r=>r.classList.remove('drop-target'));
-  if(row && parseInt(row.dataset.pos,10) !== dragSrcPos) row.classList.add('drop-target');
-});
-editorList.addEventListener('drop', (e)=>{
-  if(dragSrcPos === null) return;
-  e.preventDefault();
-  const row = e.target.closest('.editor-row');
-  if(!row) return;
-  const targetPos = parseInt(row.dataset.pos, 10);
-  if(targetPos === dragSrcPos) return;
-  const [moved] = exportOrder.splice(dragSrcPos, 1);
-  exportOrder.splice(targetPos, 0, moved);
-  dragSrcPos = null;
-  renderEditorList();
-  saveSessionProgress();
-  showToast('Chapter order updated', 'ok', 1600);
-});
-
-el('resetOrderBtn').addEventListener('click', ()=>{
-  exportOrder = chapters.map((c,i)=>i);
-  renderEditorList();
-  saveSessionProgress();
-  showToast('Original order restored', 'info', 1800);
-});
-
-function getExportChapters(){
-  return exportOrder.map(idx => chapters[idx]).filter(c => c && c.text && c.text.trim() && !c.excluded);
-}
-
-/* ---- FIND & REPLACE ---- */
-function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-
-function countFindMatches(){
-  const find = el('fnrFind').value;
-  if(!find) return 0;
-  const flags = el('fnrCase').checked ? 'g' : 'gi';
-  const re = new RegExp(escapeRegExp(find), flags);
-  let count = 0;
-  chapters.forEach(c=>{
-    if(c.text && !c.excluded){
-      const m = c.text.match(re);
-      if(m) count += m.length;
-    }
-  });
-  return count;
-}
-
-let fnrDebounce = null;
-function refreshFnrPreview(){
-  clearTimeout(fnrDebounce);
-  fnrDebounce = setTimeout(()=>{
-    const find = el('fnrFind').value;
-    el('fnrPreview').textContent = find ? countFindMatches() + ' matches' : '';
-  }, 250);
-}
-el('fnrFind').addEventListener('input', refreshFnrPreview);
-el('fnrCase').addEventListener('change', refreshFnrPreview);
-
-el('fnrApplyBtn').addEventListener('click', ()=>{
-  const find = el('fnrFind').value;
-  const replace = el('fnrReplace').value;
-  if(!find){ showToast('Enter text to find first', 'warn'); return; }
-  const flags = el('fnrCase').checked ? 'g' : 'gi';
-  const re = new RegExp(escapeRegExp(find), flags);
-  let total = 0;
-  chapters.forEach(c=>{
-    if(c.text && !c.excluded){
-      const m = c.text.match(re);
-      if(m){ total += m.length; c.text = c.text.replace(re, replace); }
-    }
-  });
-  if(total > 0){
-    renderEditorList();
-    refreshDownloadSummary();
-    requestProgressUpdate();
-    saveSessionProgress();
-    showToast(`Replaced ${total} occurrence${total>1?'s':''}`, 'ok');
-    el('fnrPreview').textContent = '0 matches';
-  } else {
-    showToast('No matches found', 'info');
-  }
-});
-
-/* ---- SESSION BACKUP (export / import JSON) ---- */
-el('backupExportBtn').addEventListener('click', ()=>{
-  if(chapters.length === 0){ showToast('Nothing to back up yet', 'warn'); return; }
-  const payload = {
-    dtvBackup: 1,
-    savedAt: Date.now(),
-    bookTitle: mTitle.textContent,
-    bookLang,
-    exportOrder,
-    chapters: chapters.map(c=>({
-      title: c.title, status: c.status, text: c.text,
-      originalText: c.originalText || '', excluded: !!c.excluded
-    }))
-  };
-  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
-  triggerDownload(blob, `${safeFileName(mTitle.textContent,'book')}_dtv_backup.json`);
-  showToast('Backup file download started', 'ok');
-});
-
-el('backupImportBtn').addEventListener('click', ()=> el('backupFileInput').click());
-el('backupFileInput').addEventListener('change', (e)=>{
-  const file = e.target.files[0];
-  e.target.value = '';
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const data = JSON.parse(reader.result);
-      if(!data || data.dtvBackup !== 1 || !Array.isArray(data.chapters)){
-        showToast('Not a valid DTV backup file', 'err');
-        return;
-      }
-      // restore as a standalone session (works even without the original document)
-      resetForNewFile(null);
-      fileNameShow.textContent = '\u2713 restored from backup: ' + file.name;
-      chapters = data.chapters.map((sc, i)=>({
-        index: i, title: sc.title || ('Chapter ' + (i+1)), item: null,
-        html: null,
-        status: sc.status || (sc.text ? 'done' : 'pending'),
-        text: sc.text || '', originalText: sc.originalText || '',
-        retries: 0, excluded: !!sc.excluded
-      }));
-      bookLang = data.bookLang || 'en';
-      mTitle.textContent = data.bookTitle || 'Restored book';
-      mChapters.textContent = chapters.length;
-      mWords.textContent = '—';
-      mStatus.textContent = 'Restored from backup';
-      exportOrder = (Array.isArray(data.exportOrder) && data.exportOrder.length === chapters.length)
-        ? data.exportOrder.slice()
-        : chapters.map((c,i)=>i);
-      sessionKey = computeSessionKey(mTitle.textContent, 0, chapters.length);
-      rangeFrom.max = chapters.length; rangeTo.max = chapters.length;
-      rangeFrom.value = 1; rangeTo.value = chapters.length;
-      renderChapterList();
-      chapPanel.style.display = 'block';
-      viewerPanel.style.display = 'block';
-      requestProgressUpdate();
-      refreshDownloadSummary();
-      showToast(`Backup restored — ${chapters.length} chapters`, 'ok');
-    }catch(err){
-      showToast('Could not read backup file', 'err');
-    }
-  };
-  reader.onerror = ()=> showToast('Could not read backup file', 'err');
-  reader.readAsText(file);
-});
-
-/* ============ 10. EXPORTS ============ */
-const EXPORT_META = {
-  story:{ btn:'Download story as a single .txt file', note:'One plain .txt file with just the translated story text, in order — no chapter numbers, titles or dividers. Ideal for reading apps or feeding into other tools.' },
-  txt:  { btn:'Download ZIP (per-chapter + combined .txt)', note:'A .zip with one .txt file per chapter plus a combined file that includes a table of contents and chapter headings.' },
-  epub: { btn:'Download EPUB (.epub)', note:'Repackages translated chapters into a standard EPUB3 container with a generated table of contents, using the titles and order set above. Opens in any e-reader (Apple Books, Calibre, Kindle after conversion, etc.).' },
-  md:   { btn:'Download Markdown (.md)', note:'A single Markdown file with a linked table of contents and one heading per chapter — great for Obsidian, Notion, GitHub, or further editing.' },
-  html: { btn:'Download HTML (.html)', note:'A single, self-contained styled HTML page with a clickable table of contents — readable in any browser, easy to print or convert to PDF.' },
-};
-exportTabs.addEventListener('click', (e)=>{
-  const tab = e.target.closest('.export-tab');
-  if(!tab) return;
-  exportMode = tab.dataset.mode;
-  document.querySelectorAll('.export-tab').forEach(t=>t.classList.remove('active'));
-  tab.classList.add('active');
-  const meta = EXPORT_META[exportMode];
-  downloadBtn.textContent = meta.btn;
-  if(meta.note){ exportNote.style.display = 'flex'; exportNoteText.textContent = meta.note; }
-  else{ exportNote.style.display = 'none'; }
-});
-
-downloadBtn.addEventListener('click', async ()=>{
-  if(downloadBtn.disabled) return;
-  if((exportMode === 'txt' || exportMode === 'epub') && !requireLib(LIB_STATUS.jszip, 'ZIP/EPUB export')){
-    showGlobalError('Cannot export', 'The JSZip component failed to load, so files can\u2019t be packaged. Reload the page after checking your connection.');
-    return;
-  }
-  downloadBtn.disabled = true;
-  const originalLabel = downloadBtn.textContent;
-  downloadBtn.textContent = 'Preparing\u2026';
-  try{
-    if(exportMode === 'story') await downloadAsStoryTxt();
-    else if(exportMode === 'epub') await downloadAsEpub();
-    else if(exportMode === 'md') await downloadAsMarkdown();
-    else if(exportMode === 'html') await downloadAsHtml();
-    else await downloadAsTxtZip();
-  }catch(err){
-    log(`Export failed: ${err.message}`, 'err');
-    showGlobalError('Export failed', 'Something went wrong while preparing the download.', (err.message||'') + (err.stack ? '\n' + err.stack : ''));
-  }finally{
-    downloadBtn.disabled = false;
-    downloadBtn.textContent = originalLabel;
-  }
-});
-
-function requireExportList(){
-  const exportList = getExportChapters();
-  if(exportList.length === 0){
-    log('Nothing to export — all chapters are excluded or empty.', 'err');
-    showGlobalWarning('Nothing to export', 'Every translated chapter is currently excluded (or empty). Include at least one chapter in the "Review & Arrange" panel above.');
-    return null;
-  }
-  return exportList;
-}
-
-function safeFileName(s, fallback){
-  const cleaned = String(s||'').replace(/[^a-zA-Z0-9 \-_]/g,'').trim();
-  return cleaned || fallback;
-}
-
-/* ---- STORY-ONLY SINGLE TXT (pure text, no headers/numbering) ---- */
-async function downloadAsStoryTxt(){
-  const exportList = requireExportList();
-  if(!exportList) return;
-  const bookTitle = safeFileName(mTitle.textContent, 'book');
-  const story = exportList.map(c => c.text.trim()).filter(t=>t).join('\n\n');
-  const blob = new Blob([story], {type:'text/plain;charset=utf-8'});
-  triggerDownload(blob, `${bookTitle}_story_${Math.floor(Date.now()/1000)}.txt`);
-  log(`Story TXT download started (${exportList.length} chapters merged, no headers).`, 'ok');
-  showToast('Story .txt download started', 'ok');
-  clearSessionProgress();
-}
-
-/* ---- TXT + ZIP ---- */
-async function downloadAsTxtZip(){
-  const exportList = requireExportList();
-  if(!exportList) return;
-  const zip = new JSZip();
-  const bookTitle = safeFileName(mTitle.textContent, 'book');
-
-  const usedNames = new Set();
-  exportList.forEach((c, pos)=>{
-    let base = `${String(pos+1).padStart(2,'0')}_${safeFileName(c.title,'chapter')}`;
-    let fname = base + '.txt';
-    let n = 1;
-    while(usedNames.has(fname)){ fname = `${base}_${n++}.txt`; }
-    usedNames.add(fname);
-    zip.file(fname, c.text);
-  });
-
-  const tocLines = ['TABLE OF CONTENTS', '='.repeat(40), ''];
-  exportList.forEach((c, pos)=>{ tocLines.push(`${String(pos+1).padStart(2,'0')}. ${c.title}`); });
-  tocLines.push('', '='.repeat(40), '');
-
-  const bodyLines = [];
-  exportList.forEach((c, pos)=>{
-    bodyLines.push(`[${String(pos+1).padStart(2,'0')}] ${c.title}`);
-    bodyLines.push('-'.repeat(40));
-    bodyLines.push('');
-    bodyLines.push(c.text);
-    bodyLines.push('', '');
-  });
-
-  const combined = tocLines.join('\n') + bodyLines.join('\n');
-  zip.file(`00_full_${bookTitle}.txt`, combined);
-
-  try{
-    // low-RAM: streamFiles compresses incrementally instead of buffering everything
-    const blob = await zip.generateAsync({type:'blob', streamFiles:true});
-    triggerDownload(blob, `${bookTitle}_translated_${Math.floor(Date.now()/1000)}.zip`);
-    log(`ZIP download started (${exportList.length} chapters).`, 'ok');
-    showToast('ZIP download started', 'ok');
-    clearSessionProgress();
-  }catch(err){
-    log(`ZIP generation failed: ${err.message}`, 'err');
-    showGlobalError('Export failed',
-      'Building the ZIP file failed, most likely because the combined content is too large to hold in memory at once. Try excluding some chapters and exporting in smaller batches.',
-      (err.message||'') + (err.stack ? '\n' + err.stack : ''));
-  }
-}
-
-function triggerDownload(blob, filename){
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(()=>URL.revokeObjectURL(url), 4000);
-}
-
-/* ---- MARKDOWN ---- */
-async function downloadAsMarkdown(){
-  const exportList = requireExportList();
-  if(!exportList) return;
-  const bookTitle = mTitle.textContent || 'Translated Book';
-  const lines = [`# ${bookTitle}`, '', '## Table of Contents', ''];
-  const anchors = exportList.map((c, pos)=>{
-    const slug = String(c.title||'chapter').toLowerCase()
-      .replace(/[^\p{L}\p{N}\s-]/gu,'').trim().replace(/\s+/g,'-') || 'chapter-' + (pos+1);
-    return slug + '-' + (pos+1);
-  });
-  exportList.forEach((c, pos)=>{
-    lines.push(`${pos+1}. [${c.title}](#${anchors[pos]})`);
-  });
-  lines.push('', '---', '');
-  exportList.forEach((c, pos)=>{
-    lines.push(`<a id="${anchors[pos]}"></a>`, '', `## ${c.title}`, '');
-    const paras = c.text.split(/\n+/).map(p=>p.trim()).filter(p=>p);
-    paras.forEach(p=>{ lines.push(p, ''); });
-    lines.push('---', '');
-  });
-  const blob = new Blob([lines.join('\n')], {type:'text/markdown;charset=utf-8'});
-  triggerDownload(blob, `${safeFileName(bookTitle,'book')}_translated_${Math.floor(Date.now()/1000)}.md`);
-  log(`Markdown download started (${exportList.length} chapters).`, 'ok');
-  showToast('Markdown download started', 'ok');
-  clearSessionProgress();
-}
-
-/* ---- SINGLE HTML ---- */
-async function downloadAsHtml(){
-  const exportList = requireExportList();
-  if(!exportList) return;
-  const bookTitle = mTitle.textContent || 'Translated Book';
-  const lang = (bookLang || 'en').split('-')[0] || 'en';
-  const tocHtml = exportList.map((c, pos)=>
-    `<li><a href="#chap-${pos+1}">${escapeHtml(c.title)}</a></li>`).join('\n');
-  const chapHtml = exportList.map((c, pos)=>{
-    const paras = c.text.split(/\n+/).map(p=>p.trim()).filter(p=>p)
-      .map(p=>`<p>${escapeHtml(p)}</p>`).join('\n');
-    return `<section id="chap-${pos+1}"><h2>${escapeHtml(c.title)}</h2>\n${paras}\n<p class="back"><a href="#top">\u2191 Contents</a></p></section>`;
-  }).join('\n<hr>\n');
-  const doc = `<!DOCTYPE html>
-<html lang="${escapeAttr(lang)}">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(bookTitle)}</title>
-<style>
-  body{max-width:680px;margin:0 auto;padding:40px 20px 80px;font-family:Georgia,'Times New Roman',serif;line-height:1.8;color:#222;background:#faf8f4;}
-  h1{font-size:1.9em;line-height:1.3;}
-  h2{margin-top:2em;font-size:1.4em;}
-  nav ol{line-height:2;}
-  a{color:#3a5fa8;}
-  hr{border:none;border-top:1px solid #ddd6c8;margin:3em 0;}
-  .back{font-size:0.85em;margin-top:2em;}
-  .meta{color:#888;font-size:0.85em;font-family:system-ui,sans-serif;}
-  @media print{.back{display:none;}}
-</style>
-</head>
-<body>
-<header id="top">
-  <h1>${escapeHtml(bookTitle)}</h1>
-  <p class="meta">Translated copy &middot; ${exportList.length} chapters &middot; generated ${new Date().toLocaleDateString()}</p>
-</header>
-<nav aria-label="Table of contents">
-  <h2>Contents</h2>
-  <ol>
-${tocHtml}
-  </ol>
-</nav>
-<hr>
-<main>
-${chapHtml}
-</main>
-</body>
-</html>`;
-  const blob = new Blob([doc], {type:'text/html;charset=utf-8'});
-  triggerDownload(blob, `${safeFileName(bookTitle,'book')}_translated_${Math.floor(Date.now()/1000)}.html`);
-  log(`HTML download started (${exportList.length} chapters).`, 'ok');
-  showToast('HTML download started', 'ok');
-  clearSessionProgress();
-}
-
-/* ---- EPUB REPACKAGING ---- */
-function textToXhtmlBody(text){
-  const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 0);
-  if(paragraphs.length === 0){
-    const lines = text.split(/\n/).map(l=>l.trim()).filter(l=>l.length>0);
-    if(lines.length === 0) return '<p></p>';
-    return lines.map(l=>`<p>${escapeXml(l)}</p>`).join('\n');
-  }
-  return paragraphs.map(p => `<p>${escapeXml(p).replace(/\n/g, '<br/>')}</p>`).join('\n');
-}
-
-function escapeXml(s){
-  return String(s == null ? '' : s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
-}
-
-function makeUuid(){
-  if(window.crypto && crypto.randomUUID){ try{ return crypto.randomUUID(); }catch(e){} }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
-    const r = Math.random()*16|0;
-    const v = c==='x' ? r : (r&0x3|0x8);
-    return v.toString(16);
-  });
-}
-
-async function downloadAsEpub(){
-  const exportList = requireExportList();
-  if(!exportList) return;
-
-  const bookTitle = mTitle.textContent || 'Translated Book';
-  const uuid = makeUuid();
-  const lang = (bookLang || 'en').split('-')[0] || 'en';
-
-  const zip = new JSZip();
-  zip.file('mimetype', 'application/epub+zip', {compression:'STORE'});
-  zip.file('META-INF/container.xml',
-`<?xml version="1.0" encoding="UTF-8"?>
-<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-  </rootfiles>
-</container>`);
-
-  const manifestItems = [];
-  const spineItems = [];
-  const navItems = [];
-
-  exportList.forEach((c, pos)=>{
-    const id = `chap${String(pos+1).padStart(3,'0')}`;
-    const fname = `${id}.xhtml`;
-    const xhtml =
-`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="${escapeXml(lang)}">
-<head>
-  <meta charset="UTF-8"/>
-  <title>${escapeXml(c.title)}</title>
-</head>
-<body>
-  <h1>${escapeXml(c.title)}</h1>
-  ${textToXhtmlBody(c.text)}
-</body>
-</html>`;
-    zip.file(`OEBPS/${fname}`, xhtml);
-    manifestItems.push(`<item id="${id}" href="${fname}" media-type="application/xhtml+xml"/>`);
-    spineItems.push(`<itemref idref="${id}"/>`);
-    navItems.push(`<li><a href="${fname}">${escapeXml(c.title)}</a></li>`);
-  });
-
-  const navXhtml =
-`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="${escapeXml(lang)}">
-<head><meta charset="UTF-8"/><title>Table of Contents</title></head>
-<body>
-  <nav epub:type="toc" id="toc">
-    <h1>Table of Contents</h1>
-    <ol>
-      ${navItems.join('\n      ')}
-    </ol>
-  </nav>
-</body>
-</html>`;
-  zip.file('OEBPS/nav.xhtml', navXhtml);
-  manifestItems.push(`<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>`);
-
-  const modified = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
-  const opf =
-`<?xml version="1.0" encoding="UTF-8"?>
-<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
-  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:identifier id="bookid">urn:uuid:${uuid}</dc:identifier>
-    <dc:title>${escapeXml(bookTitle)}</dc:title>
-    <dc:language>${escapeXml(lang)}</dc:language>
-    <meta property="dcterms:modified">${modified}</meta>
-  </metadata>
-  <manifest>
-    ${manifestItems.join('\n    ')}
-  </manifest>
-  <spine>
-    ${spineItems.join('\n    ')}
-  </spine>
-</package>`;
-  zip.file('OEBPS/content.opf', opf);
-
-  try{
-    // low-RAM: streamFiles avoids holding the entire archive in memory twice
-    const blob = await zip.generateAsync({ type:'blob', mimeType:'application/epub+zip', streamFiles:true });
-    const safeTitle = safeFileName(bookTitle, 'book');
-    triggerDownload(blob, `${safeTitle}_translated_${Math.floor(Date.now()/1000)}.epub`);
-    log(`EPUB download started (${exportList.length} chapters).`, 'ok');
-    showToast('EPUB download started', 'ok');
-    clearSessionProgress();
-  }catch(err){
-    log(`EPUB generation failed: ${err.message}`, 'err');
-    showGlobalError('Export failed',
-      'Building the EPUB file failed, most likely because the content is too large to hold in memory at once. Try excluding some chapters, or use the Text export instead.',
-      (err.message||'') + (err.stack ? '\n' + err.stack : ''));
-  }
-}
-
-/* ============ 11. UI POLISH — ripple micro-interaction ============ */
-/* Lightweight: one delegated listener, ripple node removed after animation (low-RAM). */
-(function(){
-  const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if(REDUCED) return;
-  document.addEventListener('pointerdown', (e)=>{
-    const target = e.target.closest('.btn, .banner-btn, .export-tab, .filter-btn, .fnr-apply, .mini-btn');
-    if(!target || target.disabled) return;
-    const rect = target.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const ink = document.createElement('span');
-    ink.className = 'ripple-ink';
-    ink.style.width = ink.style.height = size + 'px';
-    ink.style.left = (e.clientX - rect.left - size/2) + 'px';
-    ink.style.top = (e.clientY - rect.top - size/2) + 'px';
-    target.appendChild(ink);
-    setTimeout(()=>ink.remove(), 600); // low-RAM: always clean up
-  }, {passive:true});
-})();
-</script>
-
+<script type="module" src="js/odometer.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
