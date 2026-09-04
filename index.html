@@ -13,8 +13,11 @@
 
 <!-- Theme applied before first paint to avoid a flash -->
 <script>
-  try{var t=localStorage.getItem('dtv_theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}
+  try{var t=localStorage.getItem('dtv_theme');if(['light','dark','amoled','sepia'].indexOf(t)>-1)document.documentElement.dataset.theme=t;}catch(e){}
 </script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
@@ -68,13 +71,29 @@
         <svg class="ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="ring-bg" cx="11" cy="11" r="9"/><circle class="ring-fg" id="ringFg" cx="11" cy="11" r="9"/></svg>
         <span id="runPillText">0%</span>
       </div>
+      <button class="cmd-btn" id="cmdBtn" title="Command palette (Ctrl+K)" aria-label="Open command palette">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span>Search actions…</span><kbd>Ctrl K</kbd>
+      </button>
+      <button class="icon-btn" id="installBtn" title="Install as app" aria-label="Install app" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      </button>
+      <button class="icon-btn lang-btn" id="langBtn" title="Interface language (English / Hinglish)" aria-label="Toggle interface language">EN</button>
       <button class="icon-btn" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6"/></svg>
       </button>
-      <button class="icon-btn" id="themeToggle" title="Toggle light/dark theme" aria-label="Toggle theme">
-        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-      </button>
+      <div class="theme-wrap">
+        <button class="icon-btn" id="themeToggle" title="Theme (T)" aria-label="Choose theme" aria-haspopup="menu">
+          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        </button>
+        <div class="theme-menu" id="themeMenu" role="menu">
+          <button data-theme-pick="dark" role="menuitem"><i class="sw sw-dark"></i>Dark</button>
+          <button data-theme-pick="light" role="menuitem"><i class="sw sw-light"></i>Light</button>
+          <button data-theme-pick="amoled" role="menuitem"><i class="sw sw-amoled"></i>AMOLED</button>
+          <button data-theme-pick="sepia" role="menuitem"><i class="sw sw-sepia"></i>Sepia</button>
+        </div>
+      </div>
     </div>
   </div>
   <div id="stickyProg" aria-hidden="true"><div class="bar" id="stickyBar"></div></div>
@@ -139,6 +158,27 @@
         <li class="how-step"><span class="how-num">2</span><h4>Enable Chrome translate</h4><p>Use the address-bar icon (or right-click → Translate) and pick your target language.</p></li>
         <li class="how-step"><span class="how-num">3</span><h4>Run &amp; export</h4><p>Press <kbd>S</kbd> to start. Watch live progress, then download in the format you need.</p></li>
       </ol>
+    </div>
+
+    <!-- RECENT SESSIONS -->
+    <div class="hero-cards">
+      <section class="hero-card" id="recentWrap">
+        <div class="panel-head">
+          <span class="panel-label">Recent sessions</span>
+          <button class="mini-btn" id="recentClear">Clear</button>
+        </div>
+        <div class="recent-list" id="recentList"></div>
+      </section>
+
+      <!-- COMMUNITY LIBRARY (Firebase) -->
+      <section class="hero-card" id="libraryWrap">
+        <div class="panel-head">
+          <span class="panel-label lib-label"><span class="live-dot-pulse" aria-hidden="true"></span>Community library</span>
+          <button class="mini-btn" id="libraryRefresh" title="Refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Refresh</button>
+        </div>
+        <p class="panel-sub">Books other readers are translating right now. Chapters already verified are shared — open the same file and the run continues from the rest.</p>
+        <div class="recent-list" id="libraryList"></div>
+      </section>
     </div>
 
     <!-- LIVE VISITORS ODOMETER (shown once Firebase data arrives) -->
@@ -242,6 +282,28 @@
         <div id="parseWarnings" class="global-banner warn"></div>
       </section>
 
+      <!-- CLOUD SYNC (Firebase shared library) -->
+      <section class="panel cloud-panel" id="cloudPanel" data-state="idle">
+        <div class="panel-head">
+          <span class="panel-label"><span class="cloud-dot idle" id="cloudDot"></span>Shared library</span>
+          <label class="switch" title="Sync translated chapters with everyone who opens this file">
+            <input type="checkbox" id="cloudToggle" checked><i></i>
+          </label>
+        </div>
+        <div class="cloud-row">
+          <span class="cloud-k">Status</span><b id="cloudStatus">Waiting for a book</b>
+        </div>
+        <div class="cloud-row">
+          <span class="cloud-k">In cloud</span><b id="cloudDoneCount">—</b>
+        </div>
+        <div class="cloud-people" id="cloudPeople"></div>
+        <div class="cloud-foot">
+          <input class="text-input cloud-name" id="cloudName" maxlength="24" placeholder="Your display name" aria-label="Display name">
+          <button class="mini-btn" id="cloudPullBtn" title="Re-sync now"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Sync</button>
+        </div>
+        <div class="cloud-hint"><span id="cloudPulled"></span>Every verified chapter is saved to Firebase and shared with anyone who opens a file with the same name — nobody translates the same chapter twice.</div>
+      </section>
+
       <section class="panel" id="chapPanel">
         <div class="panel-head">
           <span class="panel-label">Chapters <span class="saved-pill" id="savedPill">auto-saved</span></span>
@@ -275,6 +337,19 @@
             <button class="filter-btn" data-f="pending">Pending</button>
             <button class="filter-btn" data-f="done">Done</button>
             <button class="filter-btn" data-f="issues">Issues</button>
+            <button class="filter-btn" data-f="flagged" title="Flagged / with notes">⚑</button>
+          </div>
+        </div>
+        <div class="bulk-bar" id="bulkBar">
+          <span id="bulkCount">0 selected</span>
+          <div class="bulk-actions">
+            <button data-bulk="all" title="Select all visible">All</button>
+            <button data-bulk="pending" title="Mark pending (re-translate)">Re-run</button>
+            <button data-bulk="skip" title="Mark skipped">Skip</button>
+            <button data-bulk="exclude" title="Exclude from export">Exclude</button>
+            <button data-bulk="include" title="Include in export">Include</button>
+            <button data-bulk="flag" title="Toggle flag">⚑</button>
+            <button data-bulk="clear" class="bulk-x" title="Clear selection">✕</button>
           </div>
         </div>
         <div class="chap-list scroll-area" id="chapList" role="list"></div>
@@ -329,6 +404,11 @@
             <button class="vc-btn" id="fontMinus" title="Smaller text" aria-label="Decrease font size">A−</button>
             <button class="vc-btn" id="fontPlus" title="Larger text" aria-label="Increase font size">A+</button>
             <span class="vc-sep"></span>
+            <button class="vc-btn" id="flagBtn" title="Flag chapter" aria-label="Flag chapter">⚑</button>
+            <button class="vc-btn" id="noteBtn" title="Chapter note (N)" aria-label="Chapter note">✎</button>
+            <button class="vc-btn" id="diffBtn" title="Diff original vs translated (D)" aria-label="Diff viewer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 3v18"/></svg></button>
+            <button class="vc-btn" id="readingModeBtn" title="Reading mode (R)" aria-label="Reading mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg></button>
+            <span class="vc-sep"></span>
             <button class="vc-btn" id="copyViewer" title="Copy visible text" aria-label="Copy visible text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             <button class="vc-btn" id="expandViewer" title="Expand / collapse preview (F)" aria-label="Expand preview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
           </div>
@@ -341,7 +421,7 @@
         </div>
         <div class="viewer-foot">
           <span id="viewerMeta"></span>
-          <span class="kbd-hints"><span><kbd>S</kbd> start</span><span><kbd>P</kbd> pause</span><span><kbd>K</kbd> skip</span><span><kbd>Esc</kbd> stop</span><span><kbd>←</kbd><kbd>→</kbd> chapters</span></span>
+          <span class="kbd-hints"><span><kbd>S</kbd> start</span><span><kbd>P</kbd> pause</span><span><kbd>K</kbd> skip</span><span><kbd>Esc</kbd> stop</span><span><kbd>←</kbd><kbd>→</kbd> chapters</span><span><kbd>Ctrl</kbd><kbd>K</kbd> commands</span></span>
         </div>
 
         <details class="log-details" id="logDetails">
@@ -360,6 +440,8 @@
         <div class="panel-head">
           <span class="panel-label">Review &amp; Arrange</span>
           <div class="panel-actions">
+            <button class="mini-btn" id="glossaryBtn" title="Glossary / custom dictionary (G)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Glossary <span class="log-count" id="glossaryCount"></span></button>
+            <button class="mini-btn" id="statsBtn" title="Statistics dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15v-4M12 15V8M17 15v-6"/></svg>Stats</button>
             <button class="mini-btn" id="resetOrderBtn">Reset order</button>
           </div>
         </div>
@@ -431,10 +513,16 @@
           </button>
         </div>
 
-        <button class="btn btn-primary btn-block" id="downloadBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
-          <span id="downloadBtnLabel">Download story as a single .txt file</span>
-        </button>
+        <div class="export-actions">
+          <button class="btn btn-ghost" id="exportPreviewBtn" title="Preview what the export will look like">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="lbl">Preview</span>
+          </button>
+          <button class="btn btn-primary btn-block" id="downloadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span id="downloadBtnLabel">Download story as a single .txt file</span>
+          </button>
+        </div>
         <div class="note-box" id="exportNote"><div class="ic">i</div><div id="exportNoteText">One plain .txt file with just the translated story text, in order — no chapter numbers, titles or dividers.</div></div>
       </section>
 
@@ -457,9 +545,22 @@
   <!-- ================================================================ -->
 
   <p class="footer-note">
-    100% local<span class="dot">•</span>No uploads<span class="dot">•</span>Auto-saved progress<span class="dot">•</span>Press <kbd>?</kbd> for shortcuts
+    Local parsing<span class="dot">•</span>Shared translation library<span class="dot">•</span>Auto-saved progress<span class="dot">•</span>Press <kbd>?</kbd> for shortcuts<span class="dot">•</span><button class="link-btn" id="tourBtn">Show tour</button>
   </p>
 </main>
+
+<!-- Mobile: chapters drawer button + scrim -->
+<button id="drawerBtn" aria-label="Open chapters" aria-expanded="false" title="Chapters">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+</button>
+<div id="drawerScrim"></div>
+
+<!-- Context menu -->
+<div class="ctx-menu" id="ctxMenu" role="menu"></div>
+
+<!-- Tour -->
+<div class="tour-hl" id="tourHl" aria-hidden="true"></div>
+<div class="tour-pop" id="tourPop" role="dialog"></div>
 
 <button id="toTopBtn" title="Back to top" aria-label="Back to top">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
@@ -481,13 +582,151 @@
       <li>Next chapter <kbd>→</kbd></li>
       <li>Expand preview <kbd>F</kbd></li>
       <li>Focus chapter filter <kbd>/</kbd></li>
-      <li>Toggle theme <kbd>T</kbd></li>
+      <li>Cycle theme <kbd>T</kbd></li>
+      <li>Command palette <kbd>Ctrl K</kbd></li>
+      <li>Open file <kbd>O</kbd></li>
+      <li>Reading mode <kbd>R</kbd></li>
+      <li>Diff viewer <kbd>D</kbd></li>
+      <li>Glossary <kbd>G</kbd></li>
+      <li>Chapter note <kbd>N</kbd></li>
       <li>This help <kbd>?</kbd></li>
     </ul>
   </div>
 </div>
 
-<script type="module" src="js/odometer.js"></script>
+<!-- Command palette -->
+<div class="modal cmd-modal" id="cmdPalette" role="dialog" aria-modal="true" aria-label="Command palette">
+  <div class="cmd-card">
+    <div class="cmd-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="cmdInput" type="text" placeholder="Type a command or chapter number…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="cmdList">
+      <kbd>Esc</kbd>
+    </div>
+    <ul class="cmd-list scroll-area" id="cmdList" role="listbox"></ul>
+    <div class="cmd-foot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>↵</kbd> run</span></div>
+  </div>
+</div>
+
+<!-- Reading mode -->
+<div class="modal reader-modal" id="readerModal" role="dialog" aria-modal="true" aria-label="Reading mode" tabindex="-1">
+  <div class="reader-card">
+    <div class="reader-top">
+      <div class="reader-meta"><b id="readerTitle"></b><span id="readerPos"></span></div>
+      <div class="viewer-controls">
+        <button class="vc-btn" id="readerAll" title="Whole book / single chapter">All</button>
+        <select class="vc-select" id="readerFontSel" aria-label="Font"><option value="serif">Serif</option><option value="sans">Sans</option><option value="mono">Mono</option></select>
+        <button class="vc-btn" id="readerFontMinus" aria-label="Smaller text">A−</button>
+        <button class="vc-btn" id="readerFontPlus" aria-label="Larger text">A+</button>
+        <span class="vc-sep"></span>
+        <button class="vc-btn" id="readerPrev" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button class="vc-btn" id="readerNext" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+    <div class="reader-progress"><i id="readerBar"></i></div>
+    <div class="reader-body scroll-area" id="readerBody" data-font="serif"></div>
+  </div>
+</div>
+
+<!-- Diff viewer -->
+<div class="modal" id="diffModal" role="dialog" aria-modal="true" aria-labelledby="diffTitle">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <div class="reader-meta"><h2 id="diffTitle">Diff</h2><span id="diffSummary"></span></div>
+      <div class="viewer-controls">
+        <select class="vc-select" id="diffMode" aria-label="Diff mode"><option value="side">Side by side</option><option value="inline">Inline word diff</option></select>
+        <button class="vc-btn" id="diffPrev" aria-label="Previous chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button class="vc-btn" id="diffNext" aria-label="Next chapter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+        <button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+    <div class="diff-pane" id="diffPane">
+      <div class="diff-col"><div class="compare-col-label">Original</div><div class="diff-text scroll-area" id="diffLeft"></div></div>
+      <div class="diff-col"><div class="compare-col-label">Translated</div><div class="diff-text scroll-area" id="diffRight"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Glossary -->
+<div class="modal" id="glossaryModal" role="dialog" aria-modal="true" aria-labelledby="glossaryTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="glossaryTitle">Glossary &amp; custom dictionary</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <p class="panel-sub">Rules run automatically on every chapter the moment it’s verified — perfect for names, places and terms Chrome keeps translating inconsistently.</p>
+    <div class="fnr-row">
+      <input type="text" id="glFrom" placeholder="Find (e.g. अर्जुन)" aria-label="Find" autofocus>
+      <input type="text" id="glTo" placeholder="Replace with (e.g. Arjun)" aria-label="Replace">
+      <button class="fnr-apply" id="glossaryAdd">Add</button>
+    </div>
+    <div class="fnr-opts">
+      <label><input type="checkbox" id="glCase"> Match case</label>
+      <label><input type="checkbox" id="glWord"> Whole word</label>
+      <label><input type="checkbox" id="glRegex"> Regex</label>
+    </div>
+    <div class="gl-list scroll-area" id="glossaryList"></div>
+    <div class="editor-footer">
+      <div class="editor-footer-group">
+        <button class="mini-btn" id="glossaryImport">Import</button>
+        <button class="mini-btn" id="glossaryExport">Export</button>
+        <button class="mini-btn" id="glossaryClear">Clear all</button>
+        <input type="file" id="glossaryFile" accept=".json" hidden>
+      </div>
+      <button class="banner-btn primary" id="glossaryApplyNow">Apply to translated chapters now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="modal" id="statsModal" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <h2 id="statsTitle">Statistics</h2>
+      <div class="viewer-controls">
+        <button class="mini-btn" id="statsCsv">Export CSV</button>
+        <button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+    <div class="kpi-grid" id="statsKpis"></div>
+    <div class="stats-legend"><span><i class="lg-w"></i>words per chapter</span><span><i class="lg-d"></i>time per chapter</span></div>
+    <div class="sbars scroll-area" id="statsBars"></div>
+    <div class="stats-extremes" id="statsExtremes"></div>
+  </div>
+</div>
+
+<!-- Export preview -->
+<div class="modal" id="exportPreviewModal" role="dialog" aria-modal="true" aria-labelledby="exportPreviewTitle">
+  <div class="modal-card wide">
+    <div class="modal-head">
+      <div class="reader-meta"><h2 id="exportPreviewTitle">Export preview</h2><span id="exportPreviewMeta"></span></div>
+      <div class="viewer-controls">
+        <button class="banner-btn primary" id="exportPreviewDownload">Download</button>
+        <button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+    <div class="export-preview scroll-area" id="exportPreviewBody"></div>
+  </div>
+</div>
+
+<!-- Chapter note -->
+<div class="modal" id="noteModal" role="dialog" aria-modal="true" aria-labelledby="noteTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="noteTitle">Chapter note</h2>
+      <button class="icon-btn" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <textarea class="text-area" id="noteText" rows="5" placeholder="e.g. Names mistranslated in the second half — re-check before export" autofocus></textarea>
+    <div class="editor-footer">
+      <label class="check-label"><input type="checkbox" id="noteFlag"> Flag this chapter</label>
+      <button class="banner-btn primary" id="noteSave">Save note</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/app.js"></script>
+<script src="js/pro.js"></script>
+<script type="module" src="js/odometer.js"></script>
+<script type="module" src="js/cloud-sync.js"></script>
 </body>
 </html>
