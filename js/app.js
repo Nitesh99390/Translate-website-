@@ -100,18 +100,47 @@ const runPillText = el('runPillText');
 const ringFg = el('ringFg');
 const RING_LEN = 56.5;
 
+/* ============ EVENT BUS (used by pro.js + cloud-sync.js) ============ */
+const bus = new EventTarget();
+function emit(name, detail){ try{ bus.dispatchEvent(new CustomEvent(name, {detail})); }catch(e){} }
+function on(name, fn){ bus.addEventListener(name, e=>fn(e.detail)); }
+/* Hooks other modules can override */
+window.DTVHooks = window.DTVHooks || {
+  transformText: t => t,          // glossary etc.
+  shouldDeferChapter: () => false // cloud claims
+};
+
 targetLang.addEventListener('change', ()=>{ verifyMode = targetLang.value; saveSettings(); });
 
 /* ============ 2. THEME · STEPPER · RUN PILL ============ */
 const THEME_KEY = 'dtv_theme';
+const THEMES = ['dark','light','amoled','sepia'];
+const THEME_COLORS = {dark:'#0a0d12', light:'#f3f5f9', amoled:'#000000', sepia:'#f4ecd8'};
 function applyTheme(t){
+  if(!THEMES.includes(t)) t = 'dark';
   document.documentElement.dataset.theme = t;
   const metaTheme = document.querySelector('meta[name="theme-color"]');
-  if(metaTheme) metaTheme.content = t === 'dark' ? '#0a0d12' : '#f3f5f9';
+  if(metaTheme) metaTheme.content = THEME_COLORS[t];
   try{ localStorage.setItem(THEME_KEY, t); }catch(e){}
+  document.querySelectorAll('[data-theme-pick]').forEach(b=>b.classList.toggle('active', b.dataset.themePick === t));
+  emit('theme', t);
 }
-function toggleTheme(){ applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
-el('themeToggle').addEventListener('click', toggleTheme);
+function toggleTheme(){
+  const cur = document.documentElement.dataset.theme || 'dark';
+  applyTheme(THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length]);
+}
+function getTheme(){ return document.documentElement.dataset.theme || 'dark'; }
+(function initThemeMenu(){
+  const btn = el('themeToggle'), menu = el('themeMenu');
+  if(!menu){ btn.addEventListener('click', toggleTheme); return; }
+  btn.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('show'); });
+  menu.addEventListener('click', (e)=>{
+    const pick = e.target.closest('[data-theme-pick]');
+    if(pick){ applyTheme(pick.dataset.themePick); menu.classList.remove('show'); }
+  });
+  document.addEventListener('click', (e)=>{ if(!menu.contains(e.target) && e.target !== btn) menu.classList.remove('show'); });
+  applyTheme(getTheme());
+})();
 
 function setStep(n){
   document.querySelectorAll('#stepper .step').forEach(s=>{
@@ -418,7 +447,8 @@ function buildSessionPayload(){
     exportOrder,
     chapters: chapters.map(c=>({
       title: c.title, status: c.status, text: c.text,
-      originalText: c.originalText || '', retries: c.retries, excluded: !!c.excluded
+      originalText: c.originalText || '', retries: c.retries, excluded: !!c.excluded,
+      note: c.note || '', flag: !!c.flag, durMs: c.durMs || 0, doneAt: c.doneAt || 0
     }))
   };
 }
@@ -480,6 +510,10 @@ function applyResumedSession(saved){
     chapters[i].originalText = sc.originalText;
     chapters[i].retries = sc.retries || 0;
     chapters[i].excluded = !!sc.excluded;
+    chapters[i].note = sc.note || '';
+    chapters[i].flag = !!sc.flag;
+    chapters[i].durMs = sc.durMs || 0;
+    chapters[i].doneAt = sc.doneAt || 0;
     if(sc.title) chapters[i].title = sc.title;
   });
   if(Array.isArray(saved.exportOrder) && saved.exportOrder.length === chapters.length){
@@ -547,9 +581,20 @@ function setStatus(text, busy=false){
 }
 
 function showWorkspace(){
-  hero.classList.add('hidden');
+  if(!hero.classList.contains('hidden')){
+    hero.classList.add('leaving');
+    setTimeout(()=>{ hero.classList.add('hidden'); hero.classList.remove('leaving'); }, 260);
+  }
   workspace.classList.add('show');
-  document.body.classList.add('has-runbar-mobile');
+  document.body.classList.add('has-runbar-mobile', 'has-book');
+  window.scrollTo({top:0, behavior:'auto'});
+}
+function showHero(){
+  if(running){ showToast('Stop the current run first', 'warn'); return; }
+  workspace.classList.remove('show');
+  hero.classList.remove('hidden');
+  document.body.classList.remove('has-runbar-mobile', 'has-book');
+  setStep(1);
   window.scrollTo({top:0, behavior:'auto'});
 }
 
@@ -600,7 +645,10 @@ function resetForNewFile(file){
   document.querySelectorAll('#statusFilters .filter-btn').forEach(b=>b.classList.toggle('active', b.dataset.f==='all'));
   el('jumpActiveBtn').disabled = true;
   setStep(1);
+  workspace.classList.add('is-loading');
+  chapList.innerHTML = '<div class="skeleton-list">' + '<div class="skel-row"></div>'.repeat(8) + '</div>';
   showWorkspace();
+  emit('book:reset', {file});
 }
 
 function handleFile(file){
@@ -657,6 +705,8 @@ function finishLoadingChapters(bookTitle, lang){
   mChapters.textContent = chapters.length;
 
   if(chapters.length === 0){
+    workspace.classList.remove('is-loading');
+    chapList.innerHTML = '';
     setStatus('Error: no readable content found');
     setRunStatus('Nothing to translate', 'No readable text was found in this file');
     startBtn.disabled = true;
@@ -670,6 +720,7 @@ function finishLoadingChapters(bookTitle, lang){
   const est = estimateSourceWords();
   mWords.textContent = est || '—';
   setStatus('Ready');
+  workspace.classList.remove('is-loading');
   exportOrder = chapters.map((c,i)=>i);
   rangeFrom.max = chapters.length; rangeTo.max = chapters.length;
   rangeFrom.value = 1; rangeTo.value = chapters.length;
@@ -684,6 +735,7 @@ function finishLoadingChapters(bookTitle, lang){
 
   const fileSize = currentFile ? currentFile.size : 0;
   checkForResumableSession(bookTitle, fileSize, chapters.length);
+  emit('book:loaded', {title: bookTitle, fileName: currentFile ? currentFile.name : '', fileSize, count: chapters.length, lang: bookLang});
 }
 
 /* ---- EPUB ---- */
@@ -953,8 +1005,11 @@ function renderChapterList(){
     row.setAttribute('role','listitem');
     row.tabIndex = 0;
     row.innerHTML = `
+      <input type="checkbox" class="chap-check" data-idx="${i}" aria-label="Select chapter" ${selectedChapters.has(i)?'checked':''}>
       <span class="chap-idx">${String(i+1).padStart(2,'0')}</span>
       <span class="chap-name" title="${escapeAttr(c.title)}">${escapeHtml(c.title)}</span>
+      <span class="chap-marks" id="chap-marks-${i}">${chapterMarksHtml(c)}</span>
+      <span class="chap-cloud" id="chap-cloud-${i}" title="Synced from shared library" ${c.fromCloud?'':'hidden'}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .4-9A7 7 0 0 0 4 12.5 4.5 4.5 0 0 0 6.5 19z"/></svg></span>
       <span class="chap-status ${statusClass(c.status)}" id="chap-status-${i}">${statusLabel(c.status)}</span>
       <button class="compare-toggle" data-idx="${i}" id="compare-toggle-${i}" style="display:none;">Compare</button>
     `;
@@ -971,7 +1026,80 @@ function renderChapterList(){
   });
   chapList.appendChild(frag);
   applyChapterFilters();
+  updateBulkBar();
 }
+
+/* ---- Notes / flags on chapters ---- */
+function chapterMarksHtml(c){
+  let h = '';
+  if(c.flag) h += `<span class="chap-flag" title="Flagged">\u2691</span>`;
+  if(c.note) h += `<span class="chap-note" title="${escapeAttr(c.note)}">\u270E</span>`;
+  return h;
+}
+function refreshChapterMarks(i){
+  const m = el('chap-marks-'+i);
+  if(m) m.innerHTML = chapterMarksHtml(chapters[i]);
+}
+function setChapterNote(i, note){
+  if(!chapters[i]) return;
+  chapters[i].note = (note||'').trim();
+  refreshChapterMarks(i);
+  saveSessionProgress();
+  emit('chapter:meta', {i});
+}
+function toggleChapterFlag(i){
+  if(!chapters[i]) return;
+  chapters[i].flag = !chapters[i].flag;
+  refreshChapterMarks(i);
+  saveSessionProgress();
+  emit('chapter:meta', {i});
+  return chapters[i].flag;
+}
+
+/* ---- Bulk selection ---- */
+const selectedChapters = new Set();
+function updateBulkBar(){
+  const bar = el('bulkBar');
+  if(!bar) return;
+  const n = selectedChapters.size;
+  bar.classList.toggle('show', n > 0);
+  const cnt = el('bulkCount'); if(cnt) cnt.textContent = n + ' selected';
+  chapList.classList.toggle('has-selection', n > 0);
+}
+function clearSelection(){
+  selectedChapters.clear();
+  chapList.querySelectorAll('.chap-check:checked').forEach(cb=>cb.checked=false);
+  updateBulkBar();
+}
+function bulkApply(act){
+  if(running && act !== 'flag' && act !== 'select-visible'){ showToast('Stop the run before bulk-editing chapters', 'warn'); return; }
+  const ids = [...selectedChapters];
+  if(act === 'skip'){ ids.forEach(i=>{ if(chapters[i].status!=='done'){ chapters[i].bulkSkipped = true; setChapterStatus(i,'skipped'); } }); }
+  else if(act === 'pending'){ ids.forEach(i=>{ chapters[i].bulkSkipped = false; chapters[i].retries = 0; setChapterStatus(i,'pending'); }); }
+  else if(act === 'exclude'){ ids.forEach(i=>{ chapters[i].excluded = true; }); renderEditorList(); saveSessionProgress(); }
+  else if(act === 'include'){ ids.forEach(i=>{ chapters[i].excluded = false; }); renderEditorList(); saveSessionProgress(); }
+  else if(act === 'flag'){ ids.forEach(i=>{ chapters[i].flag = !chapters[i].flag; refreshChapterMarks(i); }); saveSessionProgress(); }
+  showToast(`${ids.length} chapter${ids.length>1?'s':''} updated`, 'ok', 1600);
+  requestProgressUpdate();
+  clearSelection();
+}
+chapList.addEventListener('change', (e)=>{
+  const cb = e.target.closest('.chap-check');
+  if(!cb) return;
+  const i = parseInt(cb.dataset.idx, 10);
+  if(cb.checked) selectedChapters.add(i); else selectedChapters.delete(i);
+  updateBulkBar();
+});
+(function initBulkBar(){
+  const bar = el('bulkBar'); if(!bar) return;
+  bar.addEventListener('click', (e)=>{
+    const b = e.target.closest('[data-bulk]'); if(!b) return;
+    const act = b.dataset.bulk;
+    if(act === 'clear') return clearSelection();
+    if(act === 'all'){ chapters.forEach((c,i)=>{ if(rowVisible(c)){ selectedChapters.add(i); const cb = chapList.querySelector(`.chap-check[data-idx="${i}"]`); if(cb) cb.checked = true; } }); updateBulkBar(); return; }
+    bulkApply(act);
+  });
+})();
 
 let filterDebounce = null;
 el('chapFilter').addEventListener('input', (e)=>{
@@ -994,6 +1122,7 @@ function matchesStatusFilter(c){
   if(statusFilter === 'pending') return c.status === 'pending' || c.status === 'active' || c.status === 'retry';
   if(statusFilter === 'done') return c.status === 'done';
   if(statusFilter === 'issues') return c.status === 'unverified' || c.status === 'skipped';
+  if(statusFilter === 'flagged') return !!c.flag || !!c.note;
   return true;
 }
 function rowVisible(c){
@@ -1021,10 +1150,17 @@ function applyChapterFilters(){
 }
 
 chapList.addEventListener('click', async (e)=>{
+  if(e.target.closest('.chap-check')) return;
   const btn = e.target.closest('.compare-toggle');
   if(btn){ toggleComparePanel(parseInt(btn.dataset.idx, 10)); return; }
   const row = e.target.closest('.chap-item');
   if(row && !running) await previewChapter(parseInt(row.dataset.idx, 10));
+});
+chapList.addEventListener('contextmenu', (e)=>{
+  const row = e.target.closest('.chap-item');
+  if(!row) return;
+  e.preventDefault();
+  emit('chapter:menu', {i: parseInt(row.dataset.idx, 10), x: e.clientX, y: e.clientY});
 });
 chapList.addEventListener('keydown', (e)=>{
   if(e.key !== 'Enter' && e.key !== ' ') return;
@@ -1036,6 +1172,7 @@ async function previewChapter(i, {scroll=true} = {}){
   const c = chapters[i];
   if(!c) return;
   previewIdx = i;
+  emit('preview', {i});
   chapList.querySelectorAll('.chap-item.is-preview').forEach(r=>r.classList.remove('is-preview'));
   const row = el('chap-row-'+i);
   if(row && !running) row.classList.add('is-preview');
@@ -1075,6 +1212,15 @@ function stepPreview(delta){
   const row = el('chap-row-'+next);
   if(row) scrollListToRow(row, true);
 }
+/* swipe left/right on the preview to change chapter (mobile) */
+(function(){
+  let sx = 0, sy = 0, t0 = 0;
+  viewer.addEventListener('touchstart', e=>{ const t = e.touches[0]; sx = t.clientX; sy = t.clientY; t0 = Date.now(); }, {passive:true});
+  viewer.addEventListener('touchend', e=>{
+    const t = e.changedTouches[0]; const dx = t.clientX - sx, dy = t.clientY - sy;
+    if(Date.now() - t0 < 600 && Math.abs(dx) > 70 && Math.abs(dy) < 50) stepPreview(dx < 0 ? 1 : -1);
+  }, {passive:true});
+})();
 el('prevChapBtn').addEventListener('click', ()=>stepPreview(-1));
 el('nextChapBtn').addEventListener('click', ()=>stepPreview(1));
 
@@ -1105,6 +1251,7 @@ function statusLabel(s){
 }
 
 function setChapterStatus(i, status){
+  const prev = chapters[i].status;
   chapters[i].status = status;
   const badge = el('chap-status-'+i);
   if(badge){
@@ -1126,6 +1273,28 @@ function setChapterStatus(i, status){
   requestProgressUpdate();
   applyFilterToRow(i);
   saveSessionProgress();
+  emit('chapter:status', {i, status, prev});
+}
+
+/* Animated numeric counters (stats) */
+const counterState = new WeakMap();
+function setCounter(node, value, fmt){
+  const target = Number(value) || 0;
+  const st = counterState.get(node) || {cur: target, raf: 0};
+  if(st.cur === target && node.textContent){ return; }
+  const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(REDUCED || Math.abs(target - st.cur) < 2){ st.cur = target; node.textContent = fmt ? fmt(target) : target; counterState.set(node, st); return; }
+  cancelAnimationFrame(st.raf);
+  const from = st.cur, start = performance.now(), dur = 420;
+  const tick = now=>{
+    const t = Math.min(1, (now - start) / dur);
+    const e = 1 - Math.pow(1 - t, 3);
+    const v = Math.round(from + (target - from) * e);
+    node.textContent = fmt ? fmt(v) : v;
+    if(t < 1) st.raf = requestAnimationFrame(tick); else st.cur = target;
+  };
+  st.raf = requestAnimationFrame(tick);
+  counterState.set(node, st);
 }
 
 function bumpStat(id){
@@ -1160,13 +1329,14 @@ function updateProgress(){
   if(total) setRunPill(pct, running ? 'running' : (processed === total ? 'done' : 'idle'));
   if(running) document.title = `${pct}% \u00b7 Translating\u2026 — DTV Pro`;
 
-  if(el('statDone').textContent !== String(verified)){ el('statDone').textContent = verified; bumpStat('statDone'); }
-  el('statIssue').textContent = unverified;
-  el('statSkip').textContent = skipped;
-  el('statPending').textContent = total - processed;
-  el('statWords').textContent = formatNum(words);
+  if(el('statDone').textContent !== String(verified)){ setCounter(el('statDone'), verified); bumpStat('statDone'); }
+  setCounter(el('statIssue'), unverified);
+  setCounter(el('statSkip'), skipped);
+  setCounter(el('statPending'), total - processed);
+  setCounter(el('statWords'), words, formatNum);
   el('statReadTime').textContent = words > 0 ? formatDuration(Math.round(words/200)*60000) : '0m';
   updateEta(processed, total);
+  emit('progress', {verified, unverified, skipped, words, processed, total, pct});
 }
 
 function updateEta(processed, total){
@@ -1385,9 +1555,13 @@ async function processChapter(i){
   }
 
   if(result.success){
-    setText(c, result.text);
+    let finalText = result.text;
+    try{ finalText = window.DTVHooks.transformText(finalText, c) || finalText; }catch(e){}
+    setText(c, finalText);
+    c.durMs = Date.now()-t0;
+    c.doneAt = Date.now();
     setChapterStatus(i, 'done');
-    log(`Chapter ${i+1} verified (${result.text.length} chars).`, 'ok');
+    log(`Chapter ${i+1} verified (${finalText.length} chars).`, 'ok');
     consecutiveVerifyFailures = 0;
     recordDuration(Date.now()-t0);
     viewerLabel.textContent = `${c.title} · translated`;
@@ -1410,6 +1584,7 @@ async function processChapter(i){
     return await processChapter(i);
   }
   setText(c, result.text);
+  c.durMs = Date.now()-t0;
   setChapterStatus(i, 'unverified');
   log(`Chapter ${i+1} — translation not verified, saving available text as-is.`, 'err');
   consecutiveVerifyFailures++;
@@ -1455,14 +1630,32 @@ async function runTranslation(){
 
   const rangeNote = (range.from > 1 || range.to < chapters.length) ? ` Range: chapters ${range.from}\u2013${range.to}.` : '';
   log(`Starting (mode: ${verifyMode}, timeout: ${Math.round(settings.timeoutMs/1000)}s, retries: ${settings.maxRetries}).${rangeNote} Confirm Chrome translation is enabled.`);
+  emit('run:start', {range});
 
-  for(let i=range.from-1; i<range.to; i++){
+  /* Two passes: the first skips chapters another collaborator is translating right now
+     (cloud claim); the second pass picks up whatever is still pending. */
+  const deferred = [];
+  const queue = [];
+  for(let i=range.from-1; i<range.to; i++) queue.push(i);
+  let pass = 0;
+  while(queue.length && !stopRequested){
+    const i = queue.shift();
     if(stopRequested){ log('Stopped by user.', 'warn'); break; }
     await waitWhilePaused();
     if(stopRequested){ log('Stopped by user.', 'warn'); break; }
     if(chapters[i].status === 'done' && chapters[i].text && chapters[i].text.trim()) continue;
+    if(chapters[i].status === 'skipped' && chapters[i].bulkSkipped) continue;
+    if(pass === 0 && window.DTVHooks.shouldDeferChapter(i)){
+      deferred.push(i);
+      log(`Chapter ${i+1} is being translated by another collaborator — deferring.`, 'warn');
+      if(queue.length === 0 && deferred.length){ pass = 1; queue.push(...deferred); deferred.length = 0; await sleep(1500); }
+      continue;
+    }
+    if(queue.length === 0 && deferred.length && pass === 0){ pass = 1; queue.push(...deferred); deferred.length = 0; }
     chapters[i].retries = 0;
+    emit('chapter:claim', {i});
     const verified = await processChapter(i);
+    emit('chapter:release', {i});
 
     if(verified === false && consecutiveVerifyFailures >= 2){
       await new Promise(resolve=>{
@@ -1484,6 +1677,7 @@ async function runTranslation(){
   paused = false;
   clearInterval(runTimer);
   releaseWakeLock();
+  emit('run:end', {stopped: stopRequested});
   progFill.classList.remove('animating');
   stickyProg.classList.remove('on');
   actionPanel.classList.remove('is-running');
@@ -1508,6 +1702,7 @@ async function runTranslation(){
   etaText.textContent = `finished in ${took}`;
   etaText.dataset.final = '1';
   log(`Complete — ${doneCount}/${chapters.length} chapters verified in ${took}.`, doneCount>0?'ok':'warn');
+  emit('run:complete', {doneCount, total: chapters.length, issueCount, stopped: stopRequested, took});
   if(doneCount > 0){
     setRunStatus(stopRequested ? 'Run stopped' : 'Run complete', `${doneCount}/${chapters.length} verified in ${took} · ready to export`);
     playChime();
@@ -1793,6 +1988,9 @@ function restoreBackupFile(file){
       refreshDownloadSummary();
       previewChapter(0, {scroll:false});
       showToast(`Backup restored — ${chapters.length} chapters`, 'ok');
+      /* Let the cloud layer attach so a book opened from the community library
+         (or a restored backup of a shared file) keeps syncing and can be continued. */
+      emit('book:loaded', {title: mTitle.textContent, fileName: data.sourceFileName || file.name.replace(/\.json$/i,''), fileSize: file.size, count: chapters.length, lang: bookLang, restored: true, cloudBookId: data.cloudBookId || null});
     }catch(err){ showToast('Could not read backup file', 'err'); }
   };
   reader.onerror = ()=> showToast('Could not read backup file', 'err');
@@ -2171,3 +2369,41 @@ el('brandLink').addEventListener('click', (e)=>{ e.preventDefault(); window.scro
     setTimeout(()=>ink.remove(), 600);
   }, {passive:true});
 })();
+
+/* ============ 12. PUBLIC API (consumed by js/pro.js and js/cloud-sync.js) ============ */
+window.DTV = {
+  bus, on, emit,
+  get chapters(){ return chapters; },
+  get running(){ return running; },
+  get paused(){ return paused; },
+  get currentIdx(){ return currentIdx; },
+  get previewIdx(){ return previewIdx; },
+  get exportOrder(){ return exportOrder; },
+  set exportOrder(v){ exportOrder = v; },
+  get sessionKey(){ return sessionKey; },
+  get bookTitle(){ return mTitle.textContent; },
+  get bookLang(){ return bookLang; },
+  get currentFile(){ return currentFile; },
+  get verifyMode(){ return verifyMode; },
+  get exportMode(){ return exportMode; },
+  settings, THEMES,
+  el, showToast, log, formatNum, formatDuration, formatBytes, escapeHtml, escapeAttr, wordCount,
+  applyTheme, toggleTheme, getTheme, setStep, setText, setChapterStatus, statusLabel, statusClass,
+  previewChapter, stepPreview, renderChapterList, renderEditorList, requestProgressUpdate, refreshDownloadSummary,
+  saveSessionProgress, showBanner, hideBanner, showGlobalError, showGlobalWarning,
+  getExportChapters, triggerDownload, safeFileName, ensureInView, showHero, showWorkspace,
+  setChapterNote, toggleChapterFlag, refreshChapterMarks, selectedChapters, updateBulkBar, clearSelection, bulkApply,
+  toggleExpandViewer, toggleShortcuts, toggleComparePanel,
+  startRun: ()=>{ if(!startBtn.disabled && !running) startBtn.click(); },
+  pauseRun: ()=>{ if(running) pauseBtn.click(); },
+  skipChapter: ()=>{ if(running) skipBtn.click(); },
+  stopRun: ()=>{ if(running) stopBtn.click(); },
+  retryIssues: ()=>{ retryFailedBtn.click(); },
+  openFile: ()=>{ if(running) return; fileInput.value=''; fileInput.click(); },
+  handleFile, restoreBackupFile,
+  setExportMode: (m)=>{ const t = exportTabs.querySelector(`.export-tab[data-mode="${m}"]`); if(t) t.click(); },
+  download: ()=> downloadBtn.click(),
+  backup: ()=> el('backupExportBtn').click(),
+  nodes: { hero, workspace, viewer, viewerPanel, chapList, editorPanel, downloadPanel, globalBanner, resumeBanner, startBtn }
+};
+emit('ready');
