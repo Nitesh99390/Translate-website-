@@ -1,19 +1,8 @@
 /* Live visitors odometer — Firebase Realtime Database.
    The card stays hidden until real data arrives, so a blocked/offline
    Firebase never shows a broken meter. */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBVqZNnkReib87I4HQgDD1SOy2Ms8rDtho",
-  authDomain: "project-406b757a-8717-4cc8-857.firebaseapp.com",
-  databaseURL: "https://project-406b757a-8717-4cc8-857-default-rtdb.firebaseio.com",
-  projectId: "project-406b757a-8717-4cc8-857",
-  storageBucket: "project-406b757a-8717-4cc8-857.firebasestorage.app",
-  messagingSenderId: "629212608512",
-  appId: "1:629212608512:web:0df8d0a3354557824200e5",
-  measurementId: "G-W59CENB0G2"
-};
+import { ref, runTransaction, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getFirebase } from "./firebase.js";
 
 function initOdometer(){
   const NUM_DIGITS = 7;
@@ -97,8 +86,7 @@ function initOdometer(){
   }, {passive:true});
 
   try{
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    const { db } = getFirebase();
     const darshakRef = ref(db, 'darshak_ginti_pro');
 
     let counted = false;
