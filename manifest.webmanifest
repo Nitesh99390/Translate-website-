@@ -1,0 +1,35 @@
+{
+  "name": "Doc Translator — Verified Chapter Translation",
+  "short_name": "Doc Translator",
+  "description": "Translate EPUB, PDF, DOCX and TXT chapter-by-chapter with Chrome's built-in translator, verified output, and a shared community library.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "lang": "en",
+  "categories": ["productivity", "utilities", "books"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%230b0f17'/><path d='M48 60h96M48 96h64M48 132h80' stroke='%236aa9ff' stroke-width='14' stroke-linecap='round'/><circle cx='144' cy='132' r='14' fill='%2334d399'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='104' fill='%230b0f17'/><path d='M128 160h256M128 256h170M128 352h214' stroke='%236aa9ff' stroke-width='36' stroke-linecap='round'/><circle cx='384' cy='352' r='36' fill='%2334d399'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open a file",
+      "short_name": "Open",
+      "url": "./index.html?action=open",
+      "description": "Pick a document to translate"
+    }
+  ]
+}
