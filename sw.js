@@ -4,7 +4,7 @@
  *  - CDN libs & fonts: stale-while-revalidate
  *  - Firebase / Google Translate / ads: never intercepted
  */
-const VERSION = 'dtv-v3';
+const VERSION = 'dtv-v4';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 
@@ -17,11 +17,13 @@ const SHELL = [
   './js/firebase.js',
   './js/odometer.js',
   './js/cloud-sync.js',
+  './js/auth.js',
   './manifest.webmanifest'
 ];
 
 const BYPASS_HOSTS = [
-  'firebaseio.com', 'googleapis.com/identitytoolkit', 'firebase.googleapis.com',
+  'firebaseio.com', 'googleapis.com/identitytoolkit', 'firebase.googleapis.com', 'securetoken.googleapis.com',
+  'firebaseapp.com/__/auth', 'accounts.google.com', 'apis.google.com', 'lh3.googleusercontent.com',
   'translate.google', 'translate.googleapis', 'gstatic.com/firebasejs',
   'highperformanceformat.com', 'effectivegatecpm.com', 'adsterra', 'profitableratecpm'
 ];

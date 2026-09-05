@@ -37,9 +37,21 @@ site — no build step, no server. Just open `index.html` (or serve the folder).
 - PWA: installable, offline app shell (`manifest.webmanifest`, `sw.js`)
 - UI language toggle (EN / Hinglish)
 
+**Google sign-in (optional)**
+- "Sign in" button in the header uses Firebase Authentication with the Google provider
+- Popup first, automatic redirect fallback (popup blocked, in-app browsers, installed PWA)
+- When signed in, the shared library uses your Google name + uid for presence, claims
+  and contributor credits; the display-name field becomes read-only
+- Everything still works anonymously when signed out
+
 ## Firebase
 
-Config lives in `js/firebase.js` (shared by the visitor odometer and the library).
+Config lives in `js/firebase.js` (shared by the visitor odometer, auth and the library).
+
+**Enable Google login** (one-time, Firebase console):
+1. Authentication → Sign-in method → **Google** → Enable (pick a support e-mail)
+2. Authentication → Settings → **Authorized domains** → add `nitesh99390.github.io`
+   (and any custom domain / localhost you test from)
 Recommended Realtime Database rules:
 
 ```json
@@ -66,6 +78,7 @@ css/style.css         themes + all component styles
 js/app.js             core: parsing, run loop, verification, exports, window.DTV API
 js/pro.js             pro UI layer (palette, reader, diff, glossary, stats, tour, PWA…)
 js/firebase.js        shared Firebase init
+js/auth.js            Google sign-in (Firebase Auth) + header account menu
 js/cloud-sync.js      shared translation library (push / pull / live / claims / presence)
 js/odometer.js        visitor counter
 manifest.webmanifest  PWA manifest

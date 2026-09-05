@@ -37,6 +37,27 @@ export function setDisplayName(n){
   if(state.presenceRef) update(state.presenceRef, {name: n}).catch(()=>{});
   return n;
 }
+/* Google account (auth.js) → use its uid + display name for presence, claims and credits.
+   Passing null falls back to the anonymous local identity. */
+export function setIdentity(id){
+  const nameInput = document.getElementById('cloudName');
+  if(id && id.uid){
+    state.authUid = id.uid;
+    state.authName = (id.name || '').trim().slice(0, 24) || null;
+    state.authPhoto = id.photo || null;
+    state.uid = id.uid;
+    if(state.authName){ state.name = state.authName; try{ localStorage.setItem(LS_NAME, state.name); }catch(e){} }
+    if(nameInput){ nameInput.value = state.name; nameInput.readOnly = true; nameInput.title = 'Name comes from your Google account'; }
+  }else{
+    state.authUid = null; state.authName = null; state.authPhoto = null;
+    state.uid = getUid();
+    state.name = getName();
+    if(nameInput){ nameInput.readOnly = false; nameInput.title = ''; nameInput.value = state.name; }
+  }
+  /* Re-attach so presence / claims move to the new uid. */
+  if(state.bookId && window.DTV && window.DTV.chapters.length) attachToBook();
+  else renderCloudPanel();
+}
 export function isCloudEnabled(){
   try{ return localStorage.getItem(LS_CLOUD) !== 'off'; }catch(e){ return true; }
 }
@@ -61,6 +82,9 @@ const state = {
   enabled: isCloudEnabled(),
   uid: getUid(),
   name: getName(),
+  authUid: null,
+  authName: null,
+  authPhoto: null,
   db: null,
   bookId: null,
   bookRef: null,
@@ -243,7 +267,7 @@ async function pushChapter(i){
     const meta = { updatedAt: Date.now(), doneCount, title: dtv.bookTitle, chapterCount: dtv.chapters.length, fileName: dtv.currentFile ? dtv.currentFile.name : dtv.bookTitle, lang: dtv.bookLang };
     update(ref(state.db, `library/${state.bookId}/meta`), meta).catch(()=>{});
     update(ref(state.db, `library_index/${state.bookId}`), meta).catch(()=>{});
-    update(ref(state.db, `library/${state.bookId}/contributors/${state.uid}`), {name: state.name, at: Date.now()}).catch(()=>{});
+    update(ref(state.db, `library/${state.bookId}/contributors/${state.uid}`), {name: state.name, at: Date.now(), photo: state.authPhoto || null}).catch(()=>{});
     recountCloudDone();
   }catch(e){ state.lastError = e; renderCloudPanel(); }
 }
@@ -375,13 +399,16 @@ function wire(){
   const nameInput = document.getElementById('cloudName');
   if(nameInput){
     nameInput.value = state.name;
-    nameInput.addEventListener('change', e=>{ e.target.value = setDisplayName(e.target.value); dtv.showToast('Display name saved', 'ok', 1500); });
+    nameInput.addEventListener('change', e=>{
+      if(state.authUid){ e.target.value = state.name; dtv.showToast('Your name comes from your Google account', 'info', 1800); return; }
+      e.target.value = setDisplayName(e.target.value); dtv.showToast('Display name saved', 'ok', 1500);
+    });
   }
   const pullBtn = document.getElementById('cloudPullBtn');
   if(pullBtn) pullBtn.addEventListener('click', ()=>{ if(dtv.running){ dtv.showToast('Stop the run before re-syncing', 'warn'); return; } attachToBook(); dtv.showToast('Re-syncing with the shared library\u2026', 'info', 1600); });
 
   renderCloudPanel();
-  window.DTVCloud = { state, attachToBook, detach, fetchLibraryIndex, openFromLibrary, setDisplayName, setCloudEnabled, isCloudEnabled, makeBookId };
+  window.DTVCloud = { state, attachToBook, detach, fetchLibraryIndex, openFromLibrary, setDisplayName, setIdentity, setCloudEnabled, isCloudEnabled, makeBookId };
   dtv.emit('cloud:ready');
 }
 
