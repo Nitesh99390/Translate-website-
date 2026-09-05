@@ -495,17 +495,42 @@
     }
     if(tourStep >= TOUR.length){ endTour(); return; }
     const s = TOUR[tourStep], n = document.querySelector(s.sel);
+    hl.classList.remove('show'); pop.classList.remove('show');
     n.scrollIntoView({block:'center', behavior: REDUCED?'auto':'smooth'});
-    setTimeout(()=>{
+    /* The old code measured getBoundingClientRect() after a fixed 320ms
+       timeout — too short for a long smooth-scroll (e.g. jumping from the
+       top of the page down to the odometer), so the highlight box was
+       positioned using a stale, pre-scroll rectangle and landed on the
+       wrong element. Instead, poll until scrollY stops changing (scroll
+       finished) before measuring, with a hard cap so it can never hang. */
+    const place = ()=>{
       const r = n.getBoundingClientRect();
-      hl.style.cssText = `top:${r.top-8}px;left:${r.left-8}px;width:${r.width+16}px;height:${r.height+16}px;`;
+      const popW = Math.min(320, innerWidth - 20);
+      /* Clamp the highlight box itself to the viewport so it can never
+         overflow horizontally/vertically on narrow (mobile) screens. */
+      const hlLeft = Math.max(4, r.left - 8);
+      const hlTop = Math.max(4, r.top - 8);
+      const hlRight = Math.min(innerWidth - 4, r.right + 8);
+      const hlBottom = Math.min(innerHeight - 4, r.bottom + 8);
+      hl.style.cssText = `top:${hlTop}px;left:${hlLeft}px;width:${Math.max(0,hlRight-hlLeft)}px;height:${Math.max(0,hlBottom-hlTop)}px;`;
       hl.classList.add('show');
       pop.innerHTML = `<b>${escapeHtml(s.title)}</b><p>${escapeHtml(s.text)}</p><div class="tour-foot"><span>${tourStep+1} / ${TOUR.length}</span><button class="mini-btn" data-tour="skip">Skip</button><button class="banner-btn primary" data-tour="next">${tourStep===TOUR.length-1?'Done':'Next'}</button></div>`;
+      pop.style.width = popW + 'px';
       const below = r.bottom + 190 < innerHeight;
       pop.style.top = (below ? r.bottom + 14 : Math.max(10, r.top - 14 - 170)) + 'px';
-      pop.style.left = Math.max(10, Math.min(innerWidth - 330, r.left + r.width/2 - 160)) + 'px';
+      pop.style.left = Math.max(10, Math.min(innerWidth - popW - 10, r.left + r.width/2 - popW/2)) + 'px';
       pop.classList.add('show');
-    }, REDUCED ? 0 : 320);
+    };
+    if(REDUCED){ place(); return; }
+    let lastY = -1, stableFrames = 0, waited = 0;
+    const poll = ()=>{
+      const y = window.scrollY;
+      if(Math.abs(y - lastY) < 1) stableFrames++; else stableFrames = 0;
+      lastY = y; waited += 16;
+      if(stableFrames >= 3 || waited >= 900){ place(); return; }
+      requestAnimationFrame(poll);
+    };
+    setTimeout(()=>requestAnimationFrame(poll), 60);
   }
   function endTour(){ el('tourPop').classList.remove('show'); el('tourHl').classList.remove('show'); lsSet(LS.tour, true); }
   if(el('tourPop')){
