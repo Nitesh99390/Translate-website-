@@ -87,7 +87,11 @@ function initOdometer(){
 
   try{
     const { db } = getFirebase();
-    const darshakRef = ref(db, 'darshak_ginti_pro');
+    /* NOTE: must match a path allowed by the RTDB rules (see README) — only
+       visits / library_index / library are open for read+write. Any other
+       path (e.g. the old 'darshak_ginti_pro') gets permission_denied and the
+       odometer silently dies after an optimistic first update. */
+    const darshakRef = ref(db, 'visits/total');
 
     let counted = false;
     try{ counted = sessionStorage.getItem('dtv_counted') === '1'; }catch(e){}

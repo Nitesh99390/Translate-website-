@@ -393,11 +393,12 @@ a{color:var(--accent-2);}
 .workspace.show{animation:panelIn .4s var(--ease) both;}
 
 /* Hero cards: recent sessions + community library */
-.hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:1040px;margin:34px auto 0;}
+.hero-cards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;max-width:1040px;margin:34px auto 0;}
 .hero-card{
-  display:none;padding:16px 16px 12px;border-radius:var(--radius);
+  display:none;min-width:0;padding:16px 16px 12px;border-radius:var(--radius);
   background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 40%),var(--panel);
   border:1px solid var(--border);animation:panelIn .5s var(--ease) both;
+  overflow:hidden;
 }
 .hero-card.show{display:block;}
 .hero-cards:has(.hero-card.show:only-of-type),.hero-cards:has(#recentWrap:not(.show)) #libraryWrap.show,.hero-cards:has(#libraryWrap:not(.show)) #recentWrap.show{grid-column:1 / -1;}
@@ -405,8 +406,8 @@ a{color:var(--accent-2);}
 .lib-label::before{display:none;}
 .recent-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;overscroll-behavior:contain;}
 .recent-item,.lib-item{
-  display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;
-  background:var(--panel-2);border:1px solid var(--border);cursor:pointer;
+  display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;min-width:0;max-width:100%;
+  background:var(--panel-2);border:1px solid var(--border);cursor:pointer;box-sizing:border-box;
   transition:border-color .2s,transform .2s var(--ease),background .2s;
 }
 .recent-item:hover,.lib-item:hover{border-color:var(--accent);transform:translateX(2px);background:var(--panel-3);}
