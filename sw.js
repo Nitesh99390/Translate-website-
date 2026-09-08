@@ -1,10 +1,10 @@
-/* Doc Translator — Service Worker
+/* Novelxplin — Service Worker
  * Strategy:
  *  - App shell (HTML/CSS/JS): network-first with cache fallback (so updates land fast, offline still works)
  *  - CDN libs & fonts: stale-while-revalidate
  *  - Firebase / Google Translate / ads: never intercepted
  */
-const VERSION = 'dtv-v4';
+const VERSION = 'dtv-v5';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 
@@ -18,7 +18,11 @@ const SHELL = [
   './js/odometer.js',
   './js/cloud-sync.js',
   './js/auth.js',
-  './manifest.webmanifest'
+  './manifest.webmanifest',
+  './assets/logo-192.png',
+  './assets/logo-512.png',
+  './assets/favicon-32.png',
+  './assets/apple-touch-icon.png'
 ];
 
 const BYPASS_HOSTS = [

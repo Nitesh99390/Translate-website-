@@ -264,19 +264,21 @@ a{color:var(--accent-2);}
 }
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;min-width:0;position:relative;}
 .brand-mark{
-  width:38px;height:38px;flex-shrink:0;border-radius:12px;position:relative;
+  width:38px;height:38px;flex-shrink:0;border-radius:50%;position:relative;
   display:grid;place-items:center;
   filter:drop-shadow(0 6px 16px rgba(var(--accent-rgb),.35));
   transition:transform .35s var(--ease),filter .35s var(--ease);
 }
 .brand-mark::after{
-  content:'';position:absolute;inset:-4px;border-radius:15px;pointer-events:none;
+  content:'';position:absolute;inset:-4px;border-radius:50%;pointer-events:none;
   background:radial-gradient(60% 60% at 50% 50%,rgba(var(--accent-rgb),.28),transparent 70%);
   opacity:0;transition:opacity .35s;z-index:-1;
 }
 .brand:hover .brand-mark{transform:translateY(-1px) rotate(-3deg);filter:drop-shadow(0 10px 22px rgba(var(--accent-rgb),.45));}
 .brand:hover .brand-mark::after{opacity:1;}
-.brand-svg{width:38px;height:38px;display:block;}
+.brand-svg,.brand-logo{width:38px;height:38px;display:block;}
+.brand-logo{border-radius:50%;object-fit:cover;}
+[data-theme="dark"] .brand-logo,[data-theme="amoled"] .brand-logo{box-shadow:0 0 0 1.5px rgba(255,255,255,.55);}
 [data-theme="dark"] .brand-svg,[data-theme="amoled"] .brand-svg{filter:saturate(1.15) brightness(1.08);}
 .brand-text{display:flex;flex-direction:column;line-height:1.05;min-width:0;}
 .brand-name{
@@ -284,7 +286,7 @@ a{color:var(--accent-2);}
   color:var(--text);
 }
 .brand-name-2{
-  margin-left:5px;font-weight:600;
+  margin-left:0;font-weight:600;
   background:linear-gradient(90deg,var(--accent-2),var(--purple));
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
@@ -1356,7 +1358,7 @@ body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
   #toastWrap{bottom:calc(var(--runbar-h) + 44px);}
 }
 @media (max-width:420px){
-  .brand-name-2{display:none;}
+  .brand-name-2{margin-left:0;}
 }
 @media (max-width:600px){
   .shell{padding:16px 14px 90px;}
@@ -1367,7 +1369,7 @@ body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
   .gsi-btn.busy .gsi-logo{display:none;}
   .auth-menu{position:fixed;left:12px;right:12px;top:calc(var(--topbar-h,60px) + 6px);min-width:0;}
   .brand{gap:9px;flex:1;min-width:0;}
-  .brand-mark,.brand-svg{width:34px;height:34px;}
+  .brand-mark,.brand-svg,.brand-logo{width:34px;height:34px;}
   .brand-name{font-size:14px;overflow:hidden;text-overflow:ellipsis;}
   .topbar-right{gap:6px;flex-shrink:0;}
   .topbar-right .icon-btn,.topbar-right .cmd-btn,.gsi-btn,.auth-avatar{width:34px;height:34px;}

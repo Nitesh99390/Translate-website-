@@ -1327,7 +1327,7 @@ function updateProgress(){
   progText.textContent = `${verified} verified / ${total} chapters`;
   progPercent.textContent = pct + '%';
   if(total) setRunPill(pct, running ? 'running' : (processed === total ? 'done' : 'idle'));
-  if(running) document.title = `${pct}% \u00b7 Translating\u2026 — DTV Pro`;
+  if(running) document.title = `${pct}% \u00b7 Translating\u2026 — Novelxplin`;
 
   if(el('statDone').textContent !== String(verified)){ setCounter(el('statDone'), verified); bumpStat('statDone'); }
   setCounter(el('statIssue'), unverified);
