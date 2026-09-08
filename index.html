@@ -3,13 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Document Translation Verifier — Pro</title>
+<title>Novelxplin — Verified Document Translation</title>
 <meta name="description" content="Browser-based document translation verifier. Upload EPUB, PDF, DOCX or TXT, use Chrome's built-in translation, and verify every chapter translated before exporting to TXT, EPUB, Markdown or HTML. 100% local — no uploads.">
 <meta name="theme-color" content="#0a0d12">
-<meta property="og:title" content="Document Translation Verifier — Pro">
+<meta property="og:title" content="Novelxplin — Verified Document Translation">
+<meta property="og:site_name" content="Novelxplin">
+<meta property="og:url" content="https://novelxplin.in/">
+<meta property="og:image" content="https://novelxplin.in/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Novelxplin — Verified Document Translation">
+<meta name="twitter:image" content="https://novelxplin.in/assets/og-image.png">
+<link rel="canonical" href="https://novelxplin.in/">
 <meta property="og:description" content="Verify Chrome translations chapter-by-chapter for EPUB, PDF, DOCX & TXT files. Pause/resume, live ETA, drag-and-drop arranging, find & replace, session backup, 5 export formats. All processing stays in your browser.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237aa5ff'/%3E%3Cstop offset='1' stop-color='%23a371f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='1' y='1' width='38' height='38' rx='11' fill='url(%23g)'/%3E%3Cpath d='M10.5 11.5h9.5a2 2 0 0 1 2 2v3.5' fill='none' stroke='rgba(255,255,255,.55)' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M11 16h6M11 20h4' stroke='rgba(255,255,255,.55)' stroke-width='2' stroke-linecap='round'/%3E%3Crect x='17' y='18' width='13' height='12' rx='3' fill='%23fff'/%3E%3Cpath d='m20.3 24.2 2.3 2.3 4.4-4.6' fill='none' stroke='%235b8def' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/logo-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 
 <!-- Theme applied before first paint to avoid a flash -->
 <script>
@@ -48,27 +60,12 @@
 <!-- ============ TOP BAR ============ -->
 <header class="topbar" id="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="#" id="brandLink" aria-label="Document Translation Verifier — home">
+    <a class="brand" href="#" id="brandLink" aria-label="Novelxplin — home">
       <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 40 40" class="brand-svg">
-          <defs>
-            <linearGradient id="bmGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="var(--accent-2)"/>
-              <stop offset="1" stop-color="var(--purple)"/>
-            </linearGradient>
-          </defs>
-          <rect x="1" y="1" width="38" height="38" rx="11" fill="url(#bmGrad)"/>
-          <rect x="1" y="1" width="38" height="38" rx="11" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1"/>
-          <!-- source page -->
-          <path d="M10.5 11.5h9.5a2 2 0 0 1 2 2v3.5" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"/>
-          <path d="M11 16h6M11 20h4" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"/>
-          <!-- translated page + check -->
-          <rect x="17" y="18" width="13" height="12" rx="3" fill="#fff"/>
-          <path d="m20.3 24.2 2.3 2.3 4.4-4.6" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <img class="brand-logo" src="assets/logo-192.png" width="38" height="38" alt="">
       </span>
       <div class="brand-text">
-        <span class="brand-name">Translation<span class="brand-name-2">Verifier</span></span>
+        <span class="brand-name">Novel<span class="brand-name-2">xplin</span></span>
         <span class="brand-tag">Verified · Private · <span class="brand-pro">Pro</span></span>
       </div>
     </a>

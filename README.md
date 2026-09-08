@@ -1,6 +1,6 @@
-# Document Translation Verifier — Pro
+# Novelxplin — Verified Document Translation
 
-Live: https://nitesh99390.github.io/Translate-website-/
+Live: https://novelxplin.in/ (mirror: https://nitesh99390.github.io/Translate-website-/)
 
 Translate EPUB / PDF / DOCX / TXT books chapter-by-chapter using Chrome's built-in
 page translator, with every chapter **verified** before it is accepted. Pure static
