@@ -4,7 +4,7 @@
  *  - CDN libs & fonts: stale-while-revalidate
  *  - Firebase / Google Translate / ads: never intercepted
  */
-const VERSION = 'dtv-v5';
+const VERSION = 'dtv-v6';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 
@@ -18,6 +18,7 @@ const SHELL = [
   './js/odometer.js',
   './js/cloud-sync.js',
   './js/auth.js',
+  './classic/index.html',
   './manifest.webmanifest',
   './assets/logo-192.png',
   './assets/logo-512.png',
