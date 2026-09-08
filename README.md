@@ -6,6 +6,23 @@ Translate EPUB / PDF / DOCX / TXT books chapter-by-chapter using Chrome's built-
 page translator, with every chapter **verified** before it is accepted. Pure static
 site — no build step, no server. Just open `index.html` (or serve the folder).
 
+## Two interfaces — pick whichever you like
+
+| | New UI (`/`) | Classic UI (`/classic/`) |
+|---|---|---|
+| Layout | Top bar + stepper, sidebar workspace | Original single-column page |
+| Shared library / Google sign-in | Yes | No (100% local) |
+| Command palette, reading mode, diff, glossary, stats | Yes | No |
+| Verified translation, pause/skip/retry, editor, find & replace, backup, 5 exports | Yes | Yes |
+| Themes | Dark · Light · AMOLED · Sepia | Dark · Light · AMOLED · Sepia (same `T` shortcut) |
+
+- Switch any time: **Classic** button in the new top bar (or `Ctrl K` → "Switch to Classic UI"),
+  **New UI** toggle in the classic header.
+- Your choice is remembered (`localStorage.nx_ui_version`) — the next visit to `novelxplin.in`
+  opens the layout you picked. Force one with `?ui=new` or `?ui=classic`.
+- Theme (`dtv_theme`), run settings (`dtv_settings_v4`) and IndexedDB sessions are shared,
+  so a book started in one layout can be resumed in the other.
+
 ## Features
 
 **Core**
@@ -73,7 +90,8 @@ Recommended Realtime Database rules:
 ## Project layout
 
 ```
-index.html            app shell + modals
+index.html            new UI — app shell + modals
+classic/index.html    classic UI — original self-contained single page (own CSS/JS)
 css/style.css         themes + all component styles
 js/app.js             core: parsing, run loop, verification, exports, window.DTV API
 js/pro.js             pro UI layer (palette, reader, diff, glossary, stats, tour, PWA…)

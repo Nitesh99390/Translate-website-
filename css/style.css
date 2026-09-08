@@ -346,6 +346,13 @@ a{color:var(--accent-2);}
 .icon-btn svg{width:17px;height:17px;}
 .icon-btn:hover{border-color:var(--accent);color:var(--text);transform:translateY(-1px);box-shadow:0 6px 16px rgba(var(--accent-rgb),.2);}
 .icon-btn:active{transform:scale(.94);}
+/* ---------- Classic / New UI version switcher ---------- */
+.ver-btn{
+  width:auto;padding:0 11px 0 9px;gap:6px;display:inline-flex;align-items:center;
+  text-decoration:none;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+}
+.ver-btn:hover{color:var(--accent);}
+.ver-btn svg{width:15px;height:15px;}
 /* ---------- Google sign-in / account menu ---------- */
 .auth-wrap{position:relative;display:flex;align-items:center;}
 .gsi-btn{
@@ -1320,6 +1327,8 @@ body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
   .workspace.show{grid-template-columns:1fr;}
   .cmd-btn span,.cmd-btn kbd{display:none;}
   .cmd-btn{width:36px;padding:0;justify-content:center;}
+  .ver-btn .ver-btn-text{display:none;}
+  .ver-btn{width:36px;padding:0;justify-content:center;}
   .hero-cards{grid-template-columns:1fr;}
   .hero-card{grid-column:auto !important;}
   .kpi-grid{grid-template-columns:repeat(2,1fr);}

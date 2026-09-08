@@ -58,6 +58,7 @@
     { id:'theme-sepia', label:'Theme: Sepia', icon:'\u{1F4DC}', run:()=>D.applyTheme('sepia') },
     { id:'lang', label:'Toggle interface language (English / Hinglish)', icon:'\u{1F310}', run:()=>toggleUiLang() },
     { id:'tour', label:'Show onboarding tour', icon:'\u{1F9ED}', run:()=>startTour(true) },
+    { id:'classic', label:'Switch to Classic UI (original single-page layout)', icon:'\u{1F570}', run:()=>switchToClassic(), when:()=>!D.running },
     { id:'shortcuts', label:'Keyboard shortcuts', kbd:'?', icon:'\u2328', run:()=>D.toggleShortcuts(true) },
     { id:'home', label:'Back to home / load another file', icon:'\u{1F3E0}', run:()=>D.showHero(), when:()=>loaded() && !D.running },
     { id:'install', label:'Install as app (PWA)', icon:'\u{1F4F2}', run:()=>promptInstall(), when:()=>!!deferredInstall },
@@ -533,6 +534,22 @@
     setTimeout(()=>requestAnimationFrame(poll), 60);
   }
   function endTour(){ el('tourPop').classList.remove('show'); el('tourHl').classList.remove('show'); lsSet(LS.tour, true); }
+
+  /* ------------------------------------------------------------------
+     11b. UI version switcher (new <-> classic)
+     Preference lives in localStorage 'nx_ui_version'; the inline <head>
+     script in both index.html files honours it on the next visit.
+     ------------------------------------------------------------------ */
+  function switchToClassic(){
+    if(D.running){ showToast('Stop or finish the current run before switching layouts', 'warn', 2400); return; }
+    try{ localStorage.setItem('nx_ui_version', 'classic'); sessionStorage.setItem('nx_ui_switched', '1'); }catch(e){}
+    location.href = 'classic/index.html?ui=classic';
+  }
+  try{ localStorage.setItem('nx_ui_version', 'new'); }catch(e){}
+  ['classicBtn','classicFooterLink'].forEach(id=>{
+    const a = el(id); if(!a) return;
+    a.addEventListener('click', (e)=>{ e.preventDefault(); switchToClassic(); });
+  });
   if(el('tourPop')){
     el('tourPop').addEventListener('click', e=>{ const b = e.target.closest('[data-tour]'); if(!b) return; if(b.dataset.tour==='skip') endTour(); else { tourStep++; showTourStep(); } });
     el('tourBtn') && el('tourBtn').addEventListener('click', ()=>startTour(true));

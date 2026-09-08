@@ -23,9 +23,20 @@
 <link rel="icon" type="image/png" sizes="192x192" href="assets/logo-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 
-<!-- Theme applied before first paint to avoid a flash -->
+<!-- UI version preference (classic <-> new) + theme applied before first paint to avoid a flash -->
 <script>
-  try{var t=localStorage.getItem('dtv_theme');if(['light','dark','amoled','sepia'].indexOf(t)>-1)document.documentElement.dataset.theme=t;}catch(e){}
+  (function(){
+    try{
+      var q = new URLSearchParams(location.search);
+      var ui = q.get('ui');
+      if(ui === 'classic'){ localStorage.setItem('nx_ui_version','classic'); sessionStorage.setItem('nx_ui_switched','1'); location.replace('classic/index.html?ui=classic' + (location.hash||'')); return; }
+      if(ui === 'new'){ localStorage.setItem('nx_ui_version','new'); }
+      else if(localStorage.getItem('nx_ui_version') === 'classic' && !sessionStorage.getItem('nx_ui_switched')){ location.replace('classic/index.html' + (location.hash||'')); return; }
+      sessionStorage.removeItem('nx_ui_switched');
+      var t = localStorage.getItem('dtv_theme');
+      if(['light','dark','amoled','sepia'].indexOf(t) > -1) document.documentElement.dataset.theme = t;
+    }catch(e){}
+  })();
 </script>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -92,6 +103,10 @@
       <button class="icon-btn" id="installBtn" title="Install as app" aria-label="Install app" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       </button>
+      <a class="icon-btn ver-btn" id="classicBtn" href="classic/index.html?ui=classic" title="Switch to the classic (original) layout" aria-label="Switch to classic layout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
+        <span class="ver-btn-text">Classic</span>
+      </a>
       <button class="icon-btn lang-btn" id="langBtn" title="Interface language (English / Hinglish)" aria-label="Toggle interface language">EN</button>
       <button class="icon-btn" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6"/></svg>
@@ -570,7 +585,7 @@
   <!-- ================================================================ -->
 
   <p class="footer-note">
-    Local parsing<span class="dot">•</span>Shared translation library<span class="dot">•</span>Auto-saved progress<span class="dot">•</span>Press <kbd>?</kbd> for shortcuts<span class="dot">•</span><button class="link-btn" id="tourBtn">Show tour</button>
+    Local parsing<span class="dot">•</span>Shared translation library<span class="dot">•</span>Auto-saved progress<span class="dot">•</span>Press <kbd>?</kbd> for shortcuts<span class="dot">•</span><button class="link-btn" id="tourBtn">Show tour</button><span class="dot">•</span><a class="link-btn" href="classic/index.html?ui=classic" id="classicFooterLink">Classic UI</a>
   </p>
 </main>
 
