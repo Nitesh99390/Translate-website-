@@ -96,21 +96,7 @@
         <svg class="ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="ring-bg" cx="11" cy="11" r="9"/><circle class="ring-fg" id="ringFg" cx="11" cy="11" r="9"/></svg>
         <span id="runPillText">0%</span>
       </div>
-      <button class="cmd-btn" id="cmdBtn" title="Command palette (Ctrl+K)" aria-label="Open command palette">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <span>Search actions…</span><kbd>Ctrl K</kbd>
-      </button>
-      <button class="icon-btn" id="installBtn" title="Install as app" aria-label="Install app" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-      </button>
-      <a class="icon-btn ver-btn" id="classicBtn" href="classic/index.html?ui=classic" title="Switch to the classic (original) layout" aria-label="Switch to classic layout">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
-        <span class="ver-btn-text">Classic</span>
-      </a>
-      <button class="icon-btn lang-btn" id="langBtn" title="Interface language (English / Hinglish)" aria-label="Toggle interface language">EN</button>
-      <button class="icon-btn" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6"/></svg>
-      </button>
+      <!-- Google sign-in stays visible; everything else lives in the ☰ menu -->
       <div class="auth-wrap" id="authWrap" data-state="out">
         <button class="gsi-btn" id="authSignInBtn" type="button" title="Sign in with Google" aria-label="Sign in with Google">
           <span class="gsi-logo" aria-hidden="true">
@@ -122,16 +108,51 @@
         <button class="auth-avatar" id="authAvatarBtn" type="button" hidden aria-haspopup="menu" aria-expanded="false" aria-label="Account menu"></button>
         <div class="auth-menu" id="authMenu" role="menu"></div>
       </div>
-      <div class="theme-wrap">
-        <button class="icon-btn" id="themeToggle" title="Theme (T)" aria-label="Choose theme" aria-haspopup="menu">
-          <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-          <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+
+      <!-- ☰ App menu: search, theme, language, shortcuts, classic UI, install, tour -->
+      <div class="app-menu-wrap" id="appMenuWrap">
+        <button class="icon-btn menu-btn" id="menuBtn" title="Menu" aria-label="Open menu" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu">
+          <span class="menu-lines" aria-hidden="true"><i></i><i></i><i></i></span>
         </button>
-        <div class="theme-menu" id="themeMenu" role="menu">
-          <button data-theme-pick="dark" role="menuitem"><i class="sw sw-dark"></i>Dark</button>
-          <button data-theme-pick="light" role="menuitem"><i class="sw sw-light"></i>Light</button>
-          <button data-theme-pick="amoled" role="menuitem"><i class="sw sw-amoled"></i>AMOLED</button>
-          <button data-theme-pick="sepia" role="menuitem"><i class="sw sw-sepia"></i>Sepia</button>
+        <div class="app-menu" id="appMenu" role="menu" aria-label="App menu">
+          <button class="app-menu-item" id="cmdBtn" role="menuitem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <span>Search actions</span><kbd>Ctrl K</kbd>
+          </button>
+
+          <div class="app-menu-sep" role="separator"></div>
+          <div class="app-menu-label">Theme</div>
+          <div class="theme-row" id="themeMenu" role="group" aria-label="Theme">
+            <button data-theme-pick="dark" role="menuitemradio" title="Dark"><i class="sw sw-dark"></i><span>Dark</span></button>
+            <button data-theme-pick="light" role="menuitemradio" title="Light"><i class="sw sw-light"></i><span>Light</span></button>
+            <button data-theme-pick="amoled" role="menuitemradio" title="AMOLED"><i class="sw sw-amoled"></i><span>AMOLED</span></button>
+            <button data-theme-pick="sepia" role="menuitemradio" title="Sepia"><i class="sw sw-sepia"></i><span>Sepia</span></button>
+          </div>
+          <button id="themeToggle" hidden aria-hidden="true" tabindex="-1"></button>
+
+          <div class="app-menu-sep" role="separator"></div>
+          <button class="app-menu-item" id="langBtn" role="menuitem" title="Interface language (English / Hinglish)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <span>Interface language</span><b class="app-menu-val" id="langVal">EN</b>
+          </button>
+          <button class="app-menu-item" id="shortcutsBtn" role="menuitem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6"/></svg>
+            <span>Keyboard shortcuts</span><kbd>?</kbd>
+          </button>
+          <button class="app-menu-item" id="tourMenuBtn" role="menuitem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16.2 7.8-2 6.3-6.4 2.1 2-6.3z"/></svg>
+            <span>Show tour</span>
+          </button>
+
+          <div class="app-menu-sep" role="separator"></div>
+          <a class="app-menu-item" id="classicBtn" href="classic/index.html?ui=classic" role="menuitem" title="Switch to the classic (original) layout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
+            <span>Switch to Classic UI</span>
+          </a>
+          <button class="app-menu-item" id="installBtn" role="menuitem" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+            <span>Install as app</span>
+          </button>
         </div>
       </div>
     </div>
@@ -585,7 +606,7 @@
   <!-- ================================================================ -->
 
   <p class="footer-note">
-    Local parsing<span class="dot">•</span>Shared translation library<span class="dot">•</span>Auto-saved progress<span class="dot">•</span>Press <kbd>?</kbd> for shortcuts<span class="dot">•</span><button class="link-btn" id="tourBtn">Show tour</button><span class="dot">•</span><a class="link-btn" href="classic/index.html?ui=classic" id="classicFooterLink">Classic UI</a>
+    Local parsing<span class="dot">•</span>Shared translation library<span class="dot">•</span>Auto-saved progress<span class="dot">•</span>Press <kbd>?</kbd> for shortcuts<span class="dot">•</span><button class="link-btn" id="tourBtn">Show tour</button>
   </p>
 </main>
 

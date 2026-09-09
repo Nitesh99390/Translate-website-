@@ -130,16 +130,42 @@ function toggleTheme(){
   applyTheme(THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length]);
 }
 function getTheme(){ return document.documentElement.dataset.theme || 'dark'; }
-(function initThemeMenu(){
-  const btn = el('themeToggle'), menu = el('themeMenu');
-  if(!menu){ btn.addEventListener('click', toggleTheme); return; }
-  btn.addEventListener('click', (e)=>{ e.stopPropagation(); menu.classList.toggle('show'); });
-  menu.addEventListener('click', (e)=>{
+/* ☰ App menu — holds search, theme tiles, language, shortcuts, classic UI, install.
+   The old #themeToggle button is kept (hidden) so `T` / tour / older code still work. */
+(function initAppMenu(){
+  const btn = el('menuBtn'), menu = el('appMenu'), themeMenu = el('themeMenu');
+  if(!btn || !menu){ const t = el('themeToggle'); t && t.addEventListener('click', toggleTheme); applyTheme(getTheme()); return; }
+  const setOpen = (o)=>{
+    menu.classList.toggle('show', o);
+    btn.setAttribute('aria-expanded', o ? 'true' : 'false');
+    if(o){ const first = menu.querySelector('.app-menu-item'); first && first.focus({preventScroll:true}); }
+  };
+  const isOpen = ()=> menu.classList.contains('show');
+  btn.addEventListener('click', (e)=>{ e.stopPropagation(); setOpen(!isOpen()); });
+  // Theme tiles: pick + keep the menu open so the user sees the change
+  themeMenu && themeMenu.addEventListener('click', (e)=>{
     const pick = e.target.closest('[data-theme-pick]');
-    if(pick){ applyTheme(pick.dataset.themePick); menu.classList.remove('show'); }
+    if(pick) applyTheme(pick.dataset.themePick);
   });
-  document.addEventListener('click', (e)=>{ if(!menu.contains(e.target) && e.target !== btn) menu.classList.remove('show'); });
+  // Any other action closes the menu
+  menu.addEventListener('click', (e)=>{
+    const item = e.target.closest('.app-menu-item');
+    if(item) setTimeout(()=>setOpen(false), 0);
+  });
+  document.addEventListener('click', (e)=>{ if(isOpen() && !e.target.closest('#appMenuWrap')) setOpen(false); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape' && isOpen()){ setOpen(false); btn.focus(); } });
+  // Arrow-key navigation inside the menu
+  menu.addEventListener('keydown', (e)=>{
+    if(e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const items = [...menu.querySelectorAll('.app-menu-item:not([hidden]), .theme-row button')];
+    const i = items.indexOf(document.activeElement);
+    if(i < 0) return;
+    e.preventDefault();
+    items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+  });
+  const t = el('themeToggle'); t && t.addEventListener('click', toggleTheme);
   applyTheme(getTheme());
+  window.DTV_openAppMenu = ()=>setOpen(true);
 })();
 
 function setStep(n){
