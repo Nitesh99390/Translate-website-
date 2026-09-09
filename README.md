@@ -16,7 +16,7 @@ site — no build step, no server. Just open `index.html` (or serve the folder).
 | Verified translation, pause/skip/retry, editor, find & replace, backup, 5 exports | Yes | Yes |
 | Themes | Dark · Light · AMOLED · Sepia | Dark · Light · AMOLED · Sepia (same `T` shortcut) |
 
-- Switch any time: **Classic** button in the new top bar (or `Ctrl K` → "Switch to Classic UI"),
+- Switch any time: **☰ menu → Switch to Classic UI** in the new top bar (or `Ctrl K`),
   **New UI** toggle in the classic header.
 - Your choice is remembered (`localStorage.nx_ui_version`) — the next visit to `novelxplin.in`
   opens the layout you picked. Force one with `?ui=new` or `?ui=classic`.
@@ -44,7 +44,9 @@ site — no build step, no server. Just open `index.html` (or serve the folder).
 - Community library on the home screen: open any shared book and continue it
 
 **Pro UI**
-- 4 themes: Dark, Light, AMOLED, Sepia (theme menu + `T` shortcut)
+- Clean top bar: logo · stepper · progress · Sign in · **☰ menu** (search, 4 theme tiles,
+  interface language, shortcuts, tour, Classic UI, install)
+- 4 themes: Dark, Light, AMOLED, Sepia (`T` shortcut)
 - Command palette (`Ctrl/⌘ K`) with fuzzy search
 - Reading mode (`R`), word-level diff viewer (`D`), glossary / custom dictionary (`G`)
   auto-applied to translated text, stats dashboard + CSV export

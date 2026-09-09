@@ -475,8 +475,7 @@
      ------------------------------------------------------------------ */
   const TOUR = [
     { sel:'#dropZone', title:'1 · Upload', text:'Drop an EPUB, PDF, DOCX or TXT here. Everything is parsed locally in your browser.' },
-    { sel:'#cmdBtn', title:'Command palette', text:'Press Ctrl+K (or ⌘K) any time to search every action — start, export, themes, chapters…' },
-    { sel:'#themeToggle', title:'Themes', text:'Dark, Light, AMOLED and Sepia. Press T to cycle.' },
+    { sel:'#menuBtn', title:'Menu', text:'Everything lives here — search actions (Ctrl+K), 4 themes (press T to cycle), interface language, shortcuts, Classic UI and install.' },
     { sel:'#libraryWrap', title:'Shared library', text:'Chapters translated by anyone are saved to Firebase. Open the same file and the run continues from where the community left off.', optional:true },
     { sel:'#recentWrap', title:'Recent sessions', text:'Your recent books and their progress live here.', optional:true },
   ];
@@ -546,13 +545,14 @@
     location.href = 'classic/index.html?ui=classic';
   }
   try{ localStorage.setItem('nx_ui_version', 'new'); }catch(e){}
-  ['classicBtn','classicFooterLink'].forEach(id=>{
+  ['classicBtn'].forEach(id=>{
     const a = el(id); if(!a) return;
     a.addEventListener('click', (e)=>{ e.preventDefault(); switchToClassic(); });
   });
   if(el('tourPop')){
     el('tourPop').addEventListener('click', e=>{ const b = e.target.closest('[data-tour]'); if(!b) return; if(b.dataset.tour==='skip') endTour(); else { tourStep++; showTourStep(); } });
     el('tourBtn') && el('tourBtn').addEventListener('click', ()=>startTour(true));
+    el('tourMenuBtn') && el('tourMenuBtn').addEventListener('click', ()=>startTour(true));
     setTimeout(()=>{ if(!loaded()) startTour(false); }, 1400);
     window.addEventListener('resize', ()=>{ if(el('tourPop').classList.contains('show')) showTourStep(); });
   }
@@ -601,7 +601,7 @@
     const hi = uiLang === 'hi';
     if(h1){ h1.innerHTML = hi ? HI.heroTitle : enCache.h1; sub.innerHTML = hi ? HI.heroSub : enCache.sub; dl.innerHTML = hi ? HI.dropLabel : enCache.dl; }
     document.documentElement.dataset.uiLang = uiLang;
-    const lb = el('langBtn'); if(lb) lb.textContent = hi ? 'हिं' : 'EN';
+    const lv = el('langVal'); if(lv) lv.textContent = hi ? 'हिं' : 'EN';
   }
   function toggleUiLang(){ uiLang = uiLang === 'en' ? 'hi' : 'en'; lsSet(LS.lang, uiLang); applyUiLang(); showToast(uiLang==='hi' ? 'Interface: Hinglish' : 'Interface: English', 'info', 1400); }
   el('langBtn') && el('langBtn').addEventListener('click', toggleUiLang);
