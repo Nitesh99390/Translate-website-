@@ -3,7 +3,7 @@
  *  - CDN libs & fonts: stale-while-revalidate
  *  - Google Translate / Firebase / ads: never intercepted
  */
-const VERSION = 'xg-v1';
+const VERSION = 'xg-v2';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 

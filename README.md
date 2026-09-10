@@ -33,13 +33,25 @@ the footer link and the `?ui=mobile` redirect.
 - **Full-screen translation** — the chapter fills the whole phone screen so Chrome's page translator
   sees everything; the app bar hides while a run is active (tap the chapter title to bring it back,
   or use the ⛶ button for true browser fullscreen).
-- **Every option lives in the ☰ menu**: Book (open / restore / recent), Translate (start · pause ·
-  skip · stop · range · verify mode), Chapters (search + status chips, long-press for view /
-  re-translate / edit / exclude / copy), Export (TXT · ZIP · EPUB · MD · HTML · JSON backup · Share),
-  Reader (theme · text size · line height · font · keep-awake · compare), Advanced (timeouts ·
-  retries · gap · scroll · sound · vibrate · memory saver · clear sessions), Other layouts.
-- Floating ▶/⏸ button for one-thumb control, edge-swipe opens the menu, Android back button
-  closes menus/sheets, haptic feedback on each verified chapter, chime when done.
+- **Bottom bar for one-thumb use (v2)**: Chapters · Export · **▶ Start/Pause** · Reader · Menu, with
+  pending / exportable badges. A compact run HUD (progress ring, ETA, skip, stop) appears while translating.
+- **Translate-status pill** in the app bar tells you whether the browser translator is on. Tapping ▶
+  with translate off opens a **preflight sheet** with browser-specific steps (Chrome / Samsung /
+  Edge / Firefox / Safari); the run auto-starts the moment the page is translated.
+- **Target language picker** (Hindi, Bengali, Tamil, … 30 languages) — verification checks for the
+  chosen script's share of letters (or text divergence for Latin targets).
+- Bottom sheets: **Chapters** (search, jump to #, next pending, ⋮ per-row menu), **Export**
+  (TXT · ZIP · EPUB · MD · HTML · JSON backup · Share · Copy all), **Reader** (theme incl. *Follow
+  system*, A−/A+, line height, font, compare), **Finish stats** (verified / unverified / skipped /
+  words / time + *Retry unverified*).
+- ☰ drawer keeps Book (open / restore / sample / recent), Translate (range, retry unverified),
+  Reader, Advanced (timeouts · retries · gap · scroll · sound · vibrate · memory saver) and Other
+  layouts in collapsible sections.
+- First-run onboarding, built-in **sample book**, **read aloud** (Web Speech) with paragraph
+  highlight, tap zones (left / right = prev / next chapter, centre = hide bars), swipe between
+  chapters, long-press a recent session to delete it.
+- Edge-swipe opens the menu, Android back button closes menus/sheets, haptic feedback on each
+  verified chapter, chime when done.
 - Same IndexedDB (`docTranslatorDB`) as the other layouts, so a book started on desktop can be
   resumed on the phone and vice-versa. Theme is shared too.
 - Desktop browsers see a "phone-only" gate with links to the other two layouts (and a

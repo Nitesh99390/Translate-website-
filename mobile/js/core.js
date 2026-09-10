@@ -33,17 +33,51 @@ XG.state = {
   running: false, paused: false, stopRequested: false, skipRequested: false,
   currentIdx: -1, previewIdx: -1,
   verifyMode: 'auto',
-  durations: []
+  targetLang: 'hi',
+  translateOn: false,
+  durations: [],
+  runStartedAt: 0
 };
 const S = XG.state;
 XG.ORIG_SNIPPET = 4000;
+
+/* ---------- languages (target) ---------- */
+/* script: regex that matches the target script; null = Latin (use text divergence) */
+XG.LANGS = {
+  hi:{name:'Hindi', script:/[\u0900-\u097F]/},
+  mr:{name:'Marathi', script:/[\u0900-\u097F]/},
+  ne:{name:'Nepali', script:/[\u0900-\u097F]/},
+  bn:{name:'Bengali', script:/[\u0980-\u09FF]/},
+  ta:{name:'Tamil', script:/[\u0B80-\u0BFF]/},
+  te:{name:'Telugu', script:/[\u0C00-\u0C7F]/},
+  gu:{name:'Gujarati', script:/[\u0A80-\u0AFF]/},
+  kn:{name:'Kannada', script:/[\u0C80-\u0CFF]/},
+  ml:{name:'Malayalam', script:/[\u0D00-\u0D7F]/},
+  pa:{name:'Punjabi', script:/[\u0A00-\u0A7F]/},
+  or:{name:'Odia', script:/[\u0B00-\u0B7F]/},
+  ur:{name:'Urdu', script:/[\u0600-\u06FF]/},
+  ar:{name:'Arabic', script:/[\u0600-\u06FF]/},
+  he:{name:'Hebrew', script:/[\u0590-\u05FF]/},
+  zh:{name:'Chinese', script:/[\u4E00-\u9FFF\u3400-\u4DBF]/},
+  ja:{name:'Japanese', script:/[\u3040-\u30FF\u4E00-\u9FFF]/},
+  ko:{name:'Korean', script:/[\uAC00-\uD7AF\u1100-\u11FF]/},
+  ru:{name:'Russian', script:/[\u0400-\u04FF]/},
+  th:{name:'Thai', script:/[\u0E00-\u0E7F]/},
+  el:{name:'Greek', script:/[\u0370-\u03FF]/},
+  es:{name:'Spanish', script:null}, fr:{name:'French', script:null}, de:{name:'German', script:null},
+  pt:{name:'Portuguese', script:null}, it:{name:'Italian', script:null}, id:{name:'Indonesian', script:null},
+  vi:{name:'Vietnamese', script:null}, tr:{name:'Turkish', script:null}, en:{name:'English', script:null},
+  auto:{name:'your language', script:null}
+};
+XG.langName = (code)=> (XG.LANGS[code] || XG.LANGS.auto).name;
 
 /* ---------- settings ---------- */
 const SETTINGS_KEY = 'xg_settings_v1';
 XG.settings = {
   timeoutMs: 8000, maxRetries: 2, gapMs: 500, scrollMs: 200,
-  sound: true, vibrate: true, memSaver: true, wake: true, compare: false,
-  fontSize: 18, lineHeight: 1.7, fontFamily: 'serif'
+  sound: true, vibrate: true, memSaver: true, wake: true, compare: false, tapZones: true,
+  fontSize: 18, lineHeight: 1.7, fontFamily: 'serif',
+  onboarded: false, runs: 0
 };
 XG.loadSettings = function(){
   try{
@@ -56,42 +90,64 @@ XG.loadSettings = function(){
       if(typeof src.maxRetries === 'number') s.maxRetries = src.maxRetries;
       if(typeof src.gapMs === 'number') s.gapMs = src.gapMs;
       if(typeof src.scrollMs === 'number') s.scrollMs = src.scrollMs;
-      ['sound','vibrate','memSaver','wake','compare'].forEach(k=>{
+      ['sound','vibrate','memSaver','wake','compare','tapZones','onboarded'].forEach(k=>{
         if(typeof src[k] === 'boolean') s[k] = src[k];
         else if(src[k] === 'on' || src[k] === 'off') s[k] = src[k] === 'on';
       });
       if(typeof src.fontSize === 'number') s.fontSize = src.fontSize;
       if(typeof src.lineHeight === 'number') s.lineHeight = src.lineHeight;
       if(src.fontFamily) s.fontFamily = src.fontFamily;
+      if(typeof src.runs === 'number') s.runs = src.runs;
       if(src.verifyMode) S.verifyMode = src.verifyMode;
+      if(src.targetLang && XG.LANGS[src.targetLang]) S.targetLang = src.targetLang;
+      else if(!src.targetLang){
+        /* first run: guess from device language */
+        const nav = (navigator.language || 'hi').split('-')[0].toLowerCase();
+        if(XG.LANGS[nav] && nav !== 'en') S.targetLang = nav;
+      }
+    } else {
+      const nav = (navigator.language || 'hi').split('-')[0].toLowerCase();
+      if(XG.LANGS[nav] && nav !== 'en') S.targetLang = nav;
     }
   }catch(e){}
 };
 XG.saveSettings = function(){
-  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify({...XG.settings, verifyMode: S.verifyMode})); }catch(e){}
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify({...XG.settings, verifyMode: S.verifyMode, targetLang: S.targetLang})); }catch(e){}
   try{ localStorage.setItem('xg_font_size', String(XG.settings.fontSize)); }catch(e){}
 };
 
 /* ---------- theme ---------- */
+let themePref = 'dark';
+const mqLight = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
+function resolveTheme(t){ return t === 'auto' ? (mqLight && mqLight.matches ? 'light' : 'dark') : t; }
 XG.applyTheme = function(t){
-  if(!['dark','light','sepia','amoled'].includes(t)) t = 'dark';
-  document.documentElement.dataset.theme = t;
-  try{ localStorage.setItem('xg_theme', t); localStorage.setItem('dtv_theme', t); }catch(e){}
+  if(!['dark','light','sepia','amoled','auto'].includes(t)) t = 'dark';
+  themePref = t;
+  const real = resolveTheme(t);
+  document.documentElement.dataset.theme = real;
+  try{ localStorage.setItem('xg_theme', t); localStorage.setItem('dtv_theme', real); }catch(e){}
   const meta = document.querySelector('meta[name=theme-color]');
   if(meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0a0b14';
   document.querySelectorAll('.theme-dot').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
 };
-XG.getTheme = () => document.documentElement.dataset.theme || 'dark';
+XG.getTheme = () => { try{ const t = localStorage.getItem('xg_theme'); if(t) return t; }catch(e){} return document.documentElement.dataset.theme || 'dark'; };
+if(mqLight){ const onChange = ()=>{ if(themePref === 'auto') XG.applyTheme('auto'); }; mqLight.addEventListener ? mqLight.addEventListener('change', onChange) : mqLight.addListener(onChange); }
 
 /* ---------- toasts / feedback ---------- */
-XG.toast = function(msg, type='info', ms=2600){
+XG.toast = function(msg, type='info', ms=2600, action){
   const wrap = XG.el('toastWrap');
   const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
+  t.className = 'toast ' + type + (action ? ' action' : '');
+  if(action){
+    const s = document.createElement('span'); s.textContent = msg; t.appendChild(s);
+    const b = document.createElement('button'); b.textContent = action.label;
+    b.addEventListener('click', ()=>{ try{ action.onClick && action.onClick(); }finally{ t.classList.remove('show'); setTimeout(()=>t.remove(), 300); } });
+    t.appendChild(b);
+  } else t.textContent = msg;
   wrap.appendChild(t);
   requestAnimationFrame(()=>t.classList.add('show'));
   setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(), 300); }, ms);
+  return t;
 };
 XG.buzz = function(pattern){
   if(!XG.settings.vibrate) return;
@@ -113,6 +169,94 @@ XG.chime = function(){
     setTimeout(()=>{ try{ ctx.close(); }catch(e){} }, 1200);
   }catch(e){}
 };
+
+/* ---------- browser translate detection ----------
+ * Chrome adds class "translated-ltr"/"translated-rtl" to <html> and rewrites lang= when
+ * the page translator is active. As a fallback we watch a tiny sentinel sentence. */
+XG.translateDetect = (function(){
+  const listeners = new Set();
+  const SENT = 'The quick brown fox jumps over the lazy dog near the river bank.';
+  let sentinel = null, timer = null, on = false;
+  function ensureSentinel(){
+    if(sentinel) return sentinel;
+    sentinel = document.createElement('p');
+    sentinel.id = 'xgSentinel';
+    sentinel.setAttribute('aria-hidden', 'true');
+    sentinel.style.cssText = 'position:fixed;left:0;bottom:0;width:2px;height:2px;overflow:hidden;opacity:.01;pointer-events:none;margin:0;font-size:12px;line-height:1;white-space:nowrap;';
+    sentinel.textContent = SENT;
+    document.body.appendChild(sentinel);
+    return sentinel;
+  }
+  function check(){
+    const html = document.documentElement;
+    const cls = /translated-(ltr|rtl)/.test(html.className);
+    const langChanged = (html.getAttribute('lang') || 'en').split('-')[0].toLowerCase() !== 'en';
+    const s = ensureSentinel();
+    const sentChanged = (s.innerText || s.textContent || '').trim() !== SENT;
+    const next = !!(cls || langChanged || sentChanged);
+    if(next !== on){ on = next; S.translateOn = on; listeners.forEach(fn=>{ try{ fn(on); }catch(e){} }); }
+    return on;
+  }
+  function start(){
+    if(timer) return;
+    ensureSentinel();
+    check();
+    timer = setInterval(check, 900);
+    try{ new MutationObserver(check).observe(document.documentElement, {attributes:true, attributeFilter:['class','lang']}); }catch(e){}
+  }
+  return { start, check, isOn: ()=>on, onChange: fn=>{ listeners.add(fn); return ()=>listeners.delete(fn); } };
+})();
+
+/* which browser? (for the setup instructions) */
+XG.browserHint = function(){
+  const ua = navigator.userAgent || '';
+  if(/iPhone|iPad|iPod/.test(ua)){
+    if(/CriOS/.test(ua)) return {name:'Chrome (iOS)', menu:'⋯ (bottom-right)', step:'Tap ⋯ → <em>Translate…</em>'};
+    return {name:'Safari', menu:'ᴬA (address bar)', step:'Tap the <em>ᴬA</em> button in the address bar → <em>Translate to…</em>'};
+  }
+  if(/SamsungBrowser/.test(ua)) return {name:'Samsung Internet', menu:'≡ (bottom-right)', step:'Tap ≡ → <em>Translate</em>'};
+  if(/EdgA/.test(ua)) return {name:'Edge', menu:'⋯ (bottom)', step:'Tap ⋯ → <em>Translate</em>'};
+  if(/Firefox|FxiOS/.test(ua)) return {name:'Firefox', menu:'⋮', step:'Tap ⋮ → <em>Translate page</em>'};
+  if(/OPR|Opera/.test(ua)) return {name:'Opera', menu:'⋮', step:'Tap ⋮ → <em>Translate</em>'};
+  return {name:'Chrome', menu:'⋮ (top-right)', step:'Tap ⋮ → <em>Translate</em>'};
+};
+
+/* ---------- read aloud (Web Speech) ---------- */
+XG.tts = (function(){
+  const ok = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  let speaking = false, queue = [], onEnd = null, onWord = null, curIdx = -1;
+  function pickVoice(lang){
+    try{
+      const vs = speechSynthesis.getVoices();
+      return vs.find(v=>v.lang.toLowerCase().startsWith(lang)) || vs.find(v=>v.lang.toLowerCase().split('-')[0] === lang) || null;
+    }catch(e){ return null; }
+  }
+  function speakNext(){
+    if(!queue.length){ stop(); return; }
+    const {text, idx} = queue.shift(); curIdx = idx;
+    const u = new SpeechSynthesisUtterance(text);
+    const lang = S.targetLang === 'auto' ? (document.documentElement.getAttribute('lang') || 'hi').split('-')[0] : S.targetLang;
+    u.lang = lang; const v = pickVoice(lang); if(v) u.voice = v;
+    u.rate = 1; u.onend = ()=>{ if(speaking) speakNext(); }; u.onerror = ()=>{ if(speaking) speakNext(); };
+    if(onWord) onWord(idx);
+    speechSynthesis.speak(u);
+  }
+  function start(paras, opts={}){
+    if(!ok) return false;
+    stop();
+    queue = paras.map((t,i)=>({text:t, idx:i})).filter(x=>x.text.trim());
+    if(!queue.length) return false;
+    onEnd = opts.onEnd || null; onWord = opts.onPara || null; speaking = true;
+    speakNext();
+    return true;
+  }
+  function stop(){
+    const was = speaking; speaking = false; queue = []; curIdx = -1;
+    try{ speechSynthesis.cancel(); }catch(e){}
+    if(was && onEnd){ const f = onEnd; onEnd = null; f(); }
+  }
+  return { ok, start, stop, isSpeaking: ()=>speaking, current: ()=>curIdx };
+})();
 
 /* ---------- wake lock ---------- */
 let wakeLock = null;
@@ -227,7 +371,8 @@ XG.handleFile = function(file){
 };
 
 XG.resetForNewFile = function(file){
-  S.currentFile = file;
+  S.currentFile = file; S.isSample = false;
+  try{ XG.tts.stop(); }catch(e){}
   if(S.book && S.book.destroy){ try{ S.book.destroy(); }catch(e){} }
   S.book = null; S.chapters = []; S.currentIdx = -1; S.previewIdx = -1; S.exportOrder = []; S.durations = [];
   S.bookTitle = file ? file.name.replace(/\.[^.]+$/,'') : 'Restored';
@@ -439,6 +584,36 @@ function parseTxt(file){
   };
   reader.readAsText(file);
 }
+
+/* ---------- built-in sample (try before you open a book) ---------- */
+XG.loadSample = function(){
+  if(S.running){ XG.toast('Stop the current run first', 'warn'); return; }
+  const sample = [
+    {title:'The Lighthouse Keeper', paras:[
+      'The lighthouse stood at the edge of the world, or so it seemed to Mara when she was a child. Every evening her grandfather climbed the one hundred and twelve steps to light the great lamp, and every evening she counted them with him.',
+      '"A light is a promise," he told her once, resting on the landing to catch his breath. "It says: someone is watching, someone remembers you are out there."',
+      'Years later, when the ships no longer needed the lamp and the town had forgotten the old man, Mara still climbed the steps. She lit the lamp not for the ships, but for the promise.'
+    ]},
+    {title:'A Letter from the Sea', paras:[
+      'The bottle arrived on a Tuesday, wedged between two rocks below the lighthouse. Inside was a single page, water-stained but legible, written in a careful hand.',
+      '"To whoever keeps the light: I saw you from the deck of the Corvina on the night of the storm. We would not have found the channel without you. Thank you for watching."',
+      'Mara read the letter three times. Then she folded it, put it in her coat pocket, and climbed the one hundred and twelve steps a little faster than usual.'
+    ]},
+    {title:'What the Light Remembers', paras:[
+      'Some nights the fog came in so thick that even the lamp could not cut through it. On those nights Mara would sit by the window and talk to the dark, telling it stories her grandfather had told her.',
+      'She spoke of ships and sailors, of storms that had names and storms that did not, of the small brave things people do when nobody is looking.',
+      'The dark never answered. But somewhere out on the water, she liked to think, someone was listening — and that was enough.'
+    ]}
+  ];
+  XG.resetForNewFile(null);
+  S.currentFile = null;
+  S.chapters = sample.map((s,i)=>mkChapter(i, s.title, null, s.paras.map(p=>`<p>${XG.escapeHtml(p)}</p>`).join('\n')));
+  S.bookTitle = 'Sample — The Lighthouse Keeper';
+  S.isSample = true;
+  XG.el('fileNameShow').textContent = 'Sample book';
+  XG.el('fileExt').textContent = 'DEMO';
+  finishLoading(S.bookTitle, 'en');
+};
 
 /* backup restore */
 XG.restoreBackup = function(file){
