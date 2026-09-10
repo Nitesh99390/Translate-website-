@@ -15,6 +15,7 @@ function download(blob, name){
   const a = document.createElement('a'); a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  XG.buzz(12);
 }
 const stamp = ()=>Math.floor(Date.now()/1000);
 const title = ()=>S.bookTitle || 'Translated Book';
@@ -164,6 +165,13 @@ XG.shareStory = async function(){
   }
 };
 
+XG.copyAll = async function(){
+  const list = exportList(); if(!list) return;
+  const text = list.map(c=>`${c.title}\n\n${c.text.trim()}`).join('\n\n\n');
+  try{ await navigator.clipboard.writeText(text); XG.toast(`Copied ${list.length} chapters`, 'ok'); }
+  catch(e){ XG.toast('Copy not allowed here — use Share or TXT instead', 'err', 3500); }
+};
+
 XG.copyChapter = async function(i){
   const c = S.chapters[i]; if(!c || !c.text){ XG.toast('No translated text yet', 'warn'); return; }
   try{ await navigator.clipboard.writeText(c.text); XG.toast('Copied', 'ok'); }
@@ -177,4 +185,5 @@ el('exportMdBtn').addEventListener('click', XG.exportMarkdown);
 el('exportHtmlBtn').addEventListener('click', XG.exportHtml);
 el('backupExportBtn').addEventListener('click', XG.exportBackup);
 el('shareBtn').addEventListener('click', XG.shareStory);
+el('copyAllBtn').addEventListener('click', XG.copyAll);
 })();

@@ -10,7 +10,7 @@
 <meta property="og:site_name" content="Xplin Go">
 <meta property="og:url" content="https://novelxplin.in/mobile/">
 <meta property="og:image" content="https://novelxplin.in/mobile/assets/logo-512.png">
-<meta property="og:description" content="Full-screen, phone-first verified translation for EPUB / PDF / DOCX / TXT. All options live in one menu.">
+<meta property="og:description" content="Full-screen, phone-first verified translation for EPUB / PDF / DOCX / TXT. One-thumb controls, every chapter verified.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://novelxplin.in/mobile/">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -34,6 +34,7 @@
       if(ui === 'mobile'){ localStorage.setItem('nx_ui_version','mobile'); }
       sessionStorage.removeItem('nx_ui_switched');
       var t = localStorage.getItem('xg_theme') || localStorage.getItem('dtv_theme');
+      if(t === 'auto') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
       if(['light','dark','amoled','sepia'].indexOf(t) > -1) document.documentElement.dataset.theme = t;
       var fs = localStorage.getItem('xg_font_size');
       if(fs) document.documentElement.style.setProperty('--reader-fs', fs + 'px');
@@ -66,7 +67,24 @@
       <a class="btn ghost" href="../classic/index.html?ui=classic">Open Classic</a>
     </div>
     <button class="link-btn" id="gateForceBtn">Continue here anyway</button>
-    <p class="gate-tip">Tip: scan this page's URL on your phone — <code>novelxplin.in/mobile</code></p>
+    <p class="gate-tip">Tip: open <code>novelxplin.in/mobile</code> on your phone</p>
+  </div>
+</div>
+
+<!-- ============ FIRST-RUN GUIDE ============ -->
+<div class="onboard" id="onboard" hidden>
+  <div class="ob-card">
+    <img src="assets/logo-192.png" width="64" height="64" alt="">
+    <h2>Welcome to Xplin Go</h2>
+    <p class="ob-sub">Translate whole books on your phone in 3 easy steps.</p>
+    <ol class="ob-steps">
+      <li><b>Open a book</b><span>.epub · .pdf · .docx · .txt — or try the built-in sample.</span></li>
+      <li><b>Turn on your browser's translate</b><span id="obTranslateHow">Chrome ⋮ → <em>Translate</em> → choose your language.</span></li>
+      <li><b>Tap ▶ Start</b><span>The book scrolls chapter by chapter and every chapter is verified before it's saved.</span></li>
+    </ol>
+    <p class="ob-hint">Files never leave your phone. Use the bottom bar for Chapters · Start · Export · Menu.</p>
+    <button class="dbtn primary wide" id="obDone">Got it, let's go</button>
+    <button class="link-btn" id="obSample">Try with a sample first</button>
   </div>
 </div>
 
@@ -80,7 +98,10 @@
     <span class="appbar-title">Xplin<b>Go</b></span>
   </a>
   <div class="appbar-right">
-    <span class="mini-pill" id="miniPill" title="Run progress">
+    <button class="tpill" id="tPill" title="Browser translate status" aria-label="Translate status">
+      <span class="tdot"></span><span id="tPillText">Translate off</span>
+    </button>
+    <span class="mini-pill" id="miniPill" title="Run progress" hidden>
       <svg viewBox="0 0 22 22" aria-hidden="true"><circle class="ring-bg" cx="11" cy="11" r="9"/><circle class="ring-fg" id="ringFg" cx="11" cy="11" r="9"/></svg>
       <span id="miniPillText">0%</span>
     </span>
@@ -90,7 +111,7 @@
   </div>
 </header>
 
-<!-- ============ DRAWER (all options live here) ============ -->
+<!-- ============ DRAWER (settings & book) ============ -->
 <div class="scrim" id="scrim" hidden></div>
 <nav class="drawer" id="drawer" aria-label="Menu" aria-hidden="true">
   <div class="drawer-head">
@@ -106,192 +127,221 @@
 
   <div class="drawer-body">
 
-    <!-- FILE -->
-    <section class="dsec">
-      <h3 class="dsec-title">Book</h3>
-      <div class="file-card" id="fileCard">
-        <div class="file-ext" id="fileExt">—</div>
-        <div class="file-meta">
-          <div class="file-name" id="fileNameShow">No file loaded</div>
-          <div class="file-sub" id="fileSubShow">Pick an .epub, .pdf, .docx or .txt</div>
+    <!-- quick links -->
+    <div class="quick-row">
+      <button class="quick" id="qChapters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Chapters</span></button>
+      <button class="quick" id="qExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg><span>Export</span></button>
+      <button class="quick" id="qGuide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg><span>Help</span></button>
+    </div>
+
+    <!-- BOOK -->
+    <section class="dsec" data-sec="book">
+      <h3 class="dsec-title"><span>Book</span><i class="chev"></i></h3>
+      <div class="dsec-body">
+        <div class="file-card" id="fileCard">
+          <div class="file-ext" id="fileExt">—</div>
+          <div class="file-meta">
+            <div class="file-name" id="fileNameShow">No file loaded</div>
+            <div class="file-sub" id="fileSubShow">Pick an .epub, .pdf, .docx or .txt</div>
+          </div>
+        </div>
+        <div class="drow">
+          <button class="dbtn primary" id="openFileBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+            <span>Open file</span>
+          </button>
+          <button class="dbtn" id="backupImportBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/></svg>
+            <span>Restore backup</span>
+          </button>
+        </div>
+        <button class="dbtn wide ghost" id="sampleBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 9.5 8.5 3 9l5 4.5L6.5 20 12 16.5 17.5 20 16 13.5 21 9l-6.5-.5z"/></svg>
+          <span>Try a sample book</span>
+        </button>
+        <input type="file" id="fileInput" accept=".epub,.pdf,.docx,.txt" hidden>
+        <input type="file" id="backupFileInput" accept=".json,application/json" hidden>
+        <div class="recent" id="recentWrap" hidden>
+          <div class="recent-title">Recent</div>
+          <div class="recent-list" id="recentList"></div>
         </div>
       </div>
-      <div class="drow">
-        <button class="dbtn" id="openFileBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
-          <span>Open file</span>
-        </button>
-        <button class="dbtn" id="backupImportBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/></svg>
-          <span>Restore backup</span>
-        </button>
-      </div>
-      <input type="file" id="fileInput" accept=".epub,.pdf,.docx,.txt" hidden>
-      <input type="file" id="backupFileInput" accept=".json,application/json" hidden>
-      <div class="recent" id="recentWrap" hidden>
-        <div class="recent-title">Recent</div>
-        <div class="recent-list" id="recentList"></div>
-      </div>
     </section>
 
-    <!-- RUN -->
-    <section class="dsec">
-      <h3 class="dsec-title">Translate</h3>
-      <div class="run-status" id="runStatus">
-        <div class="rs-title" id="runStatusTitle">Nothing loaded</div>
-        <div class="rs-sub" id="runStatusSub">Open a file to begin</div>
-        <div class="rs-bar"><span id="runBarFill"></span></div>
-        <div class="rs-meta"><span id="runCount">0 / 0</span><span id="runEta"></span></div>
-      </div>
-      <div class="drow">
-        <button class="dbtn primary" id="startBtn" disabled>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>Start</span>
+    <!-- TRANSLATE -->
+    <section class="dsec" data-sec="run">
+      <h3 class="dsec-title"><span>Translate</span><i class="chev"></i></h3>
+      <div class="dsec-body">
+        <div class="run-status" id="runStatus">
+          <div class="rs-title" id="runStatusTitle">Nothing loaded</div>
+          <div class="rs-sub" id="runStatusSub">Open a file to begin</div>
+          <div class="rs-bar"><span id="runBarFill"></span></div>
+          <div class="rs-meta"><span id="runCount">0 / 0</span><span id="runEta"></span></div>
+        </div>
+        <label class="dfield">
+          <span>Translating to</span>
+          <select id="targetLangSel">
+            <optgroup label="Indian languages">
+              <option value="hi">Hindi · हिन्दी</option>
+              <option value="bn">Bengali · বাংলা</option>
+              <option value="ta">Tamil · தமிழ்</option>
+              <option value="te">Telugu · తెలుగు</option>
+              <option value="mr">Marathi · मराठी</option>
+              <option value="gu">Gujarati · ગુજરાતી</option>
+              <option value="kn">Kannada · ಕನ್ನಡ</option>
+              <option value="ml">Malayalam · മലയാളം</option>
+              <option value="pa">Punjabi · ਪੰਜਾਬੀ</option>
+              <option value="or">Odia · ଓଡ଼ିଆ</option>
+              <option value="ur">Urdu · اردو</option>
+              <option value="ne">Nepali · नेपाली</option>
+            </optgroup>
+            <optgroup label="Other scripts">
+              <option value="zh">Chinese · 中文</option>
+              <option value="ja">Japanese · 日本語</option>
+              <option value="ko">Korean · 한국어</option>
+              <option value="ar">Arabic · العربية</option>
+              <option value="ru">Russian · Русский</option>
+              <option value="th">Thai · ไทย</option>
+              <option value="el">Greek · Ελληνικά</option>
+              <option value="he">Hebrew · עברית</option>
+            </optgroup>
+            <optgroup label="Latin script">
+              <option value="es">Spanish · Español</option>
+              <option value="fr">French · Français</option>
+              <option value="de">German · Deutsch</option>
+              <option value="pt">Portuguese · Português</option>
+              <option value="it">Italian · Italiano</option>
+              <option value="id">Indonesian · Bahasa</option>
+              <option value="vi">Vietnamese · Tiếng Việt</option>
+              <option value="tr">Turkish · Türkçe</option>
+              <option value="en">English</option>
+            </optgroup>
+            <option value="auto">Other / auto-detect</option>
+          </select>
+        </label>
+        <div class="range-row">
+          <label>From <input type="number" id="rangeFrom" min="1" value="1"></label>
+          <label>To <input type="number" id="rangeTo" min="1" value="1"></label>
+        </div>
+        <div class="drow">
+          <button class="dbtn primary" id="startBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>Start</span>
+          </button>
+          <button class="dbtn" id="pauseBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg><span id="pauseLabel">Pause</span>
+          </button>
+        </div>
+        <div class="drow">
+          <button class="dbtn" id="skipBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l8-7zM16 5h2v14h-2z"/></svg><span>Skip</span>
+          </button>
+          <button class="dbtn danger" id="stopBtn" disabled>
+            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg><span>Stop</span>
+          </button>
+        </div>
+        <button class="dbtn wide ghost" id="retryFailedBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+          <span>Retry unverified <b id="retryFailedCount"></b></span>
         </button>
-        <button class="dbtn" id="pauseBtn" disabled>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg><span id="pauseLabel">Pause</span>
-        </button>
-      </div>
-      <div class="drow">
-        <button class="dbtn" id="skipBtn" disabled>
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l8-7zM16 5h2v14h-2z"/></svg><span>Skip</span>
-        </button>
-        <button class="dbtn danger" id="stopBtn" disabled>
-          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg><span>Stop</span>
-        </button>
-      </div>
-      <div class="range-row">
-        <label>From <input type="number" id="rangeFrom" min="1" value="1"></label>
-        <label>To <input type="number" id="rangeTo" min="1" value="1"></label>
-      </div>
-      <label class="dfield">
-        <span>Verify mode</span>
-        <select id="targetLang">
-          <option value="auto">Auto (script or text change)</option>
-          <option value="script">Non-Latin script (Hindi, Chinese…)</option>
-          <option value="latin">Latin target (Spanish, French…)</option>
-        </select>
-      </label>
-      <div class="hint">
-        Turn on Chrome's translate (⋮ → Translate) for this page, pick your language, then press Start. Every chapter is checked before it's saved.
-      </div>
-    </section>
-
-    <!-- CHAPTERS -->
-    <section class="dsec">
-      <h3 class="dsec-title">Chapters <span class="count" id="chapCount">0</span></h3>
-      <div class="filter-bar">
-        <input type="search" id="chapFilter" placeholder="Search chapters…" autocomplete="off">
-        <div class="chips" id="statusFilters">
-          <button class="chip active" data-f="all">All</button>
-          <button class="chip" data-f="done">Done</button>
-          <button class="chip" data-f="pending">Pending</button>
-          <button class="chip" data-f="unverified">Unverified</button>
-          <button class="chip" data-f="skipped">Skipped</button>
+        <div class="hint" id="translateHint">
+          Turn on your browser's translate for this page, pick your language, then press Start. Every chapter is checked before it's saved.
         </div>
       </div>
-      <div class="chap-list" id="chapList"><div class="empty">No chapters yet</div></div>
-    </section>
-
-    <!-- EXPORT -->
-    <section class="dsec">
-      <h3 class="dsec-title">Export <span class="count" id="exportCount">0</span></h3>
-      <div class="hint" id="exportHint">Translated chapters will be listed here.</div>
-      <div class="dgrid">
-        <button class="dbtn" id="exportStoryBtn" disabled><span class="ic">TXT</span><span>Story</span></button>
-        <button class="dbtn" id="exportZipBtn" disabled><span class="ic">ZIP</span><span>Per chapter</span></button>
-        <button class="dbtn" id="exportEpubBtn" disabled><span class="ic">EPUB</span><span>E-book</span></button>
-        <button class="dbtn" id="exportMdBtn" disabled><span class="ic">MD</span><span>Markdown</span></button>
-        <button class="dbtn" id="exportHtmlBtn" disabled><span class="ic">HTML</span><span>Web page</span></button>
-        <button class="dbtn" id="backupExportBtn" disabled><span class="ic">JSON</span><span>Backup</span></button>
-      </div>
-      <button class="dbtn wide" id="shareBtn" disabled>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
-        <span>Share translated story…</span>
-      </button>
     </section>
 
     <!-- READER -->
-    <section class="dsec">
-      <h3 class="dsec-title">Reader</h3>
-      <div class="theme-row" id="themeRow">
-        <button class="theme-dot" data-theme="dark" title="Dark" aria-label="Dark theme"></button>
-        <button class="theme-dot" data-theme="light" title="Light" aria-label="Light theme"></button>
-        <button class="theme-dot" data-theme="sepia" title="Sepia" aria-label="Sepia theme"></button>
-        <button class="theme-dot" data-theme="amoled" title="AMOLED" aria-label="AMOLED theme"></button>
+    <section class="dsec" data-sec="reader">
+      <h3 class="dsec-title"><span>Reader</span><i class="chev"></i></h3>
+      <div class="dsec-body">
+        <div class="theme-row" id="themeRow">
+          <button class="theme-dot" data-theme="dark" title="Dark" aria-label="Dark theme"></button>
+          <button class="theme-dot" data-theme="light" title="Light" aria-label="Light theme"></button>
+          <button class="theme-dot" data-theme="sepia" title="Sepia" aria-label="Sepia theme"></button>
+          <button class="theme-dot" data-theme="amoled" title="AMOLED" aria-label="AMOLED theme"></button>
+          <button class="theme-dot" data-theme="auto" title="Follow system" aria-label="Follow system theme"></button>
+        </div>
+        <label class="dfield slider">
+          <span>Text size <b id="fontSizeVal">18px</b></span>
+          <input type="range" id="fontSize" min="14" max="28" step="1" value="18">
+        </label>
+        <label class="dfield slider">
+          <span>Line height <b id="lineHeightVal">1.7</b></span>
+          <input type="range" id="lineHeight" min="1.3" max="2.2" step="0.05" value="1.7">
+        </label>
+        <label class="dfield">
+          <span>Font</span>
+          <select id="fontFamily">
+            <option value="serif">Serif (Literata)</option>
+            <option value="sans">Sans (Manrope)</option>
+            <option value="system">System</option>
+          </select>
+        </label>
+        <label class="dfield toggle">
+          <span>Tap screen edges to change chapter</span>
+          <input type="checkbox" id="setTapZones" checked>
+        </label>
+        <label class="dfield toggle">
+          <span>Keep screen awake while translating</span>
+          <input type="checkbox" id="setWake" checked>
+        </label>
+        <label class="dfield toggle">
+          <span>Show original / translated compare</span>
+          <input type="checkbox" id="setCompare">
+        </label>
       </div>
-      <label class="dfield slider">
-        <span>Text size <b id="fontSizeVal">18px</b></span>
-        <input type="range" id="fontSize" min="14" max="26" step="1" value="18">
-      </label>
-      <label class="dfield slider">
-        <span>Line height <b id="lineHeightVal">1.7</b></span>
-        <input type="range" id="lineHeight" min="1.3" max="2.2" step="0.05" value="1.7">
-      </label>
-      <label class="dfield">
-        <span>Font</span>
-        <select id="fontFamily">
-          <option value="serif">Serif (Literata)</option>
-          <option value="sans">Sans (Manrope)</option>
-          <option value="system">System</option>
-        </select>
-      </label>
-      <label class="dfield toggle">
-        <span>Keep screen awake while translating</span>
-        <input type="checkbox" id="setWake" checked>
-      </label>
-      <label class="dfield toggle">
-        <span>Show original / translated compare</span>
-        <input type="checkbox" id="setCompare">
-      </label>
     </section>
 
     <!-- ADVANCED -->
-    <section class="dsec">
-      <h3 class="dsec-title">Advanced</h3>
-      <label class="dfield slider">
-        <span>Wait per chapter <b id="setTimeoutVal">8s</b></span>
-        <input type="range" id="setTimeout" min="3" max="30" step="1" value="8">
-      </label>
-      <label class="dfield slider">
-        <span>Retries <b id="setRetriesVal">2</b></span>
-        <input type="range" id="setRetries" min="0" max="5" step="1" value="2">
-      </label>
-      <label class="dfield slider">
-        <span>Gap between chapters <b id="setGapVal">0.5s</b></span>
-        <input type="range" id="setGap" min="0" max="3000" step="100" value="500">
-      </label>
-      <label class="dfield slider">
-        <span>Scroll speed <b id="setScrollVal">200ms</b></span>
-        <input type="range" id="setScroll" min="60" max="600" step="20" value="200">
-      </label>
-      <label class="dfield toggle">
-        <span>Sound when finished</span>
-        <input type="checkbox" id="setSound" checked>
-      </label>
-      <label class="dfield toggle">
-        <span>Vibrate on each chapter</span>
-        <input type="checkbox" id="setVibrate" checked>
-      </label>
-      <label class="dfield toggle">
-        <span>Memory saver (trim originals)</span>
-        <input type="checkbox" id="setMemSaver" checked>
-      </label>
-      <button class="dbtn wide danger-ghost" id="clearDataBtn">Clear saved sessions</button>
+    <section class="dsec" data-sec="adv">
+      <h3 class="dsec-title"><span>Advanced</span><i class="chev"></i></h3>
+      <div class="dsec-body">
+        <label class="dfield slider">
+          <span>Wait per chapter <b id="setTimeoutVal">8s</b></span>
+          <input type="range" id="setTimeout" min="3" max="30" step="1" value="8">
+        </label>
+        <label class="dfield slider">
+          <span>Retries <b id="setRetriesVal">2</b></span>
+          <input type="range" id="setRetries" min="0" max="5" step="1" value="2">
+        </label>
+        <label class="dfield slider">
+          <span>Gap between chapters <b id="setGapVal">0.5s</b></span>
+          <input type="range" id="setGap" min="0" max="3000" step="100" value="500">
+        </label>
+        <label class="dfield slider">
+          <span>Scroll speed <b id="setScrollVal">200ms</b></span>
+          <input type="range" id="setScroll" min="60" max="600" step="20" value="200">
+        </label>
+        <label class="dfield toggle">
+          <span>Sound when finished</span>
+          <input type="checkbox" id="setSound" checked>
+        </label>
+        <label class="dfield toggle">
+          <span>Vibrate on each chapter</span>
+          <input type="checkbox" id="setVibrate" checked>
+        </label>
+        <label class="dfield toggle">
+          <span>Memory saver (trim originals)</span>
+          <input type="checkbox" id="setMemSaver" checked>
+        </label>
+        <button class="dbtn wide danger-ghost" id="clearDataBtn">Clear saved sessions</button>
+      </div>
     </section>
 
     <!-- SWITCH / ABOUT -->
-    <section class="dsec">
-      <h3 class="dsec-title">Other layouts</h3>
-      <div class="drow">
-        <a class="dbtn" href="../index.html?ui=new" id="toNewLink"><span>Novelxplin</span></a>
-        <a class="dbtn" href="../classic/index.html?ui=classic" id="toClassicLink"><span>Classic</span></a>
-      </div>
-      <button class="dbtn wide" id="installBtn" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-        <span>Install Xplin Go</span>
-      </button>
-      <div class="about">
-        Xplin Go · mobile-only edition of <a href="https://novelxplin.in/">Novelxplin</a>. Files never leave your phone.
+    <section class="dsec" data-sec="other">
+      <h3 class="dsec-title"><span>Other layouts</span><i class="chev"></i></h3>
+      <div class="dsec-body">
+        <div class="drow">
+          <a class="dbtn" href="../index.html?ui=new" id="toNewLink"><span>Novelxplin</span></a>
+          <a class="dbtn" href="../classic/index.html?ui=classic" id="toClassicLink"><span>Classic</span></a>
+        </div>
+        <button class="dbtn wide" id="installBtn" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span>Install Xplin Go</span>
+        </button>
+        <div class="about">
+          Xplin Go v2 · mobile-only edition of <a href="https://novelxplin.in/">Novelxplin</a>. Files never leave your phone.
+        </div>
       </div>
     </section>
   </div>
@@ -303,7 +353,8 @@
   <!-- Home / empty state -->
   <section class="home" id="home">
     <div class="home-hero">
-      <img class="home-logo" src="assets/logo-512.png" width="112" height="112" alt="Xplin Go">
+      <div class="home-glow"></div>
+      <img class="home-logo" src="assets/logo-512.png" width="104" height="104" alt="Xplin Go">
       <h1>Xplin <span>Go</span></h1>
       <p>Translate whole books on your phone — full screen, chapter by chapter, every chapter verified.</p>
     </div>
@@ -312,15 +363,25 @@
       <span>Open a book</span>
       <small>.epub · .pdf · .docx · .txt</small>
     </button>
-    <div class="home-steps">
-      <div class="hs"><b>1</b><span>Open a file from the menu or the button above</span></div>
-      <div class="hs"><b>2</b><span>Chrome ⋮ → <em>Translate</em> → choose your language</span></div>
-      <div class="hs"><b>3</b><span>Tap <em>Start</em> — the book scrolls & verifies itself</span></div>
-      <div class="hs"><b>4</b><span>Export TXT / EPUB / ZIP or share straight from the menu</span></div>
+    <div class="home-alt">
+      <button class="alt-btn" id="homeSampleBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 9.5 8.5 3 9l5 4.5L6.5 20 12 16.5 17.5 20 16 13.5 21 9l-6.5-.5z"/></svg>
+        <span>Try a sample</span>
+      </button>
+      <button class="alt-btn" id="homeRestoreBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/></svg>
+        <span>Restore backup</span>
+      </button>
     </div>
     <div class="home-recent" id="homeRecent" hidden>
-      <div class="recent-title">Continue</div>
+      <div class="recent-title">Continue where you left off</div>
       <div class="recent-list" id="homeRecentList"></div>
+    </div>
+    <div class="home-steps">
+      <div class="hs"><b>1</b><span>Open a file — or tap <em>Try a sample</em></span></div>
+      <div class="hs"><b>2</b><span id="hsTranslateHow">Chrome ⋮ → <em>Translate</em> → choose your language</span></div>
+      <div class="hs"><b>3</b><span>Tap <em>▶ Start</em> in the bottom bar — it scrolls & verifies itself</span></div>
+      <div class="hs"><b>4</b><span>Export TXT / EPUB / ZIP or share — all from the bottom bar</span></div>
     </div>
     <div class="home-foot">
       Prefer the desktop layout? <a href="../index.html?ui=new">Novelxplin</a> · <a href="../classic/index.html?ui=classic">Classic</a>
@@ -333,37 +394,203 @@
       <button class="icon-btn" id="prevChapBtn" aria-label="Previous chapter" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
       </button>
-      <div class="reader-title" id="viewerLabel">—</div>
+      <button class="reader-title" id="viewerLabel" aria-label="Chapter — tap to open chapter list">—</button>
+      <button class="icon-btn" id="listenBtn" aria-label="Read aloud" title="Read aloud" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+      </button>
       <button class="icon-btn" id="nextChapBtn" aria-label="Next chapter" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
       </button>
     </div>
     <div class="reader-progress"><span id="viewerScrollBar"></span></div>
     <div class="live-badge" id="liveBadge"><span class="dot"></span>Translating</div>
+    <div class="status-badge" id="statusBadge" hidden></div>
     <article class="viewer" id="viewer" lang="en"><div class="ph">Pick a chapter from the menu</div></article>
     <aside class="compare" id="comparePanel" hidden>
       <div class="compare-h">Original</div>
       <div class="compare-body" id="compareBody" translate="no"></div>
     </aside>
+    <div class="tapzone-hint" id="tapHint" hidden><span>‹ prev</span><span>tap · hide bar</span><span>next ›</span></div>
   </section>
 
   <!-- Banner (resume / errors) -->
   <div class="banner" id="banner" hidden></div>
 </main>
 
-<!-- Floating action: quick Start / Pause for one-thumb use -->
-<button class="fab" id="fab" hidden aria-label="Start translation">
-  <svg class="fab-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-  <svg class="fab-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
-</button>
+<!-- ============ RUN HUD (visible while translating) ============ -->
+<div class="runhud" id="runHud" hidden>
+  <div class="rh-ring"><svg viewBox="0 0 36 36"><circle class="ring-bg" cx="18" cy="18" r="15"/><circle class="ring-fg" id="hudRing" cx="18" cy="18" r="15"/></svg><span id="hudPct">0%</span></div>
+  <div class="rh-main">
+    <div class="rh-title" id="hudTitle">Translating…</div>
+    <div class="rh-sub" id="hudSub"></div>
+  </div>
+  <button class="rh-btn" id="hudSkip" aria-label="Skip chapter">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l8-7zM16 5h2v14h-2z"/></svg>
+  </button>
+  <button class="rh-btn danger" id="hudStop" aria-label="Stop">
+    <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+  </button>
+</div>
 
-<!-- Bottom sheet: chapter actions -->
+<!-- ============ BOTTOM BAR (one-thumb controls) ============ -->
+<nav class="bottombar" id="bottombar" aria-label="Quick controls" hidden>
+  <button class="bb-item" id="bbChapters" aria-label="Chapters">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    <span>Chapters</span>
+    <i class="bb-badge" id="bbChapBadge" hidden></i>
+  </button>
+  <button class="bb-item" id="bbExport" aria-label="Export">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+    <span>Export</span>
+    <i class="bb-badge ok" id="bbExportBadge" hidden></i>
+  </button>
+  <div class="bb-center">
+    <button class="fab" id="fab" aria-label="Start translation">
+      <svg class="fab-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="fab-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    </button>
+    <span class="fab-label" id="fabLabel">Start</span>
+  </div>
+  <button class="bb-item" id="bbReader" aria-label="Reader settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+    <span>Reader</span>
+  </button>
+  <button class="bb-item" id="bbMenu" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <span>Menu</span>
+  </button>
+</nav>
+
+<!-- ============ SHEETS ============ -->
+
+<!-- Chapters sheet -->
+<div class="sheet tall" id="chaptersSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="sheet-title">Chapters <span class="count" id="chapCount">0</span></div>
+    <button class="icon-btn sm" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="filter-bar">
+    <div class="search-row">
+      <input type="search" id="chapFilter" placeholder="Search chapters…" autocomplete="off">
+      <input type="number" id="chapJump" placeholder="#" min="1" aria-label="Go to chapter number">
+    </div>
+    <div class="chips" id="statusFilters">
+      <button class="chip active" data-f="all">All</button>
+      <button class="chip" data-f="done">Done</button>
+      <button class="chip" data-f="pending">Pending</button>
+      <button class="chip" data-f="unverified">Unverified</button>
+      <button class="chip" data-f="skipped">Skipped</button>
+    </div>
+  </div>
+  <div class="chap-list" id="chapList"><div class="empty">No chapters yet</div></div>
+  <div class="sheet-foot">
+    <button class="dbtn" id="chapNextPendingBtn">Jump to next pending</button>
+    <button class="dbtn" id="chapCurrentBtn">Show current</button>
+  </div>
+</div>
+
+<!-- Export sheet -->
+<div class="sheet" id="exportSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="sheet-title">Export <span class="count" id="exportCount">0</span></div>
+    <button class="icon-btn sm" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="hint" id="exportHint">Translated chapters will be listed here.</div>
+  <div class="dgrid">
+    <button class="dbtn" id="exportStoryBtn" disabled><span class="ic">TXT</span><span>Story</span></button>
+    <button class="dbtn" id="exportEpubBtn" disabled><span class="ic">EPUB</span><span>E-book</span></button>
+    <button class="dbtn" id="exportZipBtn" disabled><span class="ic">ZIP</span><span>Per chapter</span></button>
+    <button class="dbtn" id="exportMdBtn" disabled><span class="ic">MD</span><span>Markdown</span></button>
+    <button class="dbtn" id="exportHtmlBtn" disabled><span class="ic">HTML</span><span>Web page</span></button>
+    <button class="dbtn" id="backupExportBtn" disabled><span class="ic">JSON</span><span>Backup</span></button>
+  </div>
+  <button class="dbtn primary wide" id="shareBtn" disabled>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+    <span>Share translated story…</span>
+  </button>
+  <button class="dbtn wide ghost" id="copyAllBtn" disabled>Copy everything to clipboard</button>
+</div>
+
+<!-- Reader quick settings sheet -->
+<div class="sheet" id="readerSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="sheet-title">Reader</div>
+    <button class="icon-btn sm" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="theme-row" id="themeRow2">
+    <button class="theme-dot" data-theme="dark" aria-label="Dark theme"></button>
+    <button class="theme-dot" data-theme="light" aria-label="Light theme"></button>
+    <button class="theme-dot" data-theme="sepia" aria-label="Sepia theme"></button>
+    <button class="theme-dot" data-theme="amoled" aria-label="AMOLED theme"></button>
+    <button class="theme-dot" data-theme="auto" aria-label="Follow system theme"></button>
+  </div>
+  <div class="stepper">
+    <span>Text size</span>
+    <button class="step-btn" id="fsMinus" aria-label="Smaller text">A−</button>
+    <b id="fontSizeVal2">18</b>
+    <button class="step-btn" id="fsPlus" aria-label="Larger text">A+</button>
+  </div>
+  <div class="stepper">
+    <span>Line height</span>
+    <button class="step-btn" id="lhMinus" aria-label="Tighter lines">−</button>
+    <b id="lineHeightVal2">1.7</b>
+    <button class="step-btn" id="lhPlus" aria-label="Looser lines">+</button>
+  </div>
+  <div class="seg" id="fontSeg">
+    <button data-font="serif" class="active">Serif</button>
+    <button data-font="sans">Sans</button>
+    <button data-font="system">System</button>
+  </div>
+  <label class="dfield toggle">
+    <span>Show original below translation</span>
+    <input type="checkbox" id="setCompare2">
+  </label>
+</div>
+
+<!-- Translate setup sheet (preflight) -->
+<div class="sheet" id="setupSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="sheet-title">Turn on translate first</div>
+    <button class="icon-btn sm" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="setup-status" id="setupStatus"><span class="tdot"></span><span>Waiting for the page to be translated…</span></div>
+  <ol class="ob-steps compact" id="setupSteps">
+    <li><b>Open the browser menu</b><span id="setupStep1">Tap Chrome's <em>⋮</em> (top-right).</span></li>
+    <li><b>Tap “Translate”</b><span id="setupStep2">If it's not there, tap ⋮ again → <em>Translate…</em></span></li>
+    <li><b>Pick your language</b><span id="setupStep3">Choose <em id="setupLangName">Hindi</em>. The page text will change — this sheet closes automatically.</span></li>
+  </ol>
+  <div class="drow">
+    <button class="dbtn" id="setupSkip">Start anyway</button>
+    <button class="dbtn primary" id="setupStart" disabled>Start</button>
+  </div>
+</div>
+
+<!-- Finish / stats sheet -->
+<div class="sheet" id="statsSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="sheet-title" id="statsTitle">Finished</div>
+    <button class="icon-btn sm" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="drow">
+    <button class="dbtn" id="statsRetry" hidden>Retry unverified</button>
+    <button class="dbtn primary" id="statsExport">Export / share</button>
+  </div>
+</div>
+
+<!-- Chapter actions sheet -->
 <div class="sheet" id="chapSheet" hidden>
   <div class="sheet-handle"></div>
   <div class="sheet-title" id="sheetTitle">Chapter</div>
   <button class="sheet-item" data-act="view">View</button>
   <button class="sheet-item" data-act="retranslate">Re-translate this chapter</button>
   <button class="sheet-item" data-act="edit">Edit translated text</button>
+  <button class="sheet-item" data-act="listen">Read aloud</button>
   <button class="sheet-item" data-act="toggleExclude">Exclude from export</button>
   <button class="sheet-item" data-act="copy">Copy translated text</button>
   <button class="sheet-item cancel" data-act="cancel">Cancel</button>
