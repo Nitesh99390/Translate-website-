@@ -1,0 +1,22 @@
+{
+  "name": "Xplin Go — Mobile Book Translator",
+  "short_name": "Xplin Go",
+  "description": "Phone-first verified translation for EPUB, PDF, DOCX and TXT books. Full-screen translating with Chrome's built-in translator; every chapter verified before export.",
+  "start_url": "./index.html?ui=mobile",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0b14",
+  "theme_color": "#0a0b14",
+  "lang": "en",
+  "categories": ["productivity", "utilities", "books"],
+  "icons": [
+    { "src": "assets/logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/logo-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Open a book", "short_name": "Open", "url": "./index.html?ui=mobile&action=open", "description": "Pick a document to translate" }
+  ],
+  "id": "/mobile/"
+}

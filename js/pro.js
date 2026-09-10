@@ -544,10 +544,19 @@
     try{ localStorage.setItem('nx_ui_version', 'classic'); sessionStorage.setItem('nx_ui_switched', '1'); }catch(e){}
     location.href = 'classic/index.html?ui=classic';
   }
+  function switchToMobile(){
+    if(D.running){ showToast('Stop or finish the current run before switching layouts', 'warn', 2400); return; }
+    try{ localStorage.setItem('nx_ui_version', 'mobile'); sessionStorage.setItem('nx_ui_switched', '1'); }catch(e){}
+    location.href = 'mobile/index.html?ui=mobile';
+  }
   try{ localStorage.setItem('nx_ui_version', 'new'); }catch(e){}
   ['classicBtn'].forEach(id=>{
     const a = el(id); if(!a) return;
     a.addEventListener('click', (e)=>{ e.preventDefault(); switchToClassic(); });
+  });
+  ['mobileBtn','mobileFooterLink'].forEach(id=>{
+    const a = el(id); if(!a) return;
+    a.addEventListener('click', (e)=>{ e.preventDefault(); switchToMobile(); });
   });
   if(el('tourPop')){
     el('tourPop').addEventListener('click', e=>{ const b = e.target.closest('[data-tour]'); if(!b) return; if(b.dataset.tour==='skip') endTour(); else { tourStep++; showTourStep(); } });

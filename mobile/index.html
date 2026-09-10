@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Xplin Go — Mobile Book Translator</title>
+<meta name="description" content="Xplin Go: the mobile-only edition of Novelxplin. Translate EPUB, PDF, DOCX and TXT books chapter-by-chapter in full screen with Chrome's built-in translator — verified, private, offline-ready.">
+<meta name="theme-color" content="#0a0b14">
+<meta property="og:title" content="Xplin Go — Mobile Book Translator">
+<meta property="og:site_name" content="Xplin Go">
+<meta property="og:url" content="https://novelxplin.in/mobile/">
+<meta property="og:image" content="https://novelxplin.in/mobile/assets/logo-512.png">
+<meta property="og:description" content="Full-screen, phone-first verified translation for EPUB / PDF / DOCX / TXT. All options live in one menu.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://novelxplin.in/mobile/">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/logo-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Xplin Go">
+
+<!-- Theme + UI preference applied before first paint -->
+<script>
+  (function(){
+    try{
+      var q = new URLSearchParams(location.search);
+      var ui = q.get('ui');
+      if(ui === 'new'){ localStorage.setItem('nx_ui_version','new'); sessionStorage.setItem('nx_ui_switched','1'); location.replace('../index.html?ui=new' + (location.hash||'')); return; }
+      if(ui === 'classic'){ localStorage.setItem('nx_ui_version','classic'); sessionStorage.setItem('nx_ui_switched','1'); location.replace('../classic/index.html?ui=classic' + (location.hash||'')); return; }
+      if(ui === 'mobile'){ localStorage.setItem('nx_ui_version','mobile'); }
+      sessionStorage.removeItem('nx_ui_switched');
+      var t = localStorage.getItem('xg_theme') || localStorage.getItem('dtv_theme');
+      if(['light','dark','amoled','sepia'].indexOf(t) > -1) document.documentElement.dataset.theme = t;
+      var fs = localStorage.getItem('xg_font_size');
+      if(fs) document.documentElement.style.setProperty('--reader-fs', fs + 'px');
+    }catch(e){}
+  })();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Literata:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/mobile.css">
+</head>
+<body>
+
+<div id="toastWrap" aria-live="polite"></div>
+
+<!-- ============ DESKTOP GATE (this edition is mobile-only) ============ -->
+<div id="desktopGate" class="gate" hidden>
+  <div class="gate-card">
+    <img src="assets/logo-192.png" width="72" height="72" alt="Xplin Go">
+    <h1>Xplin Go is phone-only</h1>
+    <p>This edition is built for mobile browsers (Chrome on Android, Safari on iPhone). On a laptop or desktop please use the regular Novelxplin.</p>
+    <div class="gate-actions">
+      <a class="btn primary" href="../index.html?ui=new">Open Novelxplin</a>
+      <a class="btn ghost" href="../classic/index.html?ui=classic">Open Classic</a>
+    </div>
+    <button class="link-btn" id="gateForceBtn">Continue here anyway</button>
+    <p class="gate-tip">Tip: scan this page's URL on your phone — <code>novelxplin.in/mobile</code></p>
+  </div>
+</div>
+
+<!-- ============ APP BAR ============ -->
+<header class="appbar" id="appbar">
+  <button class="hamburger" id="menuBtn" aria-label="Open menu" aria-controls="drawer" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+  <a class="appbar-brand" href="./" id="brandLink" aria-label="Xplin Go home">
+    <img src="assets/logo-192.png" width="30" height="30" alt="">
+    <span class="appbar-title">Xplin<b>Go</b></span>
+  </a>
+  <div class="appbar-right">
+    <span class="mini-pill" id="miniPill" title="Run progress">
+      <svg viewBox="0 0 22 22" aria-hidden="true"><circle class="ring-bg" cx="11" cy="11" r="9"/><circle class="ring-fg" id="ringFg" cx="11" cy="11" r="9"/></svg>
+      <span id="miniPillText">0%</span>
+    </span>
+    <button class="icon-btn" id="fullscreenBtn" aria-label="Toggle full screen" title="Full screen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ============ DRAWER (all options live here) ============ -->
+<div class="scrim" id="scrim" hidden></div>
+<nav class="drawer" id="drawer" aria-label="Menu" aria-hidden="true">
+  <div class="drawer-head">
+    <img src="assets/logo-192.png" width="44" height="44" alt="">
+    <div>
+      <div class="drawer-name">Xplin Go</div>
+      <div class="drawer-sub">Mobile edition · Verified translate</div>
+    </div>
+    <button class="icon-btn" id="drawerClose" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="drawer-body">
+
+    <!-- FILE -->
+    <section class="dsec">
+      <h3 class="dsec-title">Book</h3>
+      <div class="file-card" id="fileCard">
+        <div class="file-ext" id="fileExt">—</div>
+        <div class="file-meta">
+          <div class="file-name" id="fileNameShow">No file loaded</div>
+          <div class="file-sub" id="fileSubShow">Pick an .epub, .pdf, .docx or .txt</div>
+        </div>
+      </div>
+      <div class="drow">
+        <button class="dbtn" id="openFileBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+          <span>Open file</span>
+        </button>
+        <button class="dbtn" id="backupImportBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/></svg>
+          <span>Restore backup</span>
+        </button>
+      </div>
+      <input type="file" id="fileInput" accept=".epub,.pdf,.docx,.txt" hidden>
+      <input type="file" id="backupFileInput" accept=".json,application/json" hidden>
+      <div class="recent" id="recentWrap" hidden>
+        <div class="recent-title">Recent</div>
+        <div class="recent-list" id="recentList"></div>
+      </div>
+    </section>
+
+    <!-- RUN -->
+    <section class="dsec">
+      <h3 class="dsec-title">Translate</h3>
+      <div class="run-status" id="runStatus">
+        <div class="rs-title" id="runStatusTitle">Nothing loaded</div>
+        <div class="rs-sub" id="runStatusSub">Open a file to begin</div>
+        <div class="rs-bar"><span id="runBarFill"></span></div>
+        <div class="rs-meta"><span id="runCount">0 / 0</span><span id="runEta"></span></div>
+      </div>
+      <div class="drow">
+        <button class="dbtn primary" id="startBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>Start</span>
+        </button>
+        <button class="dbtn" id="pauseBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg><span id="pauseLabel">Pause</span>
+        </button>
+      </div>
+      <div class="drow">
+        <button class="dbtn" id="skipBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5v14l8-7zM16 5h2v14h-2z"/></svg><span>Skip</span>
+        </button>
+        <button class="dbtn danger" id="stopBtn" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg><span>Stop</span>
+        </button>
+      </div>
+      <div class="range-row">
+        <label>From <input type="number" id="rangeFrom" min="1" value="1"></label>
+        <label>To <input type="number" id="rangeTo" min="1" value="1"></label>
+      </div>
+      <label class="dfield">
+        <span>Verify mode</span>
+        <select id="targetLang">
+          <option value="auto">Auto (script or text change)</option>
+          <option value="script">Non-Latin script (Hindi, Chinese…)</option>
+          <option value="latin">Latin target (Spanish, French…)</option>
+        </select>
+      </label>
+      <div class="hint">
+        Turn on Chrome's translate (⋮ → Translate) for this page, pick your language, then press Start. Every chapter is checked before it's saved.
+      </div>
+    </section>
+
+    <!-- CHAPTERS -->
+    <section class="dsec">
+      <h3 class="dsec-title">Chapters <span class="count" id="chapCount">0</span></h3>
+      <div class="filter-bar">
+        <input type="search" id="chapFilter" placeholder="Search chapters…" autocomplete="off">
+        <div class="chips" id="statusFilters">
+          <button class="chip active" data-f="all">All</button>
+          <button class="chip" data-f="done">Done</button>
+          <button class="chip" data-f="pending">Pending</button>
+          <button class="chip" data-f="unverified">Unverified</button>
+          <button class="chip" data-f="skipped">Skipped</button>
+        </div>
+      </div>
+      <div class="chap-list" id="chapList"><div class="empty">No chapters yet</div></div>
+    </section>
+
+    <!-- EXPORT -->
+    <section class="dsec">
+      <h3 class="dsec-title">Export <span class="count" id="exportCount">0</span></h3>
+      <div class="hint" id="exportHint">Translated chapters will be listed here.</div>
+      <div class="dgrid">
+        <button class="dbtn" id="exportStoryBtn" disabled><span class="ic">TXT</span><span>Story</span></button>
+        <button class="dbtn" id="exportZipBtn" disabled><span class="ic">ZIP</span><span>Per chapter</span></button>
+        <button class="dbtn" id="exportEpubBtn" disabled><span class="ic">EPUB</span><span>E-book</span></button>
+        <button class="dbtn" id="exportMdBtn" disabled><span class="ic">MD</span><span>Markdown</span></button>
+        <button class="dbtn" id="exportHtmlBtn" disabled><span class="ic">HTML</span><span>Web page</span></button>
+        <button class="dbtn" id="backupExportBtn" disabled><span class="ic">JSON</span><span>Backup</span></button>
+      </div>
+      <button class="dbtn wide" id="shareBtn" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+        <span>Share translated story…</span>
+      </button>
+    </section>
+
+    <!-- READER -->
+    <section class="dsec">
+      <h3 class="dsec-title">Reader</h3>
+      <div class="theme-row" id="themeRow">
+        <button class="theme-dot" data-theme="dark" title="Dark" aria-label="Dark theme"></button>
+        <button class="theme-dot" data-theme="light" title="Light" aria-label="Light theme"></button>
+        <button class="theme-dot" data-theme="sepia" title="Sepia" aria-label="Sepia theme"></button>
+        <button class="theme-dot" data-theme="amoled" title="AMOLED" aria-label="AMOLED theme"></button>
+      </div>
+      <label class="dfield slider">
+        <span>Text size <b id="fontSizeVal">18px</b></span>
+        <input type="range" id="fontSize" min="14" max="26" step="1" value="18">
+      </label>
+      <label class="dfield slider">
+        <span>Line height <b id="lineHeightVal">1.7</b></span>
+        <input type="range" id="lineHeight" min="1.3" max="2.2" step="0.05" value="1.7">
+      </label>
+      <label class="dfield">
+        <span>Font</span>
+        <select id="fontFamily">
+          <option value="serif">Serif (Literata)</option>
+          <option value="sans">Sans (Manrope)</option>
+          <option value="system">System</option>
+        </select>
+      </label>
+      <label class="dfield toggle">
+        <span>Keep screen awake while translating</span>
+        <input type="checkbox" id="setWake" checked>
+      </label>
+      <label class="dfield toggle">
+        <span>Show original / translated compare</span>
+        <input type="checkbox" id="setCompare">
+      </label>
+    </section>
+
+    <!-- ADVANCED -->
+    <section class="dsec">
+      <h3 class="dsec-title">Advanced</h3>
+      <label class="dfield slider">
+        <span>Wait per chapter <b id="setTimeoutVal">8s</b></span>
+        <input type="range" id="setTimeout" min="3" max="30" step="1" value="8">
+      </label>
+      <label class="dfield slider">
+        <span>Retries <b id="setRetriesVal">2</b></span>
+        <input type="range" id="setRetries" min="0" max="5" step="1" value="2">
+      </label>
+      <label class="dfield slider">
+        <span>Gap between chapters <b id="setGapVal">0.5s</b></span>
+        <input type="range" id="setGap" min="0" max="3000" step="100" value="500">
+      </label>
+      <label class="dfield slider">
+        <span>Scroll speed <b id="setScrollVal">200ms</b></span>
+        <input type="range" id="setScroll" min="60" max="600" step="20" value="200">
+      </label>
+      <label class="dfield toggle">
+        <span>Sound when finished</span>
+        <input type="checkbox" id="setSound" checked>
+      </label>
+      <label class="dfield toggle">
+        <span>Vibrate on each chapter</span>
+        <input type="checkbox" id="setVibrate" checked>
+      </label>
+      <label class="dfield toggle">
+        <span>Memory saver (trim originals)</span>
+        <input type="checkbox" id="setMemSaver" checked>
+      </label>
+      <button class="dbtn wide danger-ghost" id="clearDataBtn">Clear saved sessions</button>
+    </section>
+
+    <!-- SWITCH / ABOUT -->
+    <section class="dsec">
+      <h3 class="dsec-title">Other layouts</h3>
+      <div class="drow">
+        <a class="dbtn" href="../index.html?ui=new" id="toNewLink"><span>Novelxplin</span></a>
+        <a class="dbtn" href="../classic/index.html?ui=classic" id="toClassicLink"><span>Classic</span></a>
+      </div>
+      <button class="dbtn wide" id="installBtn" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <span>Install Xplin Go</span>
+      </button>
+      <div class="about">
+        Xplin Go · mobile-only edition of <a href="https://novelxplin.in/">Novelxplin</a>. Files never leave your phone.
+      </div>
+    </section>
+  </div>
+</nav>
+
+<!-- ============ MAIN: FULL-SCREEN READER ============ -->
+<main class="stage" id="stage">
+
+  <!-- Home / empty state -->
+  <section class="home" id="home">
+    <div class="home-hero">
+      <img class="home-logo" src="assets/logo-512.png" width="112" height="112" alt="Xplin Go">
+      <h1>Xplin <span>Go</span></h1>
+      <p>Translate whole books on your phone — full screen, chapter by chapter, every chapter verified.</p>
+    </div>
+    <button class="big-open" id="homeOpenBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+      <span>Open a book</span>
+      <small>.epub · .pdf · .docx · .txt</small>
+    </button>
+    <div class="home-steps">
+      <div class="hs"><b>1</b><span>Open a file from the menu or the button above</span></div>
+      <div class="hs"><b>2</b><span>Chrome ⋮ → <em>Translate</em> → choose your language</span></div>
+      <div class="hs"><b>3</b><span>Tap <em>Start</em> — the book scrolls & verifies itself</span></div>
+      <div class="hs"><b>4</b><span>Export TXT / EPUB / ZIP or share straight from the menu</span></div>
+    </div>
+    <div class="home-recent" id="homeRecent" hidden>
+      <div class="recent-title">Continue</div>
+      <div class="recent-list" id="homeRecentList"></div>
+    </div>
+    <div class="home-foot">
+      Prefer the desktop layout? <a href="../index.html?ui=new">Novelxplin</a> · <a href="../classic/index.html?ui=classic">Classic</a>
+    </div>
+  </section>
+
+  <!-- Reader / translate viewport -->
+  <section class="reader" id="readerWrap" hidden>
+    <div class="reader-top" id="readerTop">
+      <button class="icon-btn" id="prevChapBtn" aria-label="Previous chapter" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div class="reader-title" id="viewerLabel">—</div>
+      <button class="icon-btn" id="nextChapBtn" aria-label="Next chapter" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="reader-progress"><span id="viewerScrollBar"></span></div>
+    <div class="live-badge" id="liveBadge"><span class="dot"></span>Translating</div>
+    <article class="viewer" id="viewer" lang="en"><div class="ph">Pick a chapter from the menu</div></article>
+    <aside class="compare" id="comparePanel" hidden>
+      <div class="compare-h">Original</div>
+      <div class="compare-body" id="compareBody" translate="no"></div>
+    </aside>
+  </section>
+
+  <!-- Banner (resume / errors) -->
+  <div class="banner" id="banner" hidden></div>
+</main>
+
+<!-- Floating action: quick Start / Pause for one-thumb use -->
+<button class="fab" id="fab" hidden aria-label="Start translation">
+  <svg class="fab-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+  <svg class="fab-pause" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+</button>
+
+<!-- Bottom sheet: chapter actions -->
+<div class="sheet" id="chapSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="sheetTitle">Chapter</div>
+  <button class="sheet-item" data-act="view">View</button>
+  <button class="sheet-item" data-act="retranslate">Re-translate this chapter</button>
+  <button class="sheet-item" data-act="edit">Edit translated text</button>
+  <button class="sheet-item" data-act="toggleExclude">Exclude from export</button>
+  <button class="sheet-item" data-act="copy">Copy translated text</button>
+  <button class="sheet-item cancel" data-act="cancel">Cancel</button>
+</div>
+
+<!-- Editor sheet -->
+<div class="sheet editor" id="editSheet" hidden>
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="editTitle">Edit chapter</div>
+  <textarea id="editArea" translate="no" spellcheck="false"></textarea>
+  <div class="drow">
+    <button class="dbtn" id="editCancel">Cancel</button>
+    <button class="dbtn primary" id="editSave">Save</button>
+  </div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/run.js"></script>
+<script src="js/export.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

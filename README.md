@@ -6,20 +6,44 @@ Translate EPUB / PDF / DOCX / TXT books chapter-by-chapter using Chrome's built-
 page translator, with every chapter **verified** before it is accepted. Pure static
 site — no build step, no server. Just open `index.html` (or serve the folder).
 
-## Two interfaces — pick whichever you like
+## Three interfaces — pick whichever you like
 
-| | New UI (`/`) | Classic UI (`/classic/`) |
-|---|---|---|
-| Layout | Top bar + stepper, sidebar workspace | Original single-column page |
-| Shared library / Google sign-in | Yes | No (100% local) |
-| Command palette, reading mode, diff, glossary, stats | Yes | No |
-| Verified translation, pause/skip/retry, editor, find & replace, backup, 5 exports | Yes | Yes |
-| Themes | Dark · Light · AMOLED · Sepia | Dark · Light · AMOLED · Sepia (same `T` shortcut) |
+| | New UI (`/`) | Classic UI (`/classic/`) | **Xplin Go** (`/mobile/`) |
+|---|---|---|---|
+| Built for | Desktop & mobile | Desktop & mobile | **Phones only** (desktop shows a gate) |
+| Layout | Top bar + stepper, sidebar workspace | Original single-column page | App bar + ☰ hamburger drawer, **full-screen reader** |
+| Shared library / Google sign-in | Yes | No (100% local) | No (100% local) |
+| Command palette, reading mode, diff, glossary, stats | Yes | No | No |
+| Verified translation, pause/skip/retry, editor, backup, 5 exports | Yes | Yes | Yes (+ Web Share, long-press chapter menu, swipe between chapters, pinch-to-zoom text) |
+| Themes | Dark · Light · AMOLED · Sepia | Dark · Light · AMOLED · Sepia | Dark · Light · Sepia · AMOLED |
+| Logo | Aa/अ blue disc | Aa/अ blue disc | Own logo — open book + check, violet→cyan |
 
-- Switch any time: **☰ menu → Switch to Classic UI** in the new top bar (or `Ctrl K`),
-  **New UI** toggle in the classic header.
-- Your choice is remembered (`localStorage.nx_ui_version`) — the next visit to `novelxplin.in`
-  opens the layout you picked. Force one with `?ui=new` or `?ui=classic`.
+- Switch any time: **☰ menu → Switch to Classic UI / Xplin Go** in the new top bar (or `Ctrl K`),
+  **New UI** toggle in the classic header, **Xplin Go (mobile)** link in either footer,
+  and the *Other layouts* section in the Xplin Go drawer.
+- Your choice is remembered (`localStorage.nx_ui_version` = `new` | `classic` | `mobile`) — the next
+  visit to `novelxplin.in` opens the layout you picked. Force one with `?ui=new`, `?ui=classic` or `?ui=mobile`.
+
+### Xplin Go (mobile edition)
+
+`/mobile/` is a separate, self-contained app (`mobile/index.html`, `mobile/css`, `mobile/js`, own
+manifest + service worker, own icons). Nothing from the two desktop layouts is changed apart from
+the footer link and the `?ui=mobile` redirect.
+
+- **Full-screen translation** — the chapter fills the whole phone screen so Chrome's page translator
+  sees everything; the app bar hides while a run is active (tap the chapter title to bring it back,
+  or use the ⛶ button for true browser fullscreen).
+- **Every option lives in the ☰ menu**: Book (open / restore / recent), Translate (start · pause ·
+  skip · stop · range · verify mode), Chapters (search + status chips, long-press for view /
+  re-translate / edit / exclude / copy), Export (TXT · ZIP · EPUB · MD · HTML · JSON backup · Share),
+  Reader (theme · text size · line height · font · keep-awake · compare), Advanced (timeouts ·
+  retries · gap · scroll · sound · vibrate · memory saver · clear sessions), Other layouts.
+- Floating ▶/⏸ button for one-thumb control, edge-swipe opens the menu, Android back button
+  closes menus/sheets, haptic feedback on each verified chapter, chime when done.
+- Same IndexedDB (`docTranslatorDB`) as the other layouts, so a book started on desktop can be
+  resumed on the phone and vice-versa. Theme is shared too.
+- Desktop browsers see a "phone-only" gate with links to the other two layouts (and a
+  "continue anyway" escape hatch).
 - Theme (`dtv_theme`), run settings (`dtv_settings_v4`) and IndexedDB sessions are shared,
   so a book started in one layout can be resumed in the other.
 
@@ -94,6 +118,11 @@ Recommended Realtime Database rules:
 ```
 index.html            new UI — app shell + modals
 classic/index.html    classic UI — original self-contained single page (own CSS/JS)
+mobile/               Xplin Go — phone-only edition (own css/, js/, assets/, manifest, sw.js)
+mobile/js/core.js       state, settings, IndexedDB, EPUB/PDF/DOCX/TXT parsing
+mobile/js/run.js        full-screen viewer, chapter list, translate-verify loop
+mobile/js/export.js     TXT / ZIP / EPUB / MD / HTML / backup / Web Share
+mobile/js/ui.js         drawer, gate, sheets, reader settings, PWA
 css/style.css         themes + all component styles
 js/app.js             core: parsing, run loop, verification, exports, window.DTV API
 js/pro.js             pro UI layer (palette, reader, diff, glossary, stats, tour, PWA…)
