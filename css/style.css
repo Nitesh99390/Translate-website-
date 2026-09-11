@@ -223,6 +223,34 @@ a{color:var(--accent-2);}
 .step{cursor:pointer;}
 .step:hover{color:var(--text);}
 
+/* Deep Translate link (top bar) */
+.deep-link{
+  display:inline-flex;align-items:center;gap:7px;text-decoration:none;color:var(--text-dim);
+  font-size:12px;font-weight:600;padding:0 12px;height:36px;border-radius:10px;border:1px solid var(--border);background:var(--panel);
+  transition:all .2s var(--ease);white-space:nowrap;
+}
+.deep-link svg{width:15px;height:15px;color:var(--accent-2);}
+.deep-link b{font-family:var(--mono);font-size:8.5px;letter-spacing:1px;padding:2px 5px;border-radius:5px;background:var(--green);color:#04150a;}
+.deep-link:hover{color:var(--text);border-color:var(--accent);transform:translateY(-1px);}
+@media (max-width:900px){.deep-link span{display:none;}.deep-link{padding:0 9px;}}
+@media (max-width:600px){.deep-link b{display:none;}}
+
+/* Deep Translate promo (hero) */
+.deep-promo{
+  display:flex;align-items:center;gap:14px;max-width:640px;margin:16px auto 0;padding:14px 16px;border-radius:14px;text-decoration:none;color:inherit;
+  background:linear-gradient(135deg,rgba(var(--accent-rgb),.10),rgba(var(--purple-rgb),.08));border:1px solid rgba(var(--accent-rgb),.28);
+  transition:transform .2s var(--ease),box-shadow .25s,border-color .2s;text-align:left;
+}
+.deep-promo:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 12px 30px rgba(var(--accent-rgb),.18);}
+.deep-promo-ic{width:42px;height:42px;border-radius:12px;flex-shrink:0;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;}
+.deep-promo-ic svg{width:22px;height:22px;}
+.deep-promo-text{flex:1;min-width:0;}
+.deep-promo-text b{display:block;font-size:13.5px;}
+.deep-promo-text b em{font-style:normal;color:var(--accent-2);}
+.deep-promo-text > span{display:block;font-size:12px;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+.deep-promo-cta{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent-2);white-space:nowrap;}
+@media (max-width:600px){.deep-promo{flex-wrap:wrap;}.deep-promo-cta{width:100%;text-align:right;}}
+
 /* --------------------------------------------------------------------------
    ☰ App menu (top bar) — search, theme, language, shortcuts, classic UI, install
    -------------------------------------------------------------------------- */

@@ -6,6 +6,34 @@ Translate EPUB / PDF / DOCX / TXT books chapter-by-chapter using Chrome's built-
 page translator, with every chapter **verified** before it is accepted. Pure static
 site — no build step, no server. Just open `index.html` (or serve the folder).
 
+## Deep Translate (`/translate.html`) — no Chrome translate needed
+
+**New.** An API-based whole-book translator that works on any browser (phones included) without the
+Chrome page translator or any extension. Open `translate.html` from the top-bar **Deep Translate**
+link, the hero promo, the ☰ menu, the classic footer or the Xplin Go drawer.
+
+- **Parses locally**: EPUB (JSZip + OPF spine + NCX/nav TOC titles), PDF (pdf.js), DOCX (mammoth), TXT.
+- **Chunked for mobile data**: paragraphs are packed into ≈1.8 / 3.5 / 7 KB requests (Data saver ·
+  Balanced · Wi-Fi). A 100k-word novel costs roughly 1.5–2 MB in total. Live *Data used* counter.
+- **Engines with fallback**: Google (`clients5` batch endpoint, fast) → Lingva (3 instances) → MyMemory
+  (optional e-mail raises the free quota). Rate limits trigger a cool-down + back-off and the chunk is
+  split and re-queued; you can also pin one engine.
+- **Verified**: every paragraph is checked for the target script (≥35 % of letters, or text divergence
+  for Latin targets). Unverified paragraphs are retried, then reported; *Retry failed* re-runs only those.
+- **Auto-resume**: progress is saved to IndexedDB (`novelxplin_dt`) after every chunk. Going offline
+  pauses the run, coming back online resumes it. Re-opening the same file (or the *Continue where you
+  left off* list) merges the saved translations back in.
+- **30 languages**: English → Hindi by default; Bengali, Tamil, Telugu, Marathi, Gujarati, Urdu,
+  Arabic, Chinese, Japanese, Spanish, French, … Source can be *Detect language*.
+- **Reader**: Translated / Original / Compare views, per-chapter editor, swipe or ←/→ between chapters,
+  long-press / right-click a chapter to exclude it, range selection, filters (pending / done / failed).
+- **Exports**: story `.txt`, ZIP (per chapter), EPUB 3, Markdown, HTML, `.json` backup, Web Share,
+  copy — plus **Open in Novelxplin →**, which hands the book to the main UI (`?from=deep-translate`)
+  so you can use compare / glossary / stats / the shared library there. The backup is `dtvBackup:1`
+  compatible, so it also restores in Classic and Xplin Go.
+- Settings: parallel requests (1–4), pause between requests, retries, keep-awake, chime, vibration,
+  skip verification, reader font. Themes are shared (`dtv_theme`).
+
 ## Three interfaces — pick whichever you like
 
 | | New UI (`/`) | Classic UI (`/classic/`) | **Xplin Go** (`/mobile/`) |
@@ -129,6 +157,7 @@ Recommended Realtime Database rules:
 
 ```
 index.html            new UI — app shell + modals
+translate.html        Deep Translate — API-based whole-book translation (own css/translate.css + js/translate.js)
 classic/index.html    classic UI — original self-contained single page (own CSS/JS)
 mobile/               Xplin Go — phone-only edition (own css/, js/, assets/, manifest, sw.js)
 mobile/js/core.js       state, settings, IndexedDB, EPUB/PDF/DOCX/TXT parsing
@@ -136,6 +165,8 @@ mobile/js/run.js        full-screen viewer, chapter list, translate-verify loop
 mobile/js/export.js     TXT / ZIP / EPUB / MD / HTML / backup / Web Share
 mobile/js/ui.js         drawer, gate, sheets, reader settings, PWA
 css/style.css         themes + all component styles
+css/translate.css     Deep Translate styles (same design tokens / themes)
+js/translate.js       Deep Translate: parsers, chunker, engines (Google/Lingva/MyMemory), verify, resume, exports, hand-off
 js/app.js             core: parsing, run loop, verification, exports, window.DTV API
 js/pro.js             pro UI layer (palette, reader, diff, glossary, stats, tour, PWA…)
 js/firebase.js        shared Firebase init
