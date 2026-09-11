@@ -2433,3 +2433,26 @@ window.DTV = {
   nodes: { hero, workspace, viewer, viewerPanel, chapList, editorPanel, downloadPanel, globalBanner, resumeBanner, startBtn }
 };
 emit('ready');
+
+/* ============ HANDOFF FROM DEEP TRANSLATE (translate.html) ============ */
+(function acceptDeepTranslateHandoff(){
+  if(!/[?&]from=deep-translate/.test(location.search) || !('indexedDB' in window)) return;
+  try{
+    const q = indexedDB.open('novelxplin_dt', 1);
+    q.onsuccess = ()=>{
+      const d = q.result;
+      if(!d.objectStoreNames.contains('handoff')){ d.close(); return; }
+      const tx = d.transaction('handoff', 'readwrite'); const st = tx.objectStore('handoff');
+      const g = st.get('latest');
+      g.onsuccess = ()=>{
+        const payload = g.result; if(!payload) return;
+        st.delete('latest');
+        const name = (payload.bookTitle || 'deep-translate') + '.json';
+        restoreBackupFile(new File([JSON.stringify(payload)], name, {type:'application/json'}));
+        setTimeout(()=>showToast('Loaded from Deep Translate — review, compare and export here', 'ok', 4200), 600);
+        history.replaceState(null, '', location.pathname);
+      };
+      tx.oncomplete = ()=>d.close();
+    };
+  }catch(e){}
+})();

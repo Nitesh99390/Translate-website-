@@ -4,14 +4,17 @@
  *  - CDN libs & fonts: stale-while-revalidate
  *  - Firebase / Google Translate / ads: never intercepted
  */
-const VERSION = 'dtv-v8';
+const VERSION = 'dtv-v9';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 
 const SHELL = [
   './',
   './index.html',
+  './translate.html',
   './css/style.css',
+  './css/translate.css',
+  './js/translate.js',
   './js/app.js',
   './js/pro.js',
   './js/firebase.js',
@@ -36,7 +39,7 @@ const SHELL = [
 const BYPASS_HOSTS = [
   'firebaseio.com', 'googleapis.com/identitytoolkit', 'firebase.googleapis.com', 'securetoken.googleapis.com',
   'firebaseapp.com/__/auth', 'accounts.google.com', 'apis.google.com', 'lh3.googleusercontent.com',
-  'translate.google', 'translate.googleapis', 'gstatic.com/firebasejs',
+  'translate.google', 'translate.googleapis', 'clients5.google.com', 'lingva.ml', 'mymemory.translated.net', 'gstatic.com/firebasejs',
   'highperformanceformat.com', 'effectivegatecpm.com', 'adsterra', 'profitableratecpm'
 ];
 

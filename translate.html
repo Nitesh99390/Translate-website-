@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Deep Translate — Novelxplin · Translate whole books English → Hindi</title>
+<meta name="description" content="Deep Translate by Novelxplin: translate entire EPUB, PDF, DOCX or TXT books English → Hindi (and 30 more languages) directly in the browser. No Chrome translate needed — chunked for mobile data, auto-resume, verified output, 6 export formats.">
+<meta name="theme-color" content="#0a0d12">
+<meta property="og:title" content="Deep Translate — Novelxplin">
+<meta property="og:site_name" content="Novelxplin">
+<meta property="og:url" content="https://novelxplin.in/translate.html">
+<meta property="og:image" content="https://novelxplin.in/assets/og-image.png">
+<meta property="og:description" content="Translate whole books English → Hindi directly — chunked for mobile data, auto-resume, no extension needed.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://novelxplin.in/translate.html">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/logo-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<!-- Theme applied before first paint (shared with the other layouts) -->
+<script>
+  (function(){
+    try{
+      var t = localStorage.getItem('dtv_theme');
+      if(['light','dark','amoled','sepia'].indexOf(t) > -1) document.documentElement.dataset.theme = t;
+    }catch(e){}
+  })();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js" defer></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://clients5.google.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/translate.css">
+</head>
+<body>
+
+<div class="bg-orbs" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
+
+<!-- ===================== TOP BAR ===================== -->
+<header class="topbar" id="topbar">
+  <a class="brand" href="index.html?ui=new" title="Back to Novelxplin">
+    <img class="brand-logo" src="assets/logo-192.png" width="34" height="34" alt="">
+    <span class="brand-text"><b>Deep Translate</b><small>by Novelxplin · <em>NEW</em></small></span>
+  </a>
+  <div class="top-actions">
+    <span class="net-pill" id="netPill" title="Connection"><i></i><span>Online</span></span>
+    <button class="icon-btn" id="themeBtn" type="button" title="Theme (Dark · Light · AMOLED · Sepia)" aria-label="Switch theme">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+    </button>
+    <button class="icon-btn" id="settingsBtn" type="button" title="Settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <!-- ===================== HOME ===================== -->
+  <section id="home" class="home">
+    <div class="hero fade-up">
+      <span class="eyebrow"><i></i>No Chrome translate · No extension · Works on mobile data</span>
+      <h1>Translate the <em>whole book</em>, directly.</h1>
+      <p>Drop an EPUB, PDF, DOCX or TXT. Deep Translate splits it into small chunks, sends each one to a translation API, verifies the result and stitches the book back together — English → Hindi by default, 30 languages supported. Progress is saved after every chunk, so a dropped connection just picks up where it left off.</p>
+    </div>
+
+    <div class="lang-row fade-up d1">
+      <label class="field">
+        <span>From</span>
+        <select id="srcLang"></select>
+      </label>
+      <button class="swap-btn" id="swapLangBtn" type="button" title="Swap languages" aria-label="Swap languages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+      </button>
+      <label class="field">
+        <span>To</span>
+        <select id="tgtLang"></select>
+      </label>
+    </div>
+
+    <div class="dropzone fade-up d2" id="dropzone" tabindex="0" role="button" aria-label="Choose a book file">
+      <input type="file" id="fileInput" accept=".epub,.pdf,.docx,.txt,application/epub+zip,application/pdf,text/plain" hidden>
+      <div class="dz-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h5"/></svg></div>
+      <b>Tap to choose a book</b>
+      <span>or drop it here · EPUB · PDF · DOCX · TXT</span>
+      <div class="dz-alt">
+        <button class="link-btn" id="restoreBtn" type="button">Restore a .json backup</button>
+        <span class="dot">•</span>
+        <button class="link-btn" id="sampleBtn" type="button">Try the sample book</button>
+      </div>
+      <input type="file" id="restoreInput" accept=".json,application/json" hidden>
+    </div>
+
+    <section class="recent fade-up d3" id="recentWrap" hidden>
+      <h2>Continue where you left off</h2>
+      <div class="recent-list" id="recentList"></div>
+    </section>
+
+    <div class="how fade-up d3">
+      <article><i>1</i><b>Chunked for data</b><span>Requests stay around 3–4 KB each — a 100k-word novel costs roughly 1.5–2 MB in total.</span></article>
+      <article><i>2</i><b>Verified &amp; auto-resume</b><span>Every chunk is checked for the target script. Failures retry with a second engine; offline pauses, online resumes.</span></article>
+      <article><i>3</i><b>Yours to keep</b><span>Export TXT · ZIP · EPUB · Markdown · HTML · JSON — or open the result in Novelxplin to compare and edit.</span></article>
+    </div>
+
+    <p class="foot-note fade-up d4">
+      Files are parsed on your device. Only the text of each chunk is sent to the translation service you pick.
+      <span class="dot">•</span><a href="index.html?ui=new">Novelxplin</a>
+      <span class="dot">•</span><a href="classic/index.html?ui=classic">Classic UI</a>
+      <span class="dot">•</span><a href="mobile/index.html?ui=mobile">Xplin Go</a>
+    </p>
+  </section>
+
+  <!-- ===================== WORKSPACE ===================== -->
+  <section id="work" class="work" hidden>
+
+    <div class="book-card" id="bookCard">
+      <div class="book-head">
+        <div class="book-ic" id="bookExt">EPUB</div>
+        <div class="book-meta">
+          <h2 id="bookTitle">Book title</h2>
+          <div class="book-sub" id="bookSub">— chapters · — words · — chunks</div>
+        </div>
+        <button class="icon-btn ghost" id="closeBookBtn" type="button" title="Close book" aria-label="Close book">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="prog-ring" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="28"/><circle class="ring-fg" id="ringFg" cx="32" cy="32" r="28"/></svg>
+          <b id="progPct">0%</b>
+        </div>
+        <div class="prog-stats">
+          <div class="stat"><span>Chunks</span><b id="statChunks">0 / 0</b></div>
+          <div class="stat"><span>Speed</span><b id="statSpeed">—</b></div>
+          <div class="stat"><span>ETA</span><b id="statEta">—</b></div>
+          <div class="stat"><span>Data used</span><b id="statData">0 KB</b></div>
+        </div>
+      </div>
+      <div class="prog-bar"><i id="progBar"></i></div>
+      <div class="run-status" id="runStatus"><b>Ready</b><span>Choose the language above, then tap Start.</span></div>
+
+      <div class="controls">
+        <div class="lang-mini">
+          <span id="langMini">EN → HI</span>
+          <select id="engineSel" title="Translation engine">
+            <option value="auto">Engine: Auto</option>
+            <option value="google">Google (fast)</option>
+            <option value="lingva">Lingva</option>
+            <option value="mymemory">MyMemory</option>
+          </select>
+        </div>
+        <div class="ctl-btns">
+          <button class="btn btn-primary" id="startBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>Start</span>
+          </button>
+          <button class="btn" id="pauseBtn" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg><span>Pause</span>
+          </button>
+          <button class="btn danger" id="stopBtn" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg><span>Stop</span>
+          </button>
+          <button class="btn" id="retryBtn" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span>Retry failed</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="banner" id="banner" hidden>
+      <div class="banner-text"><b id="bannerTitle"></b><span id="bannerMsg"></span></div>
+      <div class="banner-actions" id="bannerActions"></div>
+    </div>
+
+    <div class="split">
+      <aside class="chapters" id="chaptersPanel">
+        <div class="panel-head">
+          <h3>Chapters <span class="count" id="chapCount">0</span></h3>
+          <div class="chap-filter">
+            <button class="chip active" data-f="all" type="button">All</button>
+            <button class="chip" data-f="pending" type="button">Pending</button>
+            <button class="chip" data-f="done" type="button">Done</button>
+            <button class="chip" data-f="failed" type="button">Failed</button>
+          </div>
+        </div>
+        <div class="range">
+          <label>From <input type="number" id="rangeFrom" min="1" value="1"></label>
+          <label>To <input type="number" id="rangeTo" min="1" value="1"></label>
+          <button class="link-btn" id="rangeAll" type="button">All</button>
+        </div>
+        <ol class="chap-list" id="chapList"></ol>
+      </aside>
+
+      <section class="preview" id="previewPanel">
+        <div class="panel-head">
+          <h3 id="prevTitle">Preview</h3>
+          <div class="seg" role="tablist">
+            <button class="seg-btn active" id="viewTrans" type="button">Translated</button>
+            <button class="seg-btn" id="viewOrig" type="button">Original</button>
+            <button class="seg-btn" id="viewBoth" type="button">Compare</button>
+          </div>
+        </div>
+        <div class="reader" id="reader" lang="hi"><p class="ph">Select a chapter to preview it here. Translated paragraphs appear live while the run is going.</p></div>
+        <div class="prev-nav">
+          <button class="btn sm" id="prevChapBtn" type="button">‹ Prev</button>
+          <button class="btn sm" id="editChapBtn" type="button">Edit</button>
+          <button class="btn sm" id="nextChapBtn" type="button">Next ›</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="export-card" id="exportCard">
+      <div class="panel-head">
+        <h3>Export <span class="count" id="exportCount">0 chapters</span></h3>
+        <button class="link-btn" id="openInNxBtn" type="button" title="Open the translated book in Novelxplin to compare, edit and use the full toolset">Open in Novelxplin →</button>
+      </div>
+      <div class="export-grid">
+        <button class="ex" data-ex="story" type="button"><b>.txt</b><span>Story text</span></button>
+        <button class="ex" data-ex="zip" type="button"><b>.zip</b><span>Per chapter</span></button>
+        <button class="ex" data-ex="epub" type="button"><b>.epub</b><span>E-reader</span></button>
+        <button class="ex" data-ex="md" type="button"><b>.md</b><span>Markdown</span></button>
+        <button class="ex" data-ex="html" type="button"><b>.html</b><span>Web page</span></button>
+        <button class="ex" data-ex="json" type="button"><b>.json</b><span>Backup</span></button>
+        <button class="ex" data-ex="share" type="button" id="shareBtn" hidden><b>Share</b><span>Send file</span></button>
+        <button class="ex" data-ex="copy" type="button"><b>Copy</b><span>Clipboard</span></button>
+      </div>
+      <label class="check"><input type="checkbox" id="exIncludeUnverified"><span>Include unverified / partial chapters in exports</span></label>
+    </section>
+
+    <!-- mobile tab bar -->
+    <nav class="mtabs" id="mtabs">
+      <button class="mtab active" data-tab="chapters" type="button">Chapters</button>
+      <button class="mtab" data-tab="preview" type="button">Preview</button>
+      <button class="mtab" data-tab="export" type="button">Export</button>
+    </nav>
+  </section>
+</main>
+
+<!-- ===================== SETTINGS SHEET ===================== -->
+<div class="sheet-scrim" id="sheetScrim" hidden></div>
+<aside class="sheet" id="settingsSheet" hidden aria-label="Settings">
+  <div class="sheet-head"><h3>Settings</h3><button class="icon-btn ghost" id="closeSettingsBtn" type="button" aria-label="Close">✕</button></div>
+  <div class="sheet-body">
+    <h4>Network</h4>
+    <label class="srow"><span>Chunk size<small>Smaller = less data per request, more requests</small></span>
+      <select id="setChunk"><option value="1800">Data saver (≈1.8 KB)</option><option value="3500" selected>Balanced (≈3.5 KB)</option><option value="7000">Fast Wi-Fi (≈7 KB)</option></select></label>
+    <label class="srow"><span>Parallel requests<small>1 is gentlest on slow mobile data</small></span>
+      <select id="setParallel"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select></label>
+    <label class="srow"><span>Pause between requests<small>ms · helps avoid rate limits</small></span>
+      <input type="number" id="setGap" min="0" max="5000" step="50" value="250"></label>
+    <label class="srow"><span>Retries per chunk</span>
+      <input type="number" id="setRetries" min="0" max="6" value="3"></label>
+    <label class="srow"><span>MyMemory e-mail<small>Optional · raises the free daily limit from 5k to 50k chars</small></span>
+      <input type="email" id="setEmail" placeholder="you@example.com"></label>
+
+    <h4>Behaviour</h4>
+    <label class="srow tog"><span>Keep screen awake while running</span><input type="checkbox" id="setWake" checked></label>
+    <label class="srow tog"><span>Chime when finished</span><input type="checkbox" id="setSound" checked></label>
+    <label class="srow tog"><span>Vibrate on each chapter (phones)</span><input type="checkbox" id="setVibe" checked></label>
+    <label class="srow tog"><span>Skip verification (accept any reply)</span><input type="checkbox" id="setNoVerify"></label>
+
+    <h4>Reader</h4>
+    <label class="srow"><span>Font size</span><input type="range" id="setFont" min="14" max="24" value="17"></label>
+    <label class="srow"><span>Font</span>
+      <select id="setFontFam"><option value="serif">Serif</option><option value="sans">Sans</option></select></label>
+
+    <h4>Storage</h4>
+    <button class="btn wide danger-outline" id="clearAllBtn" type="button">Delete all saved Deep Translate sessions</button>
+    <p class="hint">Sessions live in your browser (IndexedDB · <code>novelxplin_dt</code>). Nothing is uploaded except the text chunks sent to the translation engine.</p>
+  </div>
+</aside>
+
+<!-- ===================== EDITOR MODAL ===================== -->
+<div class="modal" id="editModal" hidden role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="sheet-head"><h3 id="editTitle">Edit chapter</h3><button class="icon-btn ghost" id="editClose" type="button" aria-label="Close">✕</button></div>
+    <textarea id="editArea" spellcheck="false"></textarea>
+    <div class="modal-foot">
+      <span class="hint" id="editHint">One paragraph per blank line.</span>
+      <div><button class="btn sm" id="editCancel" type="button">Cancel</button> <button class="btn sm btn-primary" id="editSave" type="button">Save</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toastWrap" aria-live="polite"></div>
+<div id="dropOverlay" aria-hidden="true"><div class="drop-card"><b>Drop to open</b><span>EPUB · PDF · DOCX · TXT · JSON backup</span></div></div>
+
+<script src="js/translate.js"></script>
+</body>
+</html>
