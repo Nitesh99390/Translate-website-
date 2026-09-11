@@ -40,6 +40,12 @@
       "short_name": "Open",
       "url": "./index.html?action=open",
       "description": "Pick a document to translate"
+    },
+    {
+      "name": "Deep Translate",
+      "short_name": "Deep",
+      "url": "./translate.html",
+      "description": "API-based whole-book translation — no Chrome translate needed"
     }
   ],
   "id": "/"
