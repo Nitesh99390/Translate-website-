@@ -248,19 +248,73 @@ function htmlToParas(html){
   box.innerHTML = '';
   return out;
 }
+/* Chapter-heading detector shared by TXT / PDF / EPUB-fallback.
+   Matches: "Chapter 12", "CHAPTER TWELVE — The Sea", "Ch. 3", "Part II", "Book One", "Prologue",
+   "Epilogue", "Interlude", "Act 2", "अध्याय 5", "भाग 2", "प्रस्तावना", "12. The Harbour", "XII",
+   or a short ALL-CAPS line. Long sentences are never headings. */
+const HEADING_WORD = /^(chapter|chap\.?|ch\.?|part|book|volume|vol\.?|prologue|epilogue|interlude|intermission|afterword|foreword|preface|introduction|act|section|canto|अध्याय|भाग|खंड|प्रस्तावना|उपसंहार|परिच्छेद|অধ্যায়|அத்தியாயம்|అధ్యాయం|પ્રકરણ|ಅಧ್ಯಾಯ|അധ്യായം|باب|فصل)(?=$|[\s\d.:\-—–(])/i;
+const ROMAN_RE = /^(?:[IVXLC]{2,7}|I(?=[\s.:\-—–]))(?:[\s.:\-—–]+.{0,70})?$/;
+const NUM_TITLE_RE = /^(?:\d{1,3})[.:)\-—–]\s+[A-Z\u0900-\u097F][^.!?]{0,70}$/;
+function isChapterHeading(t){
+  if(!t || t.length > 90) return false;
+  if(/[.!?\u0964]\s*\S/.test(t.slice(0, -1)) && !/^(?:\d{1,3}|[IVXLC]{1,7}|(?:chapter|chap|ch|part|book|vol)\.?\s*\d{0,3})\./i.test(t)) return false; // sentence with inner punctuation
+  if(HEADING_WORD.test(t)) return true;
+  if(ROMAN_RE.test(t)) return true;
+  if(NUM_TITLE_RE.test(t)) return true;
+  const letters = t.replace(/[^A-Za-z]/g,'');
+  if(letters.length >= 4 && letters.length <= 60 && letters === letters.toUpperCase() && /\s|^[A-Z]+$/.test(t) && !/^\W*[A-Z]{1,3}\W*$/.test(t)) return true; // ALL CAPS title line
+  return false;
+}
 function textToParas(text){
+  let raw = String(text || '').replace(/\r\n?/g,'\n').replace(/\u00A0/g,' ');
+  // Files with single-newline paragraphs (no blank lines): treat each line as a paragraph.
+  const blank = (raw.match(/\n[ \t]*\n/g) || []).length;
+  const lines = (raw.match(/\n/g) || []).length;
+  if(lines > 8 && blank < lines / 12){
+    const avg = raw.length / (lines + 1);
+    if(avg > 60) raw = raw.replace(/\n/g, '\n\n');
+  }
   const out = [];
-  String(text || '').replace(/\r\n?/g,'\n').split(/\n{2,}/).forEach(p=>{
+  raw.split(/\n{2,}/).forEach(p=>{
     const t = p.replace(/[ \t]*\n[ \t]*/g,' ').replace(/\s+/g,' ').trim();
     if(!t) return;
-    const isHeading = t.length < 80 && /^(chapter|part|book|prologue|epilogue|section|अध्याय|भाग)\b/i.test(t);
+    if(/^[\s*_\-=~#·•]{3,}$/.test(t)) return; // scene-break rules (***, ---, ===)
+    const isHeading = isChapterHeading(t);
     splitLong(t).forEach((s,i)=>out.push(mkPara(s, i === 0 && isHeading ? 2 : 0)));
   });
   return out;
 }
-/* group flat paragraphs into chapters of ~N chars when a file has no structure */
+/* group flat paragraphs into chapters.
+   - If the file has real chapter headings (2+ of them, each followed by some body text), split exactly there.
+   - Otherwise fall back to ~N-char parts; headings still start a new part when the current one is not tiny. */
 function autoChapters(paras, label, target=9000){
-  const chapters = []; let cur = [], len = 0;
+  const heads = paras.map((p,i)=>p.h ? i : -1).filter(i=>i >= 0);
+  const bodyBetween = (a, b)=>paras.slice(a + 1, b).reduce((n,p)=>n + p.o.length, 0);
+  const realHeads = heads.filter((hi, k)=>bodyBetween(hi, k + 1 < heads.length ? heads[k+1] : paras.length) >= 200);
+  const chapters = [];
+  if(realHeads.length >= 2 && realHeads.length <= 600){
+    const cuts = new Set(realHeads);
+    let cur = [];
+    paras.forEach((p,i)=>{ if(cuts.has(i) && cur.length){ chapters.push(cur); cur = []; } cur.push(p); });
+    if(cur.length) chapters.push(cur);
+    // front matter before the first heading (book title, "A novel", author) stays as its own chapter
+    // only if it has substance; otherwise it is folded into chapter 1 (which keeps chapter 1's title)
+    const titleOf = (ps)=>{ const h = ps.find(p=>p.h && cuts.has(paras.indexOf(p))) || (ps[0].h ? ps[0] : null); return h ? h.o.slice(0,80) : ''; };
+    if(chapters.length > 1 && chapters[0].reduce((n,p)=>n + p.o.length, 0) < 200){ chapters[1] = chapters[0].concat(chapters[1]); chapters.shift(); }
+    // very long chapters are split further so progress stays granular and a failure costs less
+    const MAX_CH = 40000; const out = [];
+    chapters.forEach((ps, ci)=>{
+      const baseTitle = titleOf(ps) || `${label} ${ci+1}`;
+      const len = ps.reduce((n,p)=>n + p.o.length, 0);
+      if(len <= MAX_CH){ out.push({ title: baseTitle, paras: ps }); return; }
+      const pieces = []; let cur = [], l = 0;
+      ps.forEach(p=>{ cur.push(p); l += p.o.length; if(l >= MAX_CH * 0.6){ pieces.push(cur); cur = []; l = 0; } });
+      if(cur.length) pieces.push(cur);
+      pieces.forEach((pc, k)=>out.push({ title: `${baseTitle} (${k+1}/${pieces.length})`, paras: pc }));
+    });
+    return out.map((c,i)=>({ index:i, title: c.title, paras: c.paras, excluded:false }));
+  }
+  let cur = [], len = 0;
   paras.forEach(p=>{
     if(p.h && cur.length && len > 1200){ chapters.push(cur); cur = []; len = 0; }
     cur.push(p); len += p.o.length;
@@ -345,6 +399,15 @@ async function parseEpub(file, fallbackTitle){
     chapters.push({ index: chapters.length, title: t.slice(0,100), paras, excluded:false });
   }
   if(!chapters.length) throw new Error('No readable text found in this EPUB.');
+  // Single-file EPUBs (e.g. converted from TXT) put the whole book in 1–2 spine items:
+  // split them on in-text chapter headings / size so progress and exports stay per-chapter.
+  const total = chapters.reduce((n,c)=>n + c.paras.reduce((m,p)=>m + p.o.length, 0), 0);
+  if(chapters.length <= 2 && total > 30000){
+    const flat = chapters.flatMap(c=>c.paras);
+    flat.forEach(p=>{ if(!p.h && isChapterHeading(p.o)) p.h = 2; });
+    const split = autoChapters(flat, 'Part');
+    if(split.length > chapters.length) return { title, ext:'EPUB', lang, chapters: split };
+  }
   return { title, ext:'EPUB', lang, chapters };
 }
 
@@ -365,7 +428,7 @@ async function parsePdf(file, title){
         const lines = groupLines(content.items);
         const ps = guessParagraphs(lines);
         if(ps.join('').trim().length < 3) empty++;
-        ps.forEach(t=>splitLong(t).forEach(s=>paras.push(mkPara(s, (s.length < 70 && /^(chapter|part|book|prologue|epilogue)\b/i.test(s)) ? 2 : 0))));
+        ps.forEach(t=>splitLong(t).forEach((s,i)=>paras.push(mkPara(s, (i === 0 && isChapterHeading(s)) ? 2 : 0))));
         if(page.cleanup) try{ page.cleanup(); }catch(e){}
       }catch(e){}
       if(p % 10 === 0) setDropStatus(`Reading page ${p} / ${pdf.numPages}…`);

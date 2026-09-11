@@ -13,6 +13,12 @@ Chrome page translator or any extension. Open `translate.html` from the top-bar 
 link, the hero promo, the ☰ menu, the classic footer or the Xplin Go drawer.
 
 - **Parses locally**: EPUB (JSZip + OPF spine + NCX/nav TOC titles), PDF (pdf.js), DOCX (mammoth), TXT.
+- **Heading-aware chapters**: TXT / PDF (and single-file EPUBs) are split on real chapter headings —
+  `Chapter 12`, `CHAPTER TWELVE — The Sea`, `Ch. 3`, `Part II`, `Book One`, `Prologue`, `Epilogue`,
+  `12. The Harbour`, roman numerals, short ALL-CAPS titles, `अध्याय 5`, `भाग 2`, and Bengali / Tamil /
+  Telugu / Gujarati / Kannada / Malayalam / Arabic / Urdu chapter words. Files without blank lines
+  between paragraphs are handled; scene-break rules (`***`, `---`) are dropped; very long chapters are
+  cut into `(1/3)`, `(2/3)`… pieces; if a file has no headings it falls back to ≈9 KB *Parts*.
 - **Chunked for mobile data**: paragraphs are packed into ≈1.8 / 3.5 / 7 KB requests (Data saver ·
   Balanced · Wi-Fi). A 100k-word novel costs roughly 1.5–2 MB in total. Live *Data used* counter.
 - **Engines with fallback**: Google (`clients5` batch endpoint, fast) → Lingva (3 instances) → MyMemory
