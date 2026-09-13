@@ -4,7 +4,7 @@
  *  - CDN libs & fonts: stale-while-revalidate
  *  - Firebase / Google Translate / ads: never intercepted
  */
-const VERSION = 'dtv-v10';
+const VERSION = 'dtv-v11';
 const SHELL_CACHE = `${VERSION}-shell`;
 const ASSET_CACHE = `${VERSION}-assets`;
 
@@ -13,10 +13,12 @@ const SHELL = [
   './index.html',
   './translate.html',
   './css/style.css',
+  './css/premium.css',
   './css/translate.css',
   './js/translate.js',
   './js/app.js',
   './js/pro.js',
+  './js/premium.js',
   './js/firebase.js',
   './js/odometer.js',
   './js/cloud-sync.js',
