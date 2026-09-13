@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Novelxplin — Verified Document Translation</title>
 <meta name="description" content="Browser-based document translation verifier. Upload EPUB, PDF, DOCX or TXT, use Chrome's built-in translation, and verify every chapter translated before exporting to TXT, EPUB, Markdown or HTML. 100% local — no uploads.">
-<meta name="theme-color" content="#0a0d12">
+<meta name="theme-color" content="#050507">
 <meta property="og:title" content="Novelxplin — Verified Document Translation">
 <meta property="og:site_name" content="Novelxplin">
 <meta property="og:url" content="https://novelxplin.in/">
@@ -51,13 +51,15 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/premium.css">
 
 <!-- Popunder Adsterra Code Added Here -->
 <script type='text/javascript' src='//pl25091763.profitablecpmrate.com/83/80/7e/83807eaebbb796796338fb2d2d61ce19.js'></script>
 </head>
 <body>
+<div class="bg-grid" aria-hidden="true"></div>
 <div class="bg-orbs" aria-hidden="true"><span></span><span></span><span></span></div>
 <div id="toastWrap" aria-live="polite"></div>
 
@@ -181,63 +183,181 @@
 
   <!-- ============ HERO / EMPTY STATE ============ -->
   <section class="hero" id="hero">
-    <div class="hero-top">
-      <span class="hero-badge fade-up"><span class="dot"></span>Runs entirely in your browser</span>
-      <h1 class="fade-up d1">Verify every chapter of your<br><span class="grad">Chrome translation</span> before you export</h1>
-      <p class="hero-sub fade-up d2">Upload an EPUB, PDF, DOCX or TXT. Turn on Chrome's built-in translate. The verifier walks through each chapter, confirms the text actually changed, and packages the result — nothing ever leaves your device.</p>
+
+    <div class="hero-grid">
+      <!-- Copy -->
+      <div class="hero-top">
+        <p class="hero-eyebrow fade-up">Verified <em>translation</em>, reimagined.</p>
+        <span class="hero-badge fade-up"><span class="dot"></span>Runs entirely in your browser<span class="badge-pill">v3</span></span>
+        <h1 class="fade-up d1">Verify every chapter of your<br><span class="grad">Chrome translation</span> before you export</h1>
+        <p class="hero-sub fade-up d2">Upload an EPUB, PDF, DOCX or TXT. Turn on Chrome's built-in translate. The verifier walks through each chapter, confirms the text actually changed, and packages the result — nothing ever leaves your device.</p>
+
+        <div class="hero-cta fade-up d3">
+          <button class="btn-neon magnetic" type="button" id="heroUploadBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+            Upload a document
+          </button>
+          <a class="btn-outline magnetic" href="translate.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h9M9 5v3M7 8c0 4-3 7-5 8M9 8c1 3 3 5 5 6"/><path d="M13 20l4-9 4 9M14.5 17h5"/></svg>
+            Deep Translate <b>NEW</b>
+          </a>
+        </div>
+
+        <div class="hero-trust fade-up d4">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>No uploads</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Auto-saved progress</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Works offline</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Free forever</span>
+        </div>
+
+        <div class="hero-metrics fade-up d4">
+          <div class="metric"><b><span class="count" data-to="30">0</span><small>+</small></b><span>languages</span></div>
+          <div class="metric"><b><span class="count" data-to="5">0</span></b><span>export formats</span></div>
+          <div class="metric"><b><span class="count" data-to="4">0</span></b><span>file types</span></div>
+          <div class="metric"><b><span class="count" data-to="100">0</span><small>%</small></b><span>on-device</span></div>
+        </div>
+      </div>
+
+      <!-- Visual: drop zone styled as a glowing dashboard card -->
+      <div class="hero-visual fade-up d2">
+        <div class="cube-wrap" aria-hidden="true">
+          <div class="cube-glow"></div>
+          <div class="cube"><i class="f"></i><i class="b"></i><i class="r"></i><i class="l"></i><i class="t"></i><i class="d"></i></div>
+          <div class="cube-shadow"></div>
+        </div>
+        <span class="float-tag t1" aria-hidden="true"><i></i>Chapter 12 · verified</span>
+        <span class="float-tag t2" aria-hidden="true"><i></i>हिन्दी · 98% script</span>
+
+        <label class="drop drop-hero tilt" id="dropZone" for="epubFile">
+          <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt" hidden>
+          <span class="dz-chrome" aria-hidden="true">
+            <i></i><i></i><i></i>
+            <span class="dz-url"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>novelxplin.in · local session</span>
+          </span>
+          <span class="dz-body tilt-inner">
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+            </span>
+            <span class="drop-label">Drop a document here, or <em>browse</em></span>
+            <span class="drop-sub">Large books are fine — chapters are streamed and memory-capped.</span>
+            <span class="format-chips" aria-hidden="true">
+              <span class="format-chip">EPUB</span><span class="format-chip">PDF</span><span class="format-chip">DOCX</span><span class="format-chip">TXT</span>
+            </span>
+            <span class="drop-cta"><span class="btn-inline" role="presentation">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+              Choose a file
+            </span></span>
+          </span>
+          <span class="dz-stats" aria-hidden="true">
+            <span class="dz-stat">
+              <span class="k">Verified chapters</span>
+              <span class="v cyan">111 / 142</span>
+              <span class="bar"><i style="--w:78%"></i></span>
+            </span>
+            <span class="dz-stat">
+              <span class="k">Words out</span>
+              <span class="v purple">1,213,487</span>
+              <svg class="dz-spark" viewBox="0 0 100 26" preserveAspectRatio="none">
+                <defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22d3ee" stop-opacity=".35"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient></defs>
+                <path class="area" d="M0 22 L12 18 L24 20 L36 12 L48 14 L60 8 L72 10 L84 4 L100 6 L100 26 L0 26 Z"/>
+                <path d="M0 22 L12 18 L24 20 L36 12 L48 14 L60 8 L72 10 L84 4 L100 6"/>
+              </svg>
+            </span>
+            <span class="dz-stat">
+              <span class="k">Accuracy</span>
+              <span class="v green">98.4%</span>
+              <span class="bar"><i style="--w:98%"></i></span>
+            </span>
+          </span>
+        </label>
+      </div>
     </div>
 
-    <label class="drop drop-hero fade-up d3" id="dropZone" for="epubFile">
-      <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt" hidden>
-      <span class="drop-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
-      </span>
-      <span class="drop-label">Drop a document here, or <em>browse</em></span>
-      <span class="drop-sub">Large books are fine — chapters are streamed and memory-capped.</span>
-      <span class="format-chips" aria-hidden="true">
-        <span class="format-chip">EPUB</span><span class="format-chip">PDF</span><span class="format-chip">DOCX</span><span class="format-chip">TXT</span>
-      </span>
-      <span class="drop-cta"><span class="btn-inline" role="presentation">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-        Choose a file
-      </span></span>
-    </label>
-
-    <a class="deep-promo fade-up d4" href="translate.html">
+    <a class="deep-promo fade-up d4 spot" href="translate.html">
       <span class="deep-promo-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h9M9 5v3M7 8c0 4-3 7-5 8M9 8c1 3 3 5 5 6"/><path d="M13 20l4-9 4 9M14.5 17h5"/></svg></span>
       <span class="deep-promo-text"><b>Don't want to use Chrome translate? Try <em>Deep Translate</em></b><span>Translate whole EPUB / PDF / DOCX / TXT books English → Hindi directly — chunked for mobile data, auto-resume, no extension needed.</span></span>
       <span class="deep-promo-cta">Open →</span>
     </a>
 
-    <div class="feature-grid fade-up d4">
-      <article class="feature">
-        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
-        <h3>Chapter-by-chapter verification</h3>
-        <p>Each section is rendered, scrolled, and checked for a real script or text change before it's accepted.</p>
-      </article>
-      <article class="feature">
-        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-        <h3>Private by design</h3>
-        <p>Parsing, verification and export all happen locally. Progress is auto-saved in your browser's IndexedDB.</p>
-      </article>
-      <article class="feature">
-        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-        <h3>Review &amp; arrange</h3>
-        <p>Rename, reorder with drag-and-drop, exclude chapters, and fix recurring mistranslations with find &amp; replace.</p>
-      </article>
-      <article class="feature">
-        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></div>
-        <h3>Five export formats</h3>
-        <p>Story TXT, per-chapter ZIP, EPUB3 with table of contents, Markdown, or a self-contained HTML page.</p>
-      </article>
-    </div>
+    <!-- ============ BENTO FEATURES ============ -->
+    <section class="bento-section" id="features" aria-labelledby="featuresTitle">
+      <div class="sec-head reveal">
+        <span class="sec-kicker">Everything you need</span>
+        <p class="sec-eyebrow">Built for <em>serious readers</em></p>
+        <h2 class="sec-title" id="featuresTitle">A complete verification pipeline, in a tab</h2>
+        <p class="sec-sub">From the first upload to the final EPUB — every step is checked, saved and shareable.</p>
+      </div>
 
-    <div class="how">
+      <div class="bento feature-grid">
+        <article class="bento-item b-2x2 reveal">
+          <span class="bento-tag neon">Core</span>
+          <div class="bento-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <h3>Chapter-by-chapter verification</h3>
+          <p>Each section is rendered, scrolled and checked for a real script or text change before it is accepted. Unverified chapters are retried, then flagged — never silently exported.</p>
+          <div class="mock-list" aria-hidden="true">
+            <div class="mock-row"><span class="n">10</span><span class="t">The Harbour at Dusk</span><span class="s ok">verified</span></div>
+            <div class="mock-row hi"><span class="n">11</span><span class="t">A Letter from the Capital</span><span class="s run">translating</span></div>
+            <div class="mock-row"><span class="n">12</span><span class="t">What the River Knew</span><span class="s wait">pending</span></div>
+          </div>
+          <div class="mock-prog" aria-hidden="true"><i></i></div>
+          <div class="mock-meta" aria-hidden="true"><span>ETA <b>4m 12s</b></span><span><b>91</b> / 142 chapters</span></div>
+        </article>
+
+        <article class="bento-item reveal d1">
+          <div class="bento-ic green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <h3>Private by design</h3>
+          <p>Parsing, verification and export all happen locally. Progress is auto-saved in IndexedDB.</p>
+          <span class="lock-ring" aria-hidden="true"></span>
+        </article>
+
+        <article class="bento-item reveal d2">
+          <div class="bento-ic amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg></div>
+          <h3>Five export formats</h3>
+          <p>Story TXT, per-chapter ZIP, EPUB 3 with TOC, Markdown, or a self-contained HTML page.</p>
+          <div class="chips" aria-hidden="true"><span class="chip">TXT</span><span class="chip">ZIP</span><span class="chip">EPUB</span><span class="chip">MD</span><span class="chip">HTML</span></div>
+        </article>
+
+        <article class="bento-item b-2x1 reveal d1">
+          <span class="bento-tag">Live</span>
+          <div class="bento-ic purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h3>Shared translation library</h3>
+          <p>Every verified chapter is pushed to a community library. Open the same book and the run continues from where others left off — nobody translates the same chapter twice.</p>
+          <div class="avatars" aria-hidden="true"><i>NS</i><i>AR</i><i>PK</i><i>+9</i><span><b>12 readers</b> on this book</span></div>
+          <div class="live-line" aria-hidden="true"><i></i>chapter 37 just verified by Arjun · 4s ago</div>
+        </article>
+
+        <article class="bento-item reveal d2">
+          <div class="bento-ic blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h9M9 5v3M7 8c0 4-3 7-5 8M9 8c1 3 3 5 5 6"/><path d="M13 20l4-9 4 9M14.5 17h5"/></svg></div>
+          <h3>30 target languages</h3>
+          <p>Script-aware checks for Hindi, Bengali, Tamil, Arabic, Chinese… and divergence checks for Latin targets.</p>
+          <div class="lang-pair" aria-hidden="true">
+            <span class="lang-box"><small>from</small>English</span>
+            <span class="lang-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            <span class="lang-box"><small>to</small>हिन्दी</span>
+          </div>
+        </article>
+
+        <article class="bento-item reveal d3">
+          <div class="bento-ic purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+          <h3>Review &amp; arrange</h3>
+          <p>Rename, drag to reorder, exclude chapters, glossary rules and find &amp; replace across the whole book.</p>
+          <div class="keys" aria-hidden="true"><kbd>Ctrl K</kbd><kbd>R</kbd><kbd>D</kbd><kbd>G</kbd></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <div class="how" id="how">
+      <div class="sec-head reveal">
+        <span class="sec-kicker">Three steps</span>
+        <p class="sec-eyebrow">From file to <em>finished book</em></p>
+        <h2 class="sec-title">How it works</h2>
+      </div>
       <div class="how-title">How it works</div>
       <ol class="how-steps">
-        <li class="how-step"><span class="how-num">1</span><h4>Upload</h4><p>Pick or drop a file. The document is split into chapters, pages or sections.</p></li>
-        <li class="how-step"><span class="how-num">2</span><h4>Enable Chrome translate</h4><p>Use the address-bar icon (or right-click → Translate) and pick your target language.</p></li>
-        <li class="how-step"><span class="how-num">3</span><h4>Run &amp; export</h4><p>Press <kbd>S</kbd> to start. Watch live progress, then download in the format you need.</p></li>
+        <li class="how-step reveal"><span class="how-num">1</span><h4>Upload</h4><p>Pick or drop a file. The document is split into chapters, pages or sections — locally, in milliseconds.</p></li>
+        <li class="how-step reveal d1"><span class="how-num">2</span><h4>Enable Chrome translate</h4><p>Use the address-bar icon (or right-click → Translate) and pick your target language.</p></li>
+        <li class="how-step reveal d2"><span class="how-num">3</span><h4>Run &amp; export</h4><p>Press <kbd>S</kbd> to start. Watch live progress, then download in the format you need.</p></li>
       </ol>
     </div>
 
@@ -807,6 +927,7 @@
 
 <script src="js/app.js"></script>
 <script src="js/pro.js"></script>
+<script src="js/premium.js"></script>
 <script type="module" src="js/odometer.js"></script>
 <script type="module" src="js/cloud-sync.js"></script>
 <script type="module" src="js/auth.js"></script>
