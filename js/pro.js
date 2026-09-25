@@ -423,7 +423,9 @@
   function renderRecent(){
     const wrap = el('recentWrap'), list = el('recentList'); if(!wrap||!list) return;
     const items = lsGet(LS.recent, []);
-    wrap.classList.toggle('show', items.length > 0);
+    wrap.classList.add('show');
+    el('recentClear').hidden = !items.length;
+    if(!items.length){ list.innerHTML = '<p class="studio-empty">Your next read starts above.<span>Opened books will appear here.</span></p>'; return; }
     list.innerHTML = items.map(x=>`
       <div class="recent-item" data-key="${escapeAttr(x.key)}">
         <div class="recent-ext" data-ext="${escapeAttr((x.fileName.split('.').pop()||'').toLowerCase())}">${escapeHtml((x.fileName.split('.').pop()||'bk').toUpperCase().slice(0,4))}</div>
@@ -451,16 +453,22 @@
      10. Community library (hero) — needs DTVCloud
      ------------------------------------------------------------------ */
   async function renderLibrary(){
-    const wrap = el('libraryWrap'), list = el('libraryList'); if(!wrap||!list||!window.DTVCloud) return;
+    const wrap = el('libraryWrap'), list = el('libraryList'); if(!wrap||!list) return;
+    if(!window.DTVCloud){ list.innerHTML = '<p class="studio-empty">Library unavailable.<span>Check your connection and refresh.</span></p>'; return; }
     list.innerHTML = '<div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div>';
-    const items = await window.DTVCloud.fetchLibraryIndex(12);
-    wrap.classList.toggle('show', items.length > 0);
+    let items, timer;
+    try{
+      items = await Promise.race([window.DTVCloud.fetchLibraryIndex(12), new Promise((_, reject)=>{ timer = setTimeout(()=>reject(new Error('timeout')), 8000); })]);
+    }catch(error){ list.innerHTML = '<p class="studio-empty">Library unavailable.<span>Check your connection and refresh.</span></p>'; return; }
+    finally{ clearTimeout(timer); }
+    if(!items.length){ list.innerHTML = '<p class="studio-empty">No shared books available.<span>Refresh to check again.</span></p>'; return; }
+    wrap.classList.add('show');
     list.innerHTML = items.map(x=>{
       const pct = x.chapterCount ? Math.round((x.doneCount||0)/x.chapterCount*100) : 0;
-      return `<div class="lib-item" data-id="${escapeAttr(x.id)}">
-        <div class="lib-ring" style="--p:${pct}"><span>${pct}%</span></div>
-        <div class="recent-main"><b title="${escapeAttr(x.title||x.id)}">${escapeHtml(x.title||x.id)}</b><span>${x.doneCount||0}/${x.chapterCount||'?'} chapters · ${x.updatedAt?timeAgo(x.updatedAt):''}</span></div>
-        <span class="lib-open">Open \u2192</span></div>`;
+      return `<button type="button" class="lib-item" data-id="${escapeAttr(x.id)}">
+        <span class="lib-ring" style="--p:${pct}"><span>${pct}%</span></span>
+        <span class="recent-main"><b title="${escapeAttr(x.title||x.id)}">${escapeHtml(x.title||x.id)}</b><span>${x.doneCount||0}/${x.chapterCount||'?'} chapters · ${x.updatedAt?timeAgo(x.updatedAt):''}</span></span>
+        <span class="lib-open">Open \u2192</span></button>`;
     }).join('');
   }
   if(el('libraryList')){
@@ -562,7 +570,7 @@
     el('tourPop').addEventListener('click', e=>{ const b = e.target.closest('[data-tour]'); if(!b) return; if(b.dataset.tour==='skip') endTour(); else { tourStep++; showTourStep(); } });
     el('tourBtn') && el('tourBtn').addEventListener('click', ()=>startTour(true));
     el('tourMenuBtn') && el('tourMenuBtn').addEventListener('click', ()=>startTour(true));
-    setTimeout(()=>{ if(!loaded()) startTour(false); }, 1400);
+    // The guide is opt-in, keeping the workspace distraction-free.
     window.addEventListener('resize', ()=>{ if(el('tourPop').classList.contains('show')) showTourStep(); });
   }
 
@@ -597,9 +605,9 @@
      ------------------------------------------------------------------ */
   const HI = {
     'Upload':'Upload', 'Translate':'Translate', 'Review':'Review', 'Export':'Export',
-    'heroTitle':'Chrome translation ka har chapter <span class="grad">verify</span> karo, phir export karo',
-    'heroSub':'EPUB, PDF, DOCX ya TXT upload karo. Chrome ka built-in translate on karo. Tool har chapter check karta hai ki text sach mein translate hua, aur result package kar deta hai — kuch bhi device se bahar nahi jaata.',
-    'dropLabel':'Yahan document drop karo, ya <em>browse</em> karo',
+    'heroTitle':'Aapki kitaabein. <em>Aapki bhasha.</em>',
+    'heroSub':'Har chapter translate, review aur export karo.',
+    'dropLabel':'Apni kitaab yahan drop karo',
     'startBtn':'Verified Translation Shuru Karo'
   };
   let uiLang = lsGet(LS.lang, 'en');
