@@ -1,17 +1,27 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Deep Translate — Novelxplin · Translate whole books English → Hindi</title>
-<meta name="description" content="Deep Translate by Novelxplin: translate entire EPUB, PDF, DOCX or TXT books English → Hindi (and 30 more languages) directly in the browser. No Chrome translate needed — chunked for mobile data, auto-resume, verified output, 6 export formats.">
-<meta name="theme-color" content="#0a0d12">
-<meta property="og:title" content="Deep Translate — Novelxplin">
+<title>English to Hindi Book Translator | Deep Translate by Novelxplin</title>
+<meta name="description" content="Translate EPUB, PDF, DOCX and TXT books from English to Hindi or 30 languages. Deep Translate saves progress and checks text changes. No extension needed.">
+<meta name="theme-color" content="#f6f7f3">
+<meta property="og:title" content="English to Hindi Book Translator | Deep Translate by Novelxplin">
 <meta property="og:site_name" content="Novelxplin">
 <meta property="og:url" content="https://novelxplin.in/translate.html">
 <meta property="og:image" content="https://novelxplin.in/assets/og-image.png">
-<meta property="og:description" content="Translate whole books English → Hindi directly — chunked for mobile data, auto-resume, no extension needed.">
+<meta property="og:description" content="Translate EPUB, PDF, DOCX and TXT books from English to Hindi or 30 languages. Deep Translate saves progress and checks text changes. No extension needed.">
 <meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Novelxplin — chapter-by-chapter book translation">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="English to Hindi Book Translator | Deep Translate">
+<meta name="twitter:description" content="Translate EPUB, PDF, DOCX and TXT in 30 languages, with saved progress and chapter review.">
+<meta name="twitter:image" content="https://novelxplin.in/assets/og-image.png">
+<meta name="twitter:image:alt" content="Novelxplin — chapter-by-chapter book translation">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://novelxplin.in/translate.html">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
@@ -31,25 +41,66 @@
   })();
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.12.0/mammoth.browser.min.js" defer></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://clients5.google.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/translate.css">
+<link rel="stylesheet" href="css/premium.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebApplication",
+      "@id": "https://novelxplin.in/translate.html#app",
+      "name": "Deep Translate by Novelxplin",
+      "url": "https://novelxplin.in/translate.html",
+      "description": "Translate EPUB, PDF, DOCX and TXT books from English to Hindi or 30 languages. Deep Translate saves progress and checks text changes. No extension needed.",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web browser",
+      "browserRequirements": "Requires JavaScript and an internet connection for translation.",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Novelxplin",
+          "item": "https://novelxplin.in/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Deep Translate",
+          "item": "https://novelxplin.in/translate.html"
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
-<body>
+<body class="deep-studio">
 
-<div class="bg-orbs" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i><i class="orb o3"></i></div>
+<a class="skip-link" href="#main">Skip to content</a>
 
 <!-- ===================== TOP BAR ===================== -->
 <header class="topbar" id="topbar">
   <a class="brand" href="index.html?ui=new" title="Back to Novelxplin">
-    <img class="brand-logo" src="assets/logo-192.png" width="34" height="34" alt="">
-    <span class="brand-text"><b>Deep Translate</b><small>by Novelxplin · <em>NEW</em></small></span>
+    <span class="studio-brand-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 8h6l6 16h-6L7 8Z" fill="currentColor"/><path d="M18 8h7l-6 16h-7L18 8Z" fill="currentColor" opacity=".6"/></svg></span>
+    <span class="brand-text"><b>Deep Translate</b><small>by Novelxplin</small></span>
   </a>
   <div class="top-actions">
     <span class="net-pill" id="netPill" title="Connection"><i></i><span>Online</span></span>
@@ -62,14 +113,14 @@
   </div>
 </header>
 
-<main class="shell">
+<main class="shell" id="main" tabindex="-1">
 
   <!-- ===================== HOME ===================== -->
   <section id="home" class="home">
     <div class="hero fade-up">
-      <span class="eyebrow"><i></i>No Chrome translate · No extension · Works on mobile data</span>
-      <h1>Translate the <em>whole book</em>, directly.</h1>
-      <p>Drop an EPUB, PDF, DOCX or TXT. Deep Translate splits it into small chunks, sends each one to a translation API, verifies the result and stitches the book back together — English → Hindi by default, 30 languages supported. Progress is saved after every chunk, so a dropped connection just picks up where it left off.</p>
+      <span class="eyebrow"><i></i>DIRECT BOOK TRANSLATION</span>
+      <h1>Translate your book.<br><em>Find your language.</em></h1>
+      <p>English to Hindi, and 30 languages to explore. Translate EPUB, PDF, DOCX or TXT books, one chapter at a time.</p>
     </div>
 
     <div class="lang-row fade-up d1">
@@ -89,33 +140,29 @@
     <div class="dropzone fade-up d2" id="dropzone" tabindex="0" role="button" aria-label="Choose a book file">
       <input type="file" id="fileInput" accept=".epub,.pdf,.docx,.txt,application/epub+zip,application/pdf,text/plain" hidden>
       <div class="dz-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M9 7h7M9 11h5"/></svg></div>
-      <b>Tap to choose a book</b>
+      <b>Choose a book</b>
       <span>or drop it here · EPUB · PDF · DOCX · TXT</span>
-      <div class="dz-alt">
-        <button class="link-btn" id="restoreBtn" type="button">Restore a .json backup</button>
-        <span class="dot">•</span>
-        <button class="link-btn" id="sampleBtn" type="button">Try the sample book</button>
-      </div>
-      <input type="file" id="restoreInput" accept=".json,application/json" hidden>
     </div>
+    <div class="dz-alt">
+      <button class="link-btn" id="restoreBtn" type="button">Restore backup</button>
+      <span class="dot" aria-hidden="true">·</span>
+      <button class="link-btn" id="sampleBtn" type="button">Try a sample</button>
+    </div>
+    <input type="file" id="restoreInput" accept=".json,application/json" hidden>
 
     <section class="recent fade-up d3" id="recentWrap" hidden>
-      <h2>Continue where you left off</h2>
+      <h2>Recent books</h2>
       <div class="recent-list" id="recentList"></div>
     </section>
 
-    <div class="how fade-up d3">
-      <article><i>1</i><b>Chunked for data</b><span>Requests stay around 3–4 KB each — a 100k-word novel costs roughly 1.5–2 MB in total.</span></article>
-      <article><i>2</i><b>Verified &amp; auto-resume</b><span>Every chunk is checked for the target script. Failures retry with a second engine; offline pauses, online resumes.</span></article>
-      <article><i>3</i><b>Yours to keep</b><span>Export TXT · ZIP · EPUB · Markdown · HTML · JSON — or open the result in Novelxplin to compare and edit.</span></article>
+    <div class="deep-benefits" aria-label="Translation features">
+      <article><span class="bento-kicker">01 / CONNECT</span><h2>No extension needed</h2><p>Small text chunks are sent to your selected translation API. An internet connection is required.</p></article>
+      <article><span class="bento-kicker">02 / CONTINUE</span><h2>Pause. Come back.</h2><p>Progress is saved after each chunk. Reopen the same book in this browser to continue.</p></article>
+      <article><span class="bento-kicker">03 / KEEP</span><h2>Review &amp; export</h2><p>Compare original and translated chapters, edit the result and export for your reader.</p></article>
     </div>
-
-    <p class="foot-note fade-up d4">
-      Files are parsed on your device. Only the text of each chunk is sent to the translation service you pick.
-      <span class="dot">•</span><a href="index.html?ui=new">Novelxplin</a>
-      <span class="dot">•</span><a href="classic/index.html?ui=classic">Classic UI</a>
-      <span class="dot">•</span><a href="mobile/index.html?ui=mobile">Xplin Go</a>
-    </p>
+    <p class="foot-note">Checks detect text changes, not guaranteed translation accuracy. Text-based PDFs only; scanned pages need OCR first.</p>
+    <p class="foot-note">Your book is parsed locally. Text is sent to your chosen translation service.</p>
+    <p class="foot-note"><a href="index.html?ui=new">← Back to workspace</a></p>
   </section>
 
   <!-- ===================== WORKSPACE ===================== -->
@@ -293,6 +340,6 @@
 <div class="toasts" id="toastWrap" aria-live="polite"></div>
 <div id="dropOverlay" aria-hidden="true"><div class="drop-card"><b>Drop to open</b><span>EPUB · PDF · DOCX · TXT · JSON backup</span></div></div>
 
-<script src="js/translate.js"></script>
+<script src="js/translate.js" defer></script>
 </body>
 </html>
