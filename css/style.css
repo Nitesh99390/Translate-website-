@@ -1437,3 +1437,231 @@ body.drawer-open #drawerScrim{opacity:1;pointer-events:auto;}
   *,*::before,*::after{transition:none !important;animation:none !important;}
   .fade-up{opacity:1;}
 }
+
+/* ============================================================
+   NEW FRESH DESIGN OVERRIDES (Glassmorphism + Mobile Bottom Nav + Side Odometer)
+   ============================================================ */
+
+/* Base Theme overrides for a fresh look */
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-hover: #334155;
+  --text-main: #f8fafc;
+  --text-dim: #94a3b8;
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --border: rgba(255, 255, 255, 0.1);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --shadow-glow: 0 0 20px rgba(56, 189, 248, 0.3);
+}
+
+[data-theme="light"], 
+html {
+  background-color: var(--bg);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background: radial-gradient(circle at top left, #1e1b4b, var(--bg) 50%);
+  min-height: 100vh;
+  margin: 0;
+  padding-bottom: 80px; /* space for bottom nav */
+}
+
+/* Hide old header items that might clutter */
+.topbar {
+  background: rgba(30, 41, 59, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.studio-nav, .stepper {
+  display: none !important; /* Minimal UI */
+}
+
+/* Side Odometer */
+.side-odometer {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  padding: 20px 15px;
+  border-radius: var(--radius-full, 50px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.side-odometer .run-pill {
+  display: flex;
+  flex-direction: column;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.side-odometer .run-pill svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 10px;
+}
+.side-odometer .run-pill svg .ring-bg {
+  stroke: var(--surface-hover);
+  stroke-width: 2;
+}
+.side-odometer .run-pill svg .ring-fg {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+/* Upload Card / Hero redesign */
+.hero {
+  padding: 60px 20px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.studio-intro {
+  margin-bottom: 40px;
+}
+
+.studio-intro h1 {
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, #fff, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 10px 0;
+}
+
+.studio-intro p.hero-sub {
+  color: var(--text-dim);
+  font-size: 1.2rem;
+}
+
+.studio-grid {
+  display: block !important;
+}
+
+.upload-card {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 40px !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease;
+}
+
+.upload-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-glow) !important;
+  border-color: var(--accent) !important;
+}
+
+.studio-drop {
+  border: 2px dashed var(--surface-hover) !important;
+  border-radius: var(--radius-md) !important;
+  background: transparent !important;
+  color: var(--text-main) !important;
+}
+
+.drop-label {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+}
+
+.studio-upload-btn {
+  background: var(--accent) !important;
+  color: #0f172a !important;
+  border-radius: 50px !important;
+  padding: 15px 30px !important;
+  font-weight: bold !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px;
+}
+
+/* Mobile Bottom Navigation */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 2000;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.mobile-bottom-nav .nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  gap: 4px;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.mobile-bottom-nav .nav-item svg {
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s ease;
+}
+
+.mobile-bottom-nav .nav-item:hover,
+.mobile-bottom-nav .nav-item.active {
+  color: var(--accent);
+}
+
+.mobile-bottom-nav .nav-item.active svg {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.5));
+}
+
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none; /* Hide on desktop, keep side odometer */
+  }
+}
+@media (max-width: 767px) {
+  .side-odometer {
+    top: auto;
+    bottom: 90px;
+    right: 15px;
+    transform: none;
+    padding: 10px;
+    flex-direction: row;
+  }
+  .side-odometer .run-pill {
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+  }
+  .side-odometer .run-pill svg {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0;
+  }
+}
