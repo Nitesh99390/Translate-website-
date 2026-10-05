@@ -40,6 +40,24 @@ link, the hero promo, the ☰ menu, the classic footer or the Xplin Go drawer.
 - Settings: parallel requests (1–4), pause between requests, retries, keep-awake, chime, vibration,
   skip verification, reader font. Themes are shared (`dtv_theme`).
 
+## Home page = one hub for every layout
+
+`index.html` (Studio) is a single, clean landing page that explains the whole app in order:
+
+1. **Hero** — one-line pitch, *Choose a book* / *Open Deep Translate* CTAs, 4 highlight pills.
+2. **01 · Pick a way to translate** — Browser translate (drop zone, "how it works") vs Deep Translate, side by side.
+3. **02 · One app, every layout** — cards for Studio / Classic / Xplin Go / Deep Translate with direct links.
+4. **03 · How it works** — 3 steps + 3 short notes (verified ≠ accurate, progress saved, private by default).
+5. **04 · Your shelf** — Recent books + Community library.
+6. **05 · Questions & answers** — FAQ (incl. *Which layout should I use?*).
+7. **Footer** — Translate / Layouts / Help columns, shared by Studio and Deep Translate.
+
+The top bar carries a `Translate · Layouts · Library · Guide · FAQ` nav (it swaps to the 4-step stepper once a
+book is open). `translate.html` uses the same top bar (Studio · Deep Translate · Classic · Xplin Go) and footer,
+the Classic header switch lists all four layouts, and the Xplin Go desktop gate links to Studio / Classic / Deep.
+All of this lives in `css/premium.css` (one palette, one type scale, 4 themes) on top of the existing stylesheets —
+no JavaScript hooks or element IDs changed.
+
 ## Three interfaces — pick whichever you like
 
 | | New UI (`/`) | Classic UI (`/classic/`) | **Xplin Go** (`/mobile/`) |
@@ -172,6 +190,8 @@ mobile/js/export.js     TXT / ZIP / EPUB / MD / HTML / backup / Web Share
 mobile/js/ui.js         drawer, gate, sheets, reader settings, PWA
 css/style.css         themes + all component styles
 css/translate.css     Deep Translate styles (same design tokens / themes)
+css/premium.css       shared design layer: top bar, landing sections, layouts hub, footer, themes (Studio + Deep Translate)
+js/premium.js         landing interactions (hero CTA → file input, in-page anchors, search button)
 js/translate.js       Deep Translate: parsers, chunker, engines (Google/Lingva/MyMemory), verify, resume, exports, hand-off
 js/app.js             core: parsing, run loop, verification, exports, window.DTV API
 js/pro.js             pro UI layer (palette, reader, diff, glossary, stats, tour, PWA…)

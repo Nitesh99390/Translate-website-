@@ -27,6 +27,9 @@
       focusTarget?.focus({ preventScroll: true });
     });
   });
+  document.getElementById('heroOpenBtn')?.addEventListener('click', () => {
+    if (input) input.click();
+  });
   document.getElementById('studioSearch')?.addEventListener('click', () => {
     document.getElementById('cmdBtn')?.click();
   });
