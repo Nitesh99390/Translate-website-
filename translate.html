@@ -98,18 +98,26 @@
 
 <!-- ===================== TOP BAR ===================== -->
 <header class="topbar" id="topbar">
-  <a class="brand" href="index.html?ui=new" title="Back to Novelxplin">
-    <span class="studio-brand-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 8h6l6 16h-6L7 8Z" fill="currentColor"/><path d="M18 8h7l-6 16h-7L18 8Z" fill="currentColor" opacity=".6"/></svg></span>
-    <span class="brand-text"><b>Deep Translate</b><small>by Novelxplin</small></span>
-  </a>
-  <div class="top-actions">
-    <span class="net-pill" id="netPill" title="Connection"><i></i><span>Online</span></span>
-    <button class="icon-btn" id="themeBtn" type="button" title="Theme (Dark · Light · AMOLED · Sepia)" aria-label="Switch theme">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-    </button>
-    <button class="icon-btn" id="settingsBtn" type="button" title="Settings" aria-label="Settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
-    </button>
+  <div class="topbar-inner">
+    <a class="brand" href="index.html?ui=new" title="Back to Novelxplin">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 8h6l6 16h-6L7 8Z" fill="currentColor"/><path d="M18 8h7l-6 16h-7L18 8Z" fill="currentColor" opacity=".6"/></svg></span>
+      <span class="brand-text"><b>Deep Translate</b><small>by Novelxplin</small></span>
+    </a>
+    <nav class="site-nav" aria-label="Layouts">
+      <a href="index.html?ui=new">Studio</a>
+      <a href="translate.html" class="is-current" aria-current="page">Deep Translate</a>
+      <a href="classic/index.html?ui=classic">Classic</a>
+      <a href="mobile/index.html?ui=mobile">Xplin Go</a>
+    </nav>
+    <div class="top-actions topbar-right">
+      <span class="net-pill" id="netPill" title="Connection"><i></i><span>Online</span></span>
+      <button class="icon-btn" id="themeBtn" type="button" title="Theme (Dark · Light · AMOLED · Sepia)" aria-label="Switch theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+      </button>
+      <button class="icon-btn" id="settingsBtn" type="button" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -118,9 +126,9 @@
   <!-- ===================== HOME ===================== -->
   <section id="home" class="home">
     <div class="hero fade-up">
-      <span class="eyebrow"><i></i>DIRECT BOOK TRANSLATION</span>
+      <span class="eyebrow"><i></i>Works on any browser · No extension</span>
       <h1>Translate your book.<br><em>Find your language.</em></h1>
-      <p>English to Hindi, and 30 languages to explore. Translate EPUB, PDF, DOCX or TXT books, one chapter at a time.</p>
+      <p>API-based translation for EPUB, PDF, DOCX and TXT books. English to Hindi by default, 30 languages to choose from — progress is saved after every chunk.</p>
     </div>
 
     <div class="lang-row fade-up d1">
@@ -162,7 +170,6 @@
     </div>
     <p class="foot-note">Checks detect text changes, not guaranteed translation accuracy. Text-based PDFs only; scanned pages need OCR first.</p>
     <p class="foot-note">Your book is parsed locally. Text is sent to your chosen translation service.</p>
-    <p class="foot-note"><a href="index.html?ui=new">← Back to workspace</a></p>
   </section>
 
   <!-- ===================== WORKSPACE ===================== -->
@@ -290,6 +297,33 @@
     </nav>
   </section>
 </main>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <span class="brand-mark small" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 8h6l6 16h-6L7 8Z" fill="currentColor"/><path d="m18 8 7 0-6 16h-7L18 8Z" fill="currentColor" opacity=".6"/></svg></span>
+      <div><b>Novelxplin</b><p>Verified, chapter-by-chapter book translation. Free and open in your browser.</p></div>
+    </div>
+    <nav class="footer-col" aria-label="Translate">
+      <h4>Translate</h4>
+      <a href="index.html?ui=new#methods">Browser translate</a>
+      <a href="translate.html">Deep Translate</a>
+      <a href="index.html?ui=new#libraryWrap">Community library</a>
+    </nav>
+    <nav class="footer-col" aria-label="Layouts">
+      <h4>Layouts</h4>
+      <a href="index.html?ui=new">Studio</a>
+      <a href="classic/index.html?ui=classic">Classic</a>
+      <a href="mobile/index.html?ui=mobile">Xplin Go (mobile)</a>
+    </nav>
+    <nav class="footer-col" aria-label="Help">
+      <h4>Help</h4>
+      <a href="index.html?ui=new#how-it-works">How it works</a>
+      <a href="index.html?ui=new#faq">FAQ</a>
+    </nav>
+  </div>
+  <div class="footer-bottom"><span>© Novelxplin · novelxplin.in</span><span>Progress, theme and settings are shared across all layouts.</span></div>
+</footer>
 
 <!-- ===================== SETTINGS SHEET ===================== -->
 <div class="sheet-scrim" id="sheetScrim" hidden></div>

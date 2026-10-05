@@ -119,17 +119,15 @@
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M7 8h6l6 16h-6L7 8Z" fill="currentColor"/><path d="m18 8 7 0-6 16h-7L18 8Z" fill="currentColor" opacity=".6"/></svg>
       </span>
-      <div class="brand-text">
-        <span class="brand-name">Novel<span class="brand-name-2">xplin</span></span>
-
-      </div>
+      <span class="brand-text"><span class="brand-name">Novel<span class="brand-name-2">xplin</span></span></span>
     </a>
 
-    <nav class="studio-nav" aria-label="Main navigation">
-      <a href="index.html?ui=new" class="is-current" aria-current="page">Workspace</a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="#methods" data-home-anchor>Translate</a>
+      <a href="#layouts" data-home-anchor>Layouts</a>
       <a href="#libraryWrap" id="libraryNav">Library</a>
-      <a href="translate.html">Deep Translate <span aria-hidden="true">↗</span></a>
-      <a href="#faq" data-home-anchor>FAQs</a>
+      <a href="#how-it-works" data-home-anchor>Guide</a>
+      <a href="#faq" data-home-anchor>FAQ</a>
     </nav>
 
     <ol class="stepper" id="stepper" aria-label="Workflow">
@@ -147,6 +145,7 @@
         <svg class="ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="ring-bg" cx="11" cy="11" r="9"/><circle class="ring-fg" id="ringFg" cx="11" cy="11" r="9"/></svg>
         <span id="runPillText">0%</span>
       </div>
+      <a class="top-link" href="translate.html" title="Deep Translate — API-based, works on any browser">Deep Translate <span aria-hidden="true">↗</span></a>
       <button class="icon-btn studio-search" id="studioSearch" type="button" aria-label="Search actions" title="Search actions (Ctrl K)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
       </button>
@@ -163,7 +162,7 @@
         <div class="auth-menu" id="authMenu" role="menu"></div>
       </div>
 
-      <!-- ☰ App menu: search, theme, language, shortcuts, classic UI, install, tour -->
+      <!-- ☰ App menu: search, theme, language, shortcuts, layouts, install, tour -->
       <div class="app-menu-wrap" id="appMenuWrap">
         <button class="icon-btn menu-btn" id="menuBtn" title="Menu" aria-label="Open menu" aria-haspopup="menu" aria-expanded="false" aria-controls="appMenu">
           <span class="menu-lines" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -199,17 +198,18 @@
           </button>
 
           <div class="app-menu-sep" role="separator"></div>
+          <div class="app-menu-label">Layouts</div>
           <a class="app-menu-item" id="deepBtn" href="translate.html" role="menuitem" title="Deep Translate — API-based book translation, no Chrome translate needed">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h9M9 5v3M7 8c0 4-3 7-5 8M9 8c1 3 3 5 5 6"/><path d="M13 20l4-9 4 9M14.5 17h5"/></svg>
             <span>Deep Translate</span>
           </a>
           <a class="app-menu-item" id="classicBtn" href="classic/index.html?ui=classic" role="menuitem" title="Switch to the classic (original) layout">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg>
-            <span>Switch to Classic UI</span>
+            <span>Classic UI</span>
           </a>
           <a class="app-menu-item" id="mobileBtn" href="mobile/index.html?ui=mobile" role="menuitem" title="Xplin Go — phone-only full-screen edition">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
-            <span>Xplin Go (mobile edition)</span>
+            <span>Xplin Go (mobile)</span>
           </a>
           <button class="app-menu-item" id="installBtn" role="menuitem" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
@@ -227,113 +227,169 @@
   <div id="globalBanner" class="global-banner" role="alert"></div>
   <div id="resumeBanner" class="global-banner info"></div>
 
-  <!-- Reading studio: one primary action, with direct translation as an alternative. -->
+  <!-- ============ LANDING (hidden once a book is open) ============ -->
   <section class="hero" id="hero" aria-labelledby="studioTitle">
-    <div class="studio-intro">
-      <div>
-        <p class="studio-eyebrow">YOUR PERSONAL TRANSLATION STUDIO</p>
-        <h1 id="studioTitle">Your books. <em>Your language.</em></h1>
-        <p class="hero-sub">Translate EPUB, PDF, DOCX and TXT books.<br>Keep the story. Change the language.</p>
+
+    <!-- Intro -->
+    <div class="hero-head">
+      <p class="eyebrow"><i aria-hidden="true"></i>Free book translator · No account needed</p>
+      <h1 id="studioTitle">Your books. <em>Your language.</em></h1>
+      <p class="hero-sub">Translate EPUB, PDF, DOCX and TXT books chapter by chapter. Every chapter is checked, progress is saved automatically, and you can export in five formats.</p>
+      <div class="hero-actions">
+        <button class="btn-cta" id="heroOpenBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M20 16v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3"/></svg>
+          Choose a book
+        </button>
+        <a class="btn-cta secondary" href="translate.html">Open Deep Translate <span aria-hidden="true">↗</span></a>
       </div>
-      <div class="studio-intro-note"><span class="studio-autosave"><i aria-hidden="true"></i>Made for your next chapter</span><span>Free to use. No account needed.</span></div>
+      <ul class="hero-points" aria-label="Highlights">
+        <li>Verified chapters</li>
+        <li>Auto-save &amp; resume</li>
+        <li>5 export formats</li>
+        <li>30 languages</li>
+      </ul>
     </div>
 
-    <div class="studio-grid" id="features">
-      <section class="upload-card" aria-labelledby="uploadTitle">
-        <div class="upload-card-head">
-          <h2 id="uploadTitle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v18H6a2 2 0 0 1 0-4h14"/><path d="M8 7h8M8 11h5"/></svg>New translation</h2>
-          <span class="method-pill">01 / BROWSER TRANSLATE</span>
-        </div>
-        <div class="drop studio-drop" id="dropZone" role="button" tabindex="0" aria-label="Choose an EPUB, PDF, DOCX or TXT book">
-          <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt" hidden>
-          <span class="paper-stack" aria-hidden="true">
-            <span class="paper-back"></span><span class="paper-front"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 23V9m-6 6 6-6 6 6M9 25h14"/></svg></span>
-            <span class="paper-plus">+</span>
-          </span>
-          <span class="drop-label">Drop your book here</span>
-          <span class="drop-sub">A whole novel. A single document. Start here.</span>
-          <span class="studio-upload-btn" id="heroUploadBtn">Choose a book <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></span>
-          <span class="studio-formats"><span>EPUB</span><span>PDF</span><span>DOCX</span><span>TXT</span></span>
-        </div>
-        <details class="studio-help" id="how">
-          <summary><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v1"/></svg>Uses Chrome’s page translator</span><span class="help-label">How it works <span aria-hidden="true">+</span></span></summary>
-          <ol><li>Choose your book.</li><li>Turn on Chrome’s Translate and select a language.</li><li>Start verification, review, then export.</li></ol>
-        </details>
-      </section>
+    <!-- 01 · Methods -->
+    <section class="section" id="methods" aria-labelledby="methodsTitle">
+      <div class="section-head">
+        <span class="section-num">01</span>
+        <div><h2 id="methodsTitle">Pick a way to translate</h2><p>Both are free. Choose the one that fits your device.</p></div>
+      </div>
+      <div class="methods-grid" id="features">
+        <article class="method-card upload-card" aria-labelledby="uploadTitle">
+          <div class="method-head">
+            <span class="method-tag">Browser translate</span>
+            <h3 id="uploadTitle">Translate here, in this workspace</h3>
+            <p>Uses Chrome’s built-in page translator. Best on desktop Chrome or Edge. Shared library, compare view, glossary and stats included.</p>
+          </div>
+          <div class="drop studio-drop" id="dropZone" role="button" tabindex="0" aria-label="Choose an EPUB, PDF, DOCX or TXT book">
+            <input type="file" id="epubFile" accept=".epub,.pdf,.docx,.txt" hidden>
+            <span class="drop-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><path d="M12 13V7m-3 3 3-3 3 3"/></svg></span>
+            <span class="drop-label">Drop your book here</span>
+            <span class="drop-sub">or</span>
+            <span class="studio-upload-btn" id="heroUploadBtn">Browse files</span>
+            <span class="studio-formats"><span>EPUB</span><span>PDF</span><span>DOCX</span><span>TXT</span></span>
+          </div>
+          <details class="studio-help" id="how">
+            <summary><span>How does browser translate work?</span><i aria-hidden="true">+</i></summary>
+            <ol><li>Choose your book — it is parsed in your browser.</li><li>Turn on Chrome’s Translate (address-bar icon) and pick a language.</li><li>Press Start. Each chapter is translated, checked and saved.</li><li>Review flagged chapters, then export.</li></ol>
+          </details>
+        </article>
 
-      <aside class="direct-card" aria-labelledby="directTitle">
-        <span class="direct-eyebrow"><i aria-hidden="true"></i>02 / DEEP TRANSLATE</span>
-        <div class="language-art" aria-hidden="true">
-          <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-          <span class="language-tile tile-en">A<span>English</span></span>
-          <span class="language-tile tile-hi">अ<span>हिन्दी</span></span>
-          <span class="language-connector">↗</span><span class="art-spark">✦</span>
-        </div>
-        <div class="direct-copy"><h2 id="directTitle">More stories.<br>Fewer barriers.</h2><p>English to Hindi, and 30 languages to explore.<br>No browser translator or extension needed.</p></div>
-        <a class="direct-button" href="translate.html">Open Deep Translate <span aria-hidden="true">↗</span></a>
-        <span class="direct-note">Text is sent to a translation service.</span>
-      </aside>
-
-      <article class="bento-card bento-verify">
-        <div class="bento-card-top"><span class="bento-kicker">A LITTLE EXTRA CONFIDENCE</span><svg class="bento-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/></svg></div>
-        <h2>Every chapter, checked.</h2>
-        <p>Text-change checks flag unfinished translations, so you can review before you export.</p>
-        <div class="verification-demo" aria-label="Example verification states, not your book progress"><span><i class="demo-dot checked"></i>Translated</span><span><i class="demo-dot reviewing"></i>Needs review</span><small>Example states</small></div>
-      </article>
-      <article class="bento-card bento-export">
-        <div class="bento-card-top"><span class="bento-kicker">TAKE THE STORY WITH YOU</span><svg class="bento-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg></div>
-        <h2>Your book. Your format.</h2>
-        <p>Five ways to export. Ready for your reader.</p>
-        <div class="export-formats" aria-label="Export formats"><span>EPUB</span><span>TXT</span><span>ZIP</span><span>MD</span><span>HTML</span></div>
-      </article>
-      <article class="bento-card bento-resume">
-        <div class="bento-card-top"><span class="bento-kicker">NO NEED TO START OVER</span><svg class="bento-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2"/></svg></div>
-        <h2>Pick up where you left off.</h2>
-        <p>Progress saved in this browser. Reopen the same file to resume your next chapter.</p>
-        <a class="bento-text-link" href="#recentWrap" data-home-anchor>Find your recent books <span aria-hidden="true">→</span></a>
-      </article>
-    </div>
-
-    <div class="studio-workflow" aria-label="Translation workflow">
-      <span><b>01</b> Upload your book</span><i aria-hidden="true">→</i>
-      <span><b>02</b> Translate &amp; review</span><i aria-hidden="true">→</i>
-      <span><b>03</b> Export &amp; read</span>
-    </div>
-
-    <div class="section-heading"><div><p class="studio-eyebrow">YOUR READING SHELF</p><h2>A good story is worth coming back to.</h2></div><span>One chapter at a time.</span></div>
-    <div class="hero-cards">
-      <section class="hero-card show" id="recentWrap" aria-labelledby="recentTitle">
-        <div class="panel-head"><h2 class="panel-label" id="recentTitle">Recent books</h2><button class="mini-btn" id="recentClear" hidden>Clear</button></div>
-        <div class="recent-list" id="recentList"><p class="studio-empty">Your next read starts above.<span>Opened books will appear here.</span></p></div>
-      </section>
-      <section class="hero-card show" id="libraryWrap" aria-labelledby="libraryTitle">
-        <div class="panel-head"><h2 class="panel-label" id="libraryTitle">Community library</h2><button class="mini-btn" id="libraryRefresh" title="Refresh library" aria-label="Refresh library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></svg></button></div>
-        <div class="recent-list" id="libraryList" aria-live="polite"><p class="studio-empty">Read together, translate less.<span>Connect to explore shared books.</span></p></div>
-      </section>
-    </div>
-
-    <section class="seo-guide" aria-labelledby="guideTitle">
-      <div class="guide-copy"><p class="studio-eyebrow">FROM FIRST PAGE TO LAST</p><h2 id="guideTitle">Book translation,<br><em>without the busywork.</em></h2><p>Novelxplin brings EPUB, PDF, Word documents and plain text into one reading workspace. Translate, check the chapters and export a book you can take with you.</p><a class="bento-text-link" href="translate.html">Try English to Hindi translation <span aria-hidden="true">→</span></a></div>
-      <ol class="guide-steps">
-        <li><span>01</span><div><h3>Open your document</h3><p>Choose an EPUB, text-based PDF, DOCX or TXT. Files are parsed in your browser; scanned PDFs need OCR elsewhere first.</p></div></li>
-        <li><span>02</span><div><h3>Choose how to translate</h3><p>Use Chrome’s page translator in this workspace, or <a href="translate.html">Deep Translate</a> for API-based translation in 30 languages.</p></div></li>
-        <li><span>03</span><div><h3>Review, export, keep reading</h3><p>Check flagged chapters and edit the text. Download an EPUB, TXT, chapter ZIP, Markdown or HTML file.</p></div></li>
-      </ol>
+        <article class="method-card direct-card" aria-labelledby="directTitle">
+          <div class="method-head">
+            <span class="method-tag">Deep Translate</span>
+            <h3 id="directTitle">Translate anywhere — no extension</h3>
+            <p>API-based translation that works in any browser, phones included. English → Hindi by default, 30 languages to choose from.</p>
+          </div>
+          <div class="lang-demo" aria-hidden="true">
+            <span class="lang-tile">A<small>English</small></span>
+            <span class="lang-arrow">→</span>
+            <span class="lang-tile hi">अ<small>हिन्दी</small></span>
+          </div>
+          <ul class="method-list">
+            <li>Data-saver chunks — a full novel ≈ 2 MB</li>
+            <li>Auto-pause offline, auto-resume online</li>
+            <li>Google · Lingva · MyMemory engines with fallback</li>
+          </ul>
+          <a class="direct-button" href="translate.html">Open Deep Translate <span aria-hidden="true">→</span></a>
+          <span class="direct-note">Text is sent to a translation service.</span>
+        </article>
+      </div>
     </section>
-    <section class="faq-section" id="faq" aria-labelledby="faqTitle">
-      <div class="section-heading"><div><p class="studio-eyebrow">GOOD QUESTIONS. CLEAR ANSWERS.</p><h2 id="faqTitle">Before you turn the page.</h2></div><span>About Novelxplin</span></div>
+
+    <!-- 02 · Layouts hub -->
+    <section class="section" id="layouts" aria-labelledby="layoutsTitle">
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <div><h2 id="layoutsTitle">One app, every layout</h2><p>Same engine and the same saved progress everywhere. Switch any time — your choice is remembered.</p></div>
+      </div>
+      <div class="layouts-grid">
+        <article class="layout-card is-current">
+          <span class="layout-badge">You’re here</span>
+          <span class="layout-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg></span>
+          <h3>Studio <small>/</small></h3>
+          <p>Desktop &amp; mobile. Shared library, Google sign-in, command palette, reading mode, diff, glossary and stats.</p>
+          <span class="layout-link muted">Current layout</span>
+        </article>
+        <article class="layout-card">
+          <span class="layout-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg></span>
+          <h3>Classic <small>/classic/</small></h3>
+          <p>The original single-column page. 100% local, no sign-in, no shared library — just upload, verify, export.</p>
+          <a class="layout-link" href="classic/index.html?ui=classic">Open Classic <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="layout-card">
+          <span class="layout-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span>
+          <h3>Xplin Go <small>/mobile/</small></h3>
+          <p>Phone-only edition. Full-screen chapter reader, one-thumb bottom bar, swipe between chapters, read aloud.</p>
+          <a class="layout-link" href="mobile/index.html?ui=mobile">Open Xplin Go <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="layout-card accent">
+          <span class="layout-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h9M9 5v3M7 8c0 4-3 7-5 8M9 8c1 3 3 5 5 6"/><path d="M13 20l4-9 4 9M14.5 17h5"/></svg></span>
+          <h3>Deep Translate <small>/translate.html</small></h3>
+          <p>API-based whole-book translation. No Chrome translate needed, works on any browser and phone.</p>
+          <a class="layout-link" href="translate.html">Open Deep Translate <span aria-hidden="true">→</span></a>
+        </article>
+      </div>
+    </section>
+
+    <!-- 03 · How it works -->
+    <section class="section" id="how-it-works" aria-labelledby="guideTitle">
+      <div class="section-head">
+        <span class="section-num">03</span>
+        <div><h2 id="guideTitle">How it works</h2><p>From first page to last in three steps.</p></div>
+      </div>
+      <ol class="steps-grid">
+        <li><span class="step-badge">1</span><h3>Open your book</h3><p>Choose an EPUB, text-based PDF, DOCX or TXT. Chapters are detected and parsed locally in your browser.</p></li>
+        <li><span class="step-badge">2</span><h3>Translate &amp; verify</h3><p>Use Chrome’s page translator here, or Deep Translate on any device. Every chapter is checked for a real text change.</p></li>
+        <li><span class="step-badge">3</span><h3>Review &amp; export</h3><p>Compare, edit and fix names with the glossary. Download EPUB, TXT, chapter ZIP, Markdown or HTML.</p></li>
+      </ol>
+      <div class="info-strip">
+        <div><b>Verified ≠ accurate.</b> Verification confirms the text changed to the target script — review meaning yourself.</div>
+        <div><b>Progress is saved.</b> Reopen the same file in this browser (or restore a .json backup) to continue.</div>
+        <div><b>Private by default.</b> Parsing happens on your device. Only translation providers receive the text.</div>
+      </div>
+    </section>
+
+    <!-- 04 · Shelf -->
+    <section class="section" id="shelf" aria-labelledby="shelfTitle">
+      <div class="section-head">
+        <span class="section-num">04</span>
+        <div><h2 id="shelfTitle">Your shelf</h2><p>Continue a book you started, or pick one the community is already translating.</p></div>
+      </div>
+      <div class="hero-cards">
+        <section class="hero-card show" id="recentWrap" aria-labelledby="recentTitle">
+          <div class="panel-head"><h3 class="panel-label" id="recentTitle">Recent books</h3><button class="mini-btn" id="recentClear" hidden>Clear</button></div>
+          <div class="recent-list" id="recentList"><p class="studio-empty">Nothing here yet.<span>Books you open will appear here.</span></p></div>
+        </section>
+        <section class="hero-card show" id="libraryWrap" aria-labelledby="libraryTitle">
+          <div class="panel-head"><h3 class="panel-label" id="libraryTitle">Community library</h3><button class="mini-btn" id="libraryRefresh" title="Refresh library" aria-label="Refresh library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></svg></button></div>
+          <div class="recent-list" id="libraryList" aria-live="polite"><p class="studio-empty">Connecting…<span>Shared books appear here.</span></p></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- 05 · FAQ -->
+    <section class="section faq-section" id="faq" aria-labelledby="faqTitle">
+      <div class="section-head">
+        <span class="section-num">05</span>
+        <div><h2 id="faqTitle">Questions &amp; answers</h2><p>The short version of everything you might wonder about.</p></div>
+      </div>
       <div class="faq-grid">
         <details><summary>How do I translate an EPUB or PDF to Hindi?</summary><p>Open your EPUB or text-based PDF in <a href="translate.html">Deep Translate</a>, select the source language and Hindi as the target, then start. Alternatively, open the file here, enable Chrome’s Hindi translation and run chapter verification.</p></details>
-        <details><summary>Is Novelxplin free to use?</summary><p>Yes. You can open, review and export books without an account or a Novelxplin subscription. Third-party translation services have their own availability and rate limits, which may pause or slow a translation.</p></details>
-        <details><summary>Does my book stay on my device?</summary><p>File parsing, editing and export happen in your browser. Chrome translation and Deep Translate may send text to their translation providers. The shared library is enabled by default and syncs verified chapters to Firebase; turn it off in the workspace before starting if you do not want to share.</p></details>
-        <details><summary>Does “verified” mean the translation is accurate?</summary><p>No. Verification checks for script or text changes to help detect untranslated content. It does not guarantee meaning, grammar or literary accuracy. Review the output, especially for important documents.</p></details>
-        <details><summary>Can I continue a translation later?</summary><p>Yes. Progress is stored in this browser. Reopen the same file on the same device to resume. Keep a JSON backup for safekeeping: clearing site data or using private browsing can remove saved sessions.</p></details>
-        <details><summary>Can I translate on my phone or offline?</summary><p><a href="translate.html">Deep Translate</a> works on mobile without Chrome’s page translator. <a href="mobile/index.html?ui=mobile">Xplin Go</a> offers a phone-first browser-translation layout. The installed app shell and cached content can work offline, but new translations need an internet connection.</p></details>
+        <details><summary>Is Novelxplin free to use?</summary><p>Yes. You can open, review and export books without an account or subscription. Third-party translation services have their own availability and rate limits, which may pause or slow a translation.</p></details>
+        <details><summary>Which layout should I use?</summary><p><b>Studio</b> (this page) for desktop with the shared library and tools. <b>Classic</b> if you want the original, fully local page. <b>Xplin Go</b> on a phone with Chrome translate. <b>Deep Translate</b> when you don’t have Chrome’s translator at all.</p></details>
+        <details><summary>Does my book stay on my device?</summary><p>File parsing, editing and export happen in your browser. Chrome translation and Deep Translate send text to their translation providers. The shared library syncs verified chapters to Firebase; turn it off in the workspace before starting if you don’t want to share.</p></details>
+        <details><summary>Does “verified” mean the translation is accurate?</summary><p>No. Verification checks for a script or text change to detect untranslated content. It does not guarantee meaning, grammar or literary accuracy — review the output, especially for important documents.</p></details>
+        <details><summary>Can I continue a translation later?</summary><p>Yes. Progress is stored in this browser. Reopen the same file on the same device to resume. Keep a JSON backup for safekeeping: clearing site data or private browsing can remove saved sessions.</p></details>
+        <details><summary>Can I translate on my phone or offline?</summary><p><a href="translate.html">Deep Translate</a> works on mobile without Chrome’s page translator. <a href="mobile/index.html?ui=mobile">Xplin Go</a> is a phone-first browser-translation layout. The installed app shell works offline, but new translations need an internet connection.</p></details>
+        <details><summary>Which file types are supported?</summary><p>EPUB, text-based PDF, DOCX and TXT. Scanned PDFs (images) need OCR elsewhere first. Chapter headings like “Chapter 12”, “Part II”, “अध्याय 5” are detected automatically.</p></details>
       </div>
     </section>
   </section>
 
-  <!-- ============ WORKSPACE (2-column) ============ -->
+<!-- ============ WORKSPACE (2-column) ============ -->
   <div class="workspace" id="workspace">
 
     <!-- ---------- SIDEBAR ---------- -->
@@ -671,9 +727,32 @@
     </div>
   </div>
 
-  <footer class="studio-footer">
-    <span>Novelxplin <span class="footer-divider">/</span> A home for every story.</span>
-    <nav aria-label="Footer navigation"><button class="link-btn" id="tourBtn">Quick guide</button><a href="#faq" data-home-anchor>FAQs</a><a href="translate.html">Deep Translate</a><a href="classic/index.html?ui=classic">Classic</a><a href="mobile/index.html?ui=mobile" id="mobileFooterLink">Mobile edition <span aria-hidden="true">↗</span></a></nav>
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="brand-mark small" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M7 8h6l6 16h-6L7 8Z" fill="currentColor"/><path d="m18 8 7 0-6 16h-7L18 8Z" fill="currentColor" opacity=".6"/></svg></span>
+        <div><b>Novelxplin</b><p>Verified, chapter-by-chapter book translation. Free and open in your browser.</p></div>
+      </div>
+      <nav class="footer-col" aria-label="Translate">
+        <h4>Translate</h4>
+        <a href="#methods" data-home-anchor>Browser translate</a>
+        <a href="translate.html">Deep Translate</a>
+        <a href="#libraryWrap" data-home-anchor>Community library</a>
+      </nav>
+      <nav class="footer-col" aria-label="Layouts">
+        <h4>Layouts</h4>
+        <a href="index.html?ui=new">Studio</a>
+        <a href="classic/index.html?ui=classic">Classic</a>
+        <a href="mobile/index.html?ui=mobile" id="mobileFooterLink">Xplin Go (mobile)</a>
+      </nav>
+      <nav class="footer-col" aria-label="Help">
+        <h4>Help</h4>
+        <button class="link-btn" id="tourBtn" type="button">Quick tour</button>
+        <a href="#how-it-works" data-home-anchor>How it works</a>
+        <a href="#faq" data-home-anchor>FAQ</a>
+      </nav>
+    </div>
+    <div class="footer-bottom"><span>© Novelxplin · novelxplin.in</span><span>Progress, theme and settings are shared across all layouts.</span></div>
   </footer>
 </main>
 
